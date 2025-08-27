@@ -12,8 +12,8 @@
   "license": "MIT",
   "devDependencies": {
     "ava": "^5.3.1",
-    "esbuild": "^0.19.0",
-    "tsx": "^3.12.8",
+    "esbuild": "^0.25.9",
+    "tsx": "^3.14.0",
     "typescript": "^5.2.2"
   },
   "files": [
