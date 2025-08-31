@@ -13,7 +13,7 @@
   "devDependencies": {
     "ava": "^5.3.1",
     "esbuild": "^0.25.9",
-    "tsx": "^3.12.8",
+    "tsx": "^4.20.5",
     "typescript": "^5.2.2"
   },
   "files": [
