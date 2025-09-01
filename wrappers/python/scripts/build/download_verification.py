@@ -8,9 +8,9 @@ log = logging.getLogger(__name__)
 
 def verify_hashes(version_vendor_dir: Path, name_to_hash: Dict[str, str]) -> List[Path]:
     verified = []
-    assert (
-        version_vendor_dir.is_dir()
-    ), f"{version_vendor_dir} is not a directory; pwd={Path.cwd()}"
+    assert version_vendor_dir.is_dir(), (
+        f"{version_vendor_dir} is not a directory; pwd={Path.cwd()}"
+    )
     for name, hash_name in name_to_hash.items():
         to_verify = version_vendor_dir / name
         hash_file = version_vendor_dir / hash_name

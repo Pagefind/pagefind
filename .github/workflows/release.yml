@@ -14,7 +14,7 @@ env:
 jobs:
   publish-crate:
     name: Publish Crate
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: publish-github-release
     steps:
       - name: Clone
@@ -28,6 +28,14 @@ jobs:
             ~/.rustup
             target
           key: ${{ runner.os }}-stable-min165
+
+      - name: Install Nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          default: true
+          components: rustfmt, clippy, rust-src
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -76,6 +84,10 @@ jobs:
 
       - name: Build Modular UI
         working-directory: ./pagefind_ui/modular
+        run: npm i && npm run build
+
+      - name: Build Playground
+        working-directory: ./pagefind_playground
         run: npm i && npm run build
 
       - name: Build
@@ -159,7 +171,7 @@ jobs:
 
   publish-npm-package:
     name: Publish NPM packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: publish-binary-npm-packages
     steps:
       - name: Clone
@@ -217,7 +229,7 @@ jobs:
 
   publish-binary-npm-packages:
     name: Publish NPM binaries
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: publish-github-release
     strategy:
       matrix:
@@ -237,6 +249,11 @@ jobs:
           - target: x86_64-apple-darwin
             package: darwin-x64
             os: darwin
+            cpu: x64
+          
+          - target: x86_64-unknown-freebsd
+            package: freebsd-x64
+            os: freebsd
             cpu: x64
           - target: aarch64-apple-darwin
             package: darwin-arm64
@@ -279,7 +296,7 @@ jobs:
 
   publish-github-release:
     name: GitHub Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: test-and-build
     defaults:
       run:
@@ -289,8 +306,8 @@ jobs:
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@v2
         with:
-          application_id: ${{ secrets.CC_OSS_BOT_ID }}
-          application_private_key: ${{ secrets.CC_OSS_BOT_PEM }}
+          application_id: ${{ secrets.PF_BOT_ID }}
+          application_private_key: ${{ secrets.PF_BOT_PEM }}
 
       - name: Clone
         uses: actions/checkout@v4
@@ -333,7 +350,7 @@ jobs:
         id: push_changes
         with:
           route: PUT /repos/{owner}/{repo}/contents/CHANGELOG.md
-          owner: cloudcannon
+          owner: pagefind
           repo: pagefind
           branch: main
           message: Changelog for ${{ env.GIT_VERSION }}
@@ -347,7 +364,7 @@ jobs:
         id: merge_docs
         with:
           route: POST /repos/{owner}/{repo}/merges
-          owner: cloudcannon
+          owner: pagefind
           repo: pagefind
           base: production-docs
           head: main
@@ -359,9 +376,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG == 'latest'
         with:
-          repository: cloudcannon/pagefind
+          repository: pagefind/pagefind
           prerelease: false
           body_path: RELEASE.md
+          discussion_category_name: Announcements
           files: |
             build-artifacts/*
         env:
@@ -370,9 +388,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG != 'latest'
         with:
-          repository: cloudcannon/pagefind-beta
+          repository: pagefind/pagefind-beta
           prerelease: true
           body_path: RELEASE.md
+          discussion_category_name: Announcements
           files: |
             build-artifacts/*
         env:
@@ -416,6 +435,13 @@ jobs:
             rust: stable
             target: aarch64-apple-darwin
             cross: false
+            run_tests: false
+          
+          - build: freebsd
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-freebsd
+            cross: true
             run_tests: false
     steps:
       - name: Checkout repository
@@ -468,6 +494,15 @@ jobs:
           echo "CFLAGS_aarch64_unknown_linux_musl=--sysroot=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/aarch64-linux-gnu/bin/ld" >> $GITHUB_ENV
 
+      - name: Install Nightly Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: ${{ matrix.target }}
+          override: true
+          default: true
+          components: rustfmt, clippy, rust-src
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -481,6 +516,10 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: ${{env.WASM_PACK_VERSION}}
+      
+      - name: Install cross (FreeBSD binary build)
+        if: matrix.cross == true
+        run: cargo install cross
 
       - name: Set up python 3.12
         uses: actions/setup-python@v5
@@ -521,6 +560,10 @@ jobs:
         working-directory: ./pagefind_ui/modular
         run: npm i && npm run build
 
+      - name: Build Playground
+        working-directory: ./pagefind_playground
+        run: npm i && npm run build
+
       - name: Test Web
         if: matrix.run_tests == true
         working-directory: ./pagefind_web
@@ -528,8 +571,12 @@ jobs:
 
       - name: Build
         working-directory: ./pagefind
+        if: matrix.build!= 'freebsd'
         run: cargo build --release --target ${{ matrix.target }} --features extended
-
+      - name: Build FreeBSD Binary
+        working-directory: ./pagefind
+        if: matrix.build == 'freebsd'
+        run: cross build --release --target ${{ matrix.target }} --features extended
       - name: Test Lib
         if: matrix.run_tests == true
         working-directory: ./pagefind
@@ -543,9 +590,16 @@ jobs:
         run: |
           cp target/${{ matrix.target }}/release/pagefind target/${{ matrix.target }}/release/pagefind_extended
 
+
       - name: Build Non-Extended
         working-directory: ./pagefind
+        if: matrix.build!= 'freebsd'
         run: cargo build --release --target ${{ matrix.target }}
+      
+      - name: Build Non-Extended (FreeBSD)
+        if: matrix.build == 'freebsd'
+        working-directory: ./pagefind
+        run: cross build --release --target ${{ matrix.target }}
 
       - name: Create Standard Release
         run: |

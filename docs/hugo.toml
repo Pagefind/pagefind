@@ -12,4 +12,4 @@ highlight.noClasses = false
 unsafe = true
 
 [[module.imports]]
-path = 'github.com/bglw/alto-as-module'
+path = 'github.com/pagefind/docs-template'

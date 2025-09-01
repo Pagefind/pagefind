@@ -19,10 +19,13 @@ mod index;
 mod logging;
 pub mod options;
 mod output;
+mod playground;
 pub mod runner;
 mod serve;
 mod service;
 mod utils;
+
+const PAGEFIND_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct SearchState {
     options: SearchOptions,
@@ -298,7 +301,13 @@ impl SearchState {
         )
         .await;
 
-        output::write_common_to_disk(index_entries, &outdir).await;
+        output::write_common_to_disk(
+            index_entries,
+            self.options.write_playground,
+            &outdir,
+            &self.options,
+        )
+        .await;
 
         outdir
     }
@@ -322,9 +331,14 @@ impl SearchState {
             .collect();
 
         files.extend(
-            output::write_common_to_memory(index_entries, outdir)
-                .await
-                .into_iter(),
+            output::write_common_to_memory(
+                index_entries,
+                self.options.write_playground,
+                outdir,
+                &self.options,
+            )
+            .await
+            .into_iter(),
         );
 
         // SyntheticFiles should only return the relative path to the file

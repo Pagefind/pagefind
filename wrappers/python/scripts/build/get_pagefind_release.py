@@ -27,7 +27,7 @@ def get_version_downloads(
     Dict[str, str],  # file: hash_file mapping
     str,  # tag_name
 ]:
-    url = f"https://api.github.com/repos/CloudCannon/pagefind/releases/{version}"
+    url = f"https://api.github.com/repos/pagefind/pagefind/releases/{version}"
     response = urlopen(url)
     data = json.loads(response.read())
     all_assets: Dict[str, Dict[str, Any]] = dict()

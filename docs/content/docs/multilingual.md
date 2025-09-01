@@ -5,7 +5,7 @@ nav_section: Multilingual
 weight: 30
 ---
 
-Pagefind supports multilingual sites out of the box, with zero configuration. 
+Pagefind supports multilingual sites out of the box, with zero configuration.
 
 When indexing, Pagefind will look for a [`lang` attribute](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/lang) on your `html` element. Indexing will then run independently for each detected language. When Pagefind initializes in the browser it will check the same `lang` attribute and load the appropriate index.
 
@@ -26,9 +26,9 @@ If word stemming is unsupported, search results won't match across root words. I
 | Language          | UI Translations | Word Stemming |
 |-------------------|-----------------|---------------|
 | Afrikaans — `af`  | ✅               | ❌             |
-| Arabic — `ar`     | ❌               | ✅             |
+| Arabic — `ar`     | ✅               | ✅             |
 | Armenian — `hy`   | ❌               | ✅             |
-| Basque — `eu`     | ❌               | ✅             |
+| Basque — `eu`     | ✅               | ✅             |
 | Bengali — `bn`    | ✅               | ❌             |
 | Catalan — `ca`    | ✅               | ✅             |
 | Chinese — `zh`    | ✅               | See below     |
@@ -42,6 +42,7 @@ If word stemming is unsupported, search results won't match across root words. I
 | Galician — `gl`   | ✅               | ❌             |
 | German — `de`     | ✅               | ✅             |
 | Greek — `el`      | ❌               | ✅             |
+| Hebrew — `he`     | ✅               | ❌             |
 | Hindi — `hi`      | ✅               | ✅             |
 | Hungarian — `hu`  | ✅               | ✅             |
 | Indonesian — `id` | ✅               | ✅             |
@@ -51,21 +52,28 @@ If word stemming is unsupported, search results won't match across root words. I
 | Korean — `ko`     | ✅               | ❌             |
 | Lithuanian — `lt` | ❌               | ✅             |
 | Māori — `mi`      | ✅               | ❌             |
+| Myanmar — `my`    | ✅               | ❌             |
 | Nepali — `ne`     | ❌               | ✅             |
 | Norwegian — `no`  | ✅               | ✅             |
+| Norwegian (bokmål) — `nb`  | ✅      | ✅             |
+| Norwegian (nynorsk) — `nn` | ✅      | ✅             |
+| Persian — `fa`    | ✅               | ❌             |
 | Polish — `pl`     | ✅               | ❌             |
 | Portuguese — `pt` | ✅               | ✅             |
-| Romanian — `ro`   | ❌               | ✅             |
+| Romanian — `ro`   | ✅               | ✅             |
 | Russian — `ru`    | ✅               | ✅             |
 | Serbian — `sr`    | ✅               | ✅             |
 | Spanish — `es`    | ✅               | ✅             |
+| Swahili — `sw`    | ✅               | ❌             |
 | Swedish — `sv`    | ✅               | ✅             |
 | Tamil — `ta`      | ✅               | ✅             |
+| Thai — `th`       | ✅               | ❌             |
 | Turkish — `tr`    | ✅               | ✅             |
+| Ukrainian — `uk`  | ✅               | ❌             |
 | Vietnamese — `vi` | ✅               | ❌             |
 | Yiddish — `yi`    | ❌               | ✅             |
 
-> Feel free to [open an issue](https://github.com/CloudCannon/pagefind/issues/new) if there's a language you would like better support for, or [contribute a translation](https://github.com/CloudCannon/pagefind/tree/main/pagefind_ui/translations) for Pagefind UI in your language.
+> Feel free to [open an issue](https://github.com/pagefind/pagefind/issues/new) if there's a language you would like better support for, or [contribute a translation](https://github.com/pagefind/pagefind/tree/main/pagefind_ui/translations) for Pagefind UI in your language.
 
 ## Specialized languages
 
@@ -75,7 +83,7 @@ Currently when indexing, Pagefind does not support stemming for specialized lang
 
 Pagefind does not _yet_ support segmentation of the search query, so searching in the browser requires that words in the search query are separated by whitespace.
 
-In practice, this means that on a page tagged as a `zh-` language, `每個月都` will be indexed as the words `每個`, `月`, and `都`. 
+In practice, this means that on a page tagged as a `zh-` language, `每個月都` will be indexed as the words `每個`, `月`, and `都`.
 
 When searching in the browser, searching for `每個`, `月`, or `都` individually will work. Additionally, searching `每個 月 都` will return results containing each word in any order, and searching `"每個 月 都"` in quotes will match `每個月都` exactly.
 

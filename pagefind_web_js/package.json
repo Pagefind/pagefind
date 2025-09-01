@@ -8,12 +8,14 @@
     "build-coupled": "node ./build.js",
     "test": "ava"
   },
-  "author": "Cloudcannon",
+  "author": "Pagefind",
   "license": "MIT",
   "devDependencies": {
+    "@types/mark.js": "^8.11.8",
+    "@types/node": "^22.15.29",
     "ava": "^5.3.1",
-    "esbuild": "^0.19.0",
-    "tsx": "^3.12.8",
+    "esbuild": "^0.25.9",
+    "tsx": "^4.20.5",
     "typescript": "^5.2.2"
   },
   "files": [
@@ -28,7 +30,6 @@
     ]
   },
   "dependencies": {
-    "@types/mark.js": "^8.11.8",
     "mark.js": "^8.11.1"
   }
 }

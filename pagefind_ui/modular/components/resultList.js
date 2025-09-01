@@ -28,15 +28,16 @@ const placeholderTemplate = () => {
 </li>`;
 }
 
-const resultTemplate = (result) => {
+const resultTemplate = (result, showImages) => {
     let wrapper = new El("li").class("pagefind-modular-list-result");
-
-    let thumb = new El("div").class("pagefind-modular-list-thumb").addTo(wrapper);
-    if (result?.meta?.image) {
-        new El("img").class("pagefind-modular-list-image").attrs({
-            src: result.meta.image,
-            alt: result.meta.image_alt || result.meta.title
-        }).addTo(thumb);
+    if(showImages) {
+        let thumb = new El("div").class("pagefind-modular-list-thumb").addTo(wrapper);
+        if (result?.meta?.image) {
+            new El("img").class("pagefind-modular-list-image").attrs({
+                src: result.meta.image,
+                alt: result.meta.image_alt || result.meta.title
+            }).addTo(thumb);
+        }
     }
 
     let inner = new El("div").class("pagefind-modular-list-inner").addTo(wrapper);
@@ -68,6 +69,7 @@ class Result {
         this.placeholderNodes = opts.placeholderNodes;
         this.resultFn = opts.resultFn;
         this.intersectionEl = opts.intersectionEl;
+        this.showImages = opts.showImages;
         this.result = null;
         this.waitForIntersection();
     }
@@ -96,7 +98,7 @@ class Result {
         if (!this.placeholderNodes?.length) return;
 
         this.result = await this.rawResult.data();
-        const resultTemplate = this.resultFn(this.result);
+        const resultTemplate = this.resultFn(this.result, this.showImages);
         const resultNodes = templateNodes(resultTemplate);
 
         while (this.placeholderNodes.length > 1) {
@@ -114,6 +116,7 @@ export class ResultList {
         this.results = [];
         this.placeholderTemplate = opts.placeholderTemplate ?? placeholderTemplate;
         this.resultTemplate = opts.resultTemplate ?? resultTemplate;
+        this.showImages = opts.showImages ?? true;
 
         if (opts.containerElement) {
             this.initContainer(opts.containerElement);
@@ -147,7 +150,7 @@ export class ResultList {
             this.results = results.results.map(r => {
                 let placeholderNodes = templateNodes(this.placeholderTemplate());
                 this.append(placeholderNodes);
-                return new Result({ result: r, placeholderNodes, resultFn: this.resultTemplate, intersectionEl: this.intersectionEl });
+                return new Result({ result: r, placeholderNodes, resultFn: this.resultTemplate, intersectionEl: this.intersectionEl, showImages: this.showImages });
             })
         });
 

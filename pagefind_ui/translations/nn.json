@@ -1,0 +1,18 @@
+{
+    "thanks_to": "Eirik Mikkelsen",
+    "comments": "",
+    "direction": "ltr",
+    "strings": {
+        "placeholder": "Søk",
+        "clear_search": "Fjern",
+        "load_more": "Last fleire resultat",
+        "search_label": "Søk på denne sida",
+        "filters_label": "Filter",
+        "zero_results": "Ingen resultat for [SEARCH_TERM]",
+        "many_results": "[COUNT] resultat for [SEARCH_TERM]",
+        "one_result": "[COUNT] resultat for [SEARCH_TERM]",
+        "alt_search": "Ingen resultat for [SEARCH_TERM]. Viser resultat for [DIFFERENT_TERM] i staden",
+        "search_suggestion": "Ingen resultat for [SEARCH_TERM]. Prøv eitt av desse søkeorda i staden:",
+        "searching": "Søker etter [SEARCH_TERM]"
+    }
+}

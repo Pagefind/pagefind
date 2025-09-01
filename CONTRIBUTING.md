@@ -14,8 +14,8 @@ This lives in `pagefind_web`, and is what performs the actual search actions in 
 ### [JavaScript] The Pagefind UI modules
 These are the node packages in `pagefind_ui`, which are both published to NPM and compiled into the indexing binary.
 
-### [JavaScript] The wrapper Node module
-This lives in `wrappers/node`, and is what provides the `npx pagefind` binary runner, as well as the Node bindings for Pagefind.
+### [JavaScript + Python] The wrapper modules
+These live in `wrappers`, and are what provide the `npx` and `pip` binary Pagefind runners, as well as the Node and Python bindings for Pagefind.
 
 ## Extras:
 
@@ -31,77 +31,110 @@ This lives in `pagefind_stem`, and it's unlikely you'll need to touch this.
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [NodeJS](https://nodejs.org/en/download)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-- Add the wasm target to your Rust installation: `rustup target add wasm32-unknown-unknown`
+- [just](https://github.com/casey/just#installation) - Command runner for development tasks
 
-NB: Contributing right now is certainly easier on macOS/Linux systems, but there are no blockers for contributing from Windows.
-To do so, you'll just need to run the applicable commands from the bash scripts in the repo manually (adjusted for Windows as needed).
+NB: Contributing right now is certainly easier on macOS/Linux systems, but there are no hard blockers for contributing from Windows.
+To do so, you will need to dig into the justfile and run the applicable commands for Windows.
+If you're interested in contributing Windows variants for the build scripts and justfile commands, that would be lovely!
 
-## Building the supporting packages
+## Quick Start
 
-Ultimately, most contributions will require the ability to build the main Pagefind binary.
-That binary compiles in some of our supporting facets, so you'll need to build those first.
+We use [just](https://github.com/casey/just) to manage development commands. To get started:
 
-First, build the web JS bindings with:
-- `cd pagefind_web_js && npm i && npm run build-coupled`
+```bash
+# Install all dependencies and tooling
+just install
 
-Next, build the UI packages with:
-- `cd pagefind_ui/default && npm i && npm run build`
-- `cd pagefind_ui/modular && npm i && npm run build`
+# Build everything
+just build
 
-This builds the packages for distribution, but also builds the files to the `pagefind/vendor` directory,
-which is where the Pagefind source looks for them during compilation.
+# Run tests
+just test
+```
 
-Next, build the WebAssembly package with:
-- `cd pagefind_web && ./local_build.sh`
+Run `just` to see all available commands.
 
-Similar to before, this builds the WebAssembly outputs to the `pagefind/vendor/wasm` directory.
-This step might take a while, as it needs to build a WASM file for each supported language. Grab a tea 🙂
+## Building the project
 
-## Building the main package
+The project has multiple components that need to be built in order. The easiest way is to use:
 
-To build the main Pagefind binary, enter the `pagefind` folder and run `cargo build --release --features extended`.
-Pagefind currently runs _very_ slowly in a debug build, so the extra time of a `--release` compile is more than made up
-for by the faster runtime of the output binary, especially when running the test suite.
+```bash
+# Build all supporting packages first
+just build-deps
 
-After building, you'll have a final Pagefind binary at `target/release/pagefind` (in the root of the repo, as we are a cargo workspace).
+# Then build the main Pagefind binary
+just build-main
+
+# Or build everything at once
+just build
+```
+
+The build process:
+1. Builds the JavaScript API bindings (`pagefind_web_js`)
+2. Builds the UI packages (`pagefind_ui/default` and `pagefind_ui/modular`)
+3. Builds the playground (`pagefind_playground`)
+4. Builds the WebAssembly package for all supported languages (this takes a while!)
+5. Builds the main Pagefind binary with release optimizations
+
+After building, you'll have a final Pagefind binary at `target/release/pagefind`.
+
+Note: Pagefind currently runs _very_ slowly in a debug build, so we always build with `--release` for better runtime performance.
 
 ## Test suite
 
-To run the integration test suite, from the root folder run `npx toolproof@latest`.
-This will give you a terminal interface to run tests and accept snapshot changes.
+```bash
+# Run all tests
+just test
+```
 
-From the `pagefind` directory you can run `cargo test` for unit tests.
+This runs:
+- Rust unit tests for the main package
+- WebAssembly tests
+- JavaScript tests
+- Integration tests using Toolproof
 
-For most changes unit tests are a nice to have, but integration tests are better.
+For most changes, integration tests are preferred over unit tests. The integration test files are in `pagefind/integration_tests` and are written for [Toolproof](https://toolproof.app/).
 
-You can see the integration test files inside `pagefind/integration_tests`. These are written for, and run by, Toolproof.
-You can see documentation for this at https://toolproof.app/
+## Development commands
+
+```bash
+# Start UI development server (default UI)
+just dev-ui
+
+# Start UI development server (modular UI)
+just dev-ui-modular
+
+# Format code
+just fmt
+
+# Lint everything
+just lint
+
+# Test with the documentation site
+just test-docs
+```
 
 ## Manually testing
 
-For the UI packages, running `npm start` in either the `pagefind_ui/default` or `pagefind_ui/modular` directories will
-start serving a dev server with these UI libraries rendered on the page. Reload to automatically pull in any changes to files.
+For the UI packages, use `just dev-ui` or `just dev-ui-modular` to start a development server with hot reload.
 
-Currently this does just stub out a Pagefind mock, so for anything more substantial you'll want to run `npm run build`, then build
-the main Pagefind package and test from there.
+To test the main package with the documentation site:
 
-To test the main package, run the `target/release/pagefind` file however you would normally run Pagefind, and use the assets it creates
-to test any dependent package.
+```bash
+just test-docs
+```
 
-A quick way to get off the ground is to test using the `docs` site in this repo. Enter the `docs` directory and follow the given steps:
-
-- Delete any `public` directory if it already exists
-- Run `npm i`
-- Run `hugo` to build the site
-- Run `../target/release/pagefind -s public --serve`
-- Open the provided URL, and you should now see the Pagefind documentation, but:
-  - Indexed by your local build of the binary
+This will:
+- Build the Pagefind documentation site
+- Run your local Pagefind binary on it
+- Start a server where you can test:
+  - Indexing by your local build of the binary
   - Searching with your local build of the WebAssembly
-  - Shown with your local build of the Default UI
+  - UI rendered by your local build of the Default UI
 
 ## Further Notes
 
 TODOS:
 - Devise and document a nice way to manually test the npx wrapper behaviour
 - Devise and document a nice way to manually test the Node package interface
+- Provide a better path for contributing from Windows machines

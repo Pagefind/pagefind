@@ -169,9 +169,9 @@ class PagefindService(AbstractAsyncContextManager["PagefindService"]):
                         message_id = sent.get("message_id")
             if message_id is not None:
                 log.debug(f"received response for message {message_id}")
-                assert (
-                    self._message_id >= message_id
-                ), f"message_id out of order: incoming {message_id} > current: {self._message_id}"
+                assert self._message_id >= message_id, (
+                    f"message_id out of order: incoming {message_id} > current: {self._message_id}"
+                )
                 if (future := self._responses.get(message_id)) is not None:
                     log.debug(f"resolving future for message {message_id}")
                     payload = resp["payload"]
@@ -195,9 +195,8 @@ class PagefindService(AbstractAsyncContextManager["PagefindService"]):
         log.debug("waiting for all responses to be resolved")
         try:
             # wait at most 5s for all responses to be resolved
-            async with asyncio.timeout(5):
-                await asyncio.gather(*self._responses.values())
-                log.debug("all responses resolved")
+            await asyncio.wait_for(asyncio.gather(*self._responses.values()), timeout=5)
+            log.debug("all responses resolved")
         except asyncio.TimeoutError:
             log.error("timed out waiting for responses to be resolved")
         self._poll_task.cancel()

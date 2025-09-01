@@ -19,7 +19,7 @@ The most widely-supported solution at the current moment is to ensure your Conte
 
 A [proposal exists](https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md) for `script-src 'wasm-unsafe-eval'`, which is supported in Chrome, Firefox, and Edge, but has not yet shipped to a stable Safari version.
 
-> In the future, hopefully a `wasm-src` attribute / SRI hash validation will be supported in CSP, as proposed in [chrome#961485](https://bugs.chromium.org/p/chromium/issues/detail?id=961485), [chrome#945121](https://bugs.chromium.org/p/chromium/issues/detail?id=945121).  
-[Open an issue](https://github.com/CloudCannon/pagefind/issues) if this is now the case!
+> In the future, hopefully a `wasm-src` attribute / SRI hash validation will be supported in CSP, as proposed in [chrome#961485](https://bugs.chromium.org/p/chromium/issues/detail?id=961485), [chrome#945121](https://bugs.chromium.org/p/chromium/issues/detail?id=945121).
+[Open an issue](https://github.com/pagefind/pagefind/issues) if this is now the case!
 
 If you're using the Pagefind UI snippet as documented you will also need `unsafe-inline`, but this could also be addressed by moving the Pagefind initialization into one of your existing JavaScript files.

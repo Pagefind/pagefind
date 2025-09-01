@@ -39,7 +39,7 @@ new PagefindUI({
 ```
 {{< /diffcode >}}
 
-Whether to show nested results for each heading within a matching page. Defaults to `false`.  
+Whether to show nested results for each heading within a matching page. Defaults to `false`.
 If `true`, a maximum of three will be shown per result.
 
 ### Show images
@@ -81,7 +81,7 @@ new PagefindUI({
 ```
 {{< /diffcode >}}
 
-Provides a function that Pagefind UI calls before performing a search. This can be used to normalize search terms to match your content. The result will not be shown to the user, in the above example the search input would still display `aa`. 
+Provides a function that Pagefind UI calls before performing a search. This can be used to normalize search terms to match your content. The result will not be shown to the user, in the above example the search input would still display `aa`.
 
 
 ### Process result
@@ -98,7 +98,7 @@ new PagefindUI({
 ```
 {{< /diffcode >}}
 
-Provides a function that Pagefind UI calls before displaying each result. This can be used to fix relative URLs, rewrite titles, or any other modifications you might like to make to the raw result object returned by Pagefind. 
+Provides a function that Pagefind UI calls before displaying each result. This can be used to fix relative URLs, rewrite titles, or any other modifications you might like to make to the raw result object returned by Pagefind.
 
 ### Show empty filters
 
@@ -179,7 +179,7 @@ new PagefindUI({
 ```
 {{< /diffcode >}}
 
-A set of custom ui strings to use instead of the automatically detected language strings. See the [translations/en.json](https://github.com/CloudCannon/pagefind/blob/main/pagefind_ui/translations/en.json) file for all available keys and their initial values.
+A set of custom ui strings to use instead of the automatically detected language strings. See the [translations/en.json](https://github.com/pagefind/pagefind/blob/main/pagefind_ui/translations/en.json) file for all available keys and their initial values.
 
 The items in square brackets such as `SEARCH_TERM` will be substituted dynamically when the text is used.
 
@@ -189,7 +189,7 @@ The items in square brackets such as `SEARCH_TERM` will be substituted dynamical
 ```javascript
 new PagefindUI({
     element: "#search",
-+    autofocus: true 
++    autofocus: true
 });
 ```
 {{< /diffcode >}}

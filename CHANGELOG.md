@@ -9,6 +9,46 @@
 
 ## Unreleased
 
+### Core Features & Improvements
+* Added the "Include Characters" option to allow indexing of specific special characters.
+  * See [📘 Indexing Special Characters](https://pagefind.app/docs/indexing/#indexing-special-characters).
+* Reduced filesizes for the Pagefind WebAssembly modules.
+* Added FreeBSD as a supported platform (PR #813 — thanks @nguthiru !)
+* Fixed an issue where matches in compound words could be ranked with zero weight. (PR #806 — thanks @teamdandelion !)
+
+### Pagefind Playground
+* Added the Pagefind Playground
+  * Optionally hosted as part of your site, the playground gives you a deeper look into how results are calculated.
+  * Check out the playground for the Pagefind docs at https://pagefind.app/pagefind/playground/
+  * See [📘 Pagefind Playground](https://pagefind.app/docs/playground/) to configure and view the playground for your own site.
+
+### Modular UI Features & Improvements
+* Added option to hide images on result templates in the Modular UI (PR #874 — thanks @HannesOberreiter !)
+* Added a data attribute for result count on the filter pills. (PR #827 — thanks @cmahnke !)
+
+### Default UI Features & Improvements
+* Added title attribute to the default UI search input for improved accessibility (PR #798 — thanks @rdela !)
+
+### UI Translations
+* Added Thai (th) translations (PR #801 — thanks @Phon1209 !)
+* Added Thai segmenter support when indexing (PR #807 — thanks @anonymaew !)
+* Added Basque (eu) translations (PR #826 — thanks @erral !)
+* Added Norwegian Bokmål (nb) and Norwegian Nynorsk (nn) translations (PR #878 — thanks @altinnadmin !)
+* Added Burmese (my) translations (PR #768 — thanks @harrymkt !)
+
+### Everything Else
+* Added a development `justfile`, and improved CONTRIBUTING.md (hint hint)
+* The Pagefind JavaScript should support running in Node.js a bit better (PR #828 — thanks @justsml !)
+
+### Looking Forward
+👋 from @bglw — I thought I'd add a new section to these release notes talking about what's next.
+
+The biggest item on my list is to improve the relevance of the Pagefind search results. With the current setup, you can tweak enough settings to get decent results for a given site, but it needs to better meet the goal of working more-than-good-enough out of the box.
+
+The second-biggest item is to fill out the Modular UI and transition the default Pagefind experience to use that. This has been pending for a long time, and will be a much better base for those who wish to customize their search more than the Default UI currently allows.
+
+Releases also now trigger a GitHub Discussion to be created, so please drop any general thoughts, comments, or feedback there 🙂
+
 ## v1.3.0 (December 18, 2024)
 
 ### Core Features & Improvements

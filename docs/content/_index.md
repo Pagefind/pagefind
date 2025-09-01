@@ -23,25 +23,35 @@ The goal of Pagefind is that websites with tens of thousands of pages should be 
 - Index **anything** (e.g. PDFs, JSON files, or subtitles) with the NodeJS indexing library
 - All features available with the same low-bandwidth footprint
 
+## Development Sponsor
+Pagefind is an independent open source project, originally created and developed at CloudCannon 💙
+
+{{< card
+    title="CloudCannon"
+    url="cloudcannon.com"
+    image="/cloudcannon.svg"
+    classname="dark-silhouette"
+    >}}
+
 ## Pagefind demos
 
 To test large instances of Pagefind, check out:
 
 {{< card
-    title="Sample: MDN, indexed by Pagefind" 
+    title="Sample: MDN, indexed by Pagefind"
     url="mdn.pagefind.app"
     image="/mdn.svg"
     classname="dark-silhouette"
     >}}
 
 {{< card
-    title="Sample: Godot documentation, indexed by Pagefind" 
+    title="Sample: Godot documentation, indexed by Pagefind"
     url="godot.pagefind.app"
     image="/godot.svg"
     >}}
 
 {{< card
-    title="Sample: XKCD, indexed by Pagefind" 
+    title="Sample: XKCD, indexed by Pagefind"
     url="xkcd.pagefind.app"
     image="/xkcd.png"
     classname="dark-blend"

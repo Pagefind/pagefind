@@ -1,7 +1,7 @@
 side_nav_title: Docs
 nav_links:
   - link_title: GitHub
-    link_url: https://github.com/cloudcannon/pagefind
+    link_url: https://github.com/pagefind/pagefind
     link_label: Local
     link_icon_path: /github.svg
 logo:

@@ -4,7 +4,7 @@ name = "pagefind"
 version = "0.0.0a0"
 # note this^^^^^^^ version will be replaced by scripts/build/api_package.py
 description = "Python API for Pagefind"
-authors = ["CloudCannon"]
+authors = ["Pagefind"]
 license = "MIT"
 readme = "README.md"
 include = []
@@ -15,7 +15,7 @@ exclude = [
     "*.egg-info",
     "*.log",
     ".venv",
-    "pagefind_python_bin" # poetry has a *.pth file in its .venv that causes
+    "pagefind_python_bin", # poetry has a *.pth file in its .venv that causes
     # directories in src/ to be preferentially imported. To allow testing
     # `import pagefind_bin`, we use ./src/pagefind_python_bin as a workaround.
 ]
@@ -49,7 +49,7 @@ bin = ["pagefind_bin"]
 extended = ["pagefind_bin_extended"]
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.5.0"
+ruff = "0.12.11"
 mypy = "^1.10.1"
 wheel = "^0.43.0"
 cogapp = "^3.4.1"

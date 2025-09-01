@@ -8,7 +8,10 @@ use std::{env, path::PathBuf};
 use twelf::config;
 use typed_builder::TypedBuilder;
 
-use crate::logging::{LogLevel, Logger};
+use crate::{
+    logging::{LogLevel, Logger},
+    utils::WORD_SYMBOLS,
+};
 
 //
 // If editing this configuration struct,
@@ -88,6 +91,13 @@ pub(crate) struct PagefindInboundConfig {
 
     #[clap(
         long,
+        help = "Include these characters when indexing and searching words. Useful for sites documenting technical topics such as programming languages."
+    )]
+    #[clap(required = false)]
+    pub(crate) include_characters: Option<String>,
+
+    #[clap(
+        long,
         help = "Serve the source directory after creating the search index"
     )]
     #[clap(required = false)]
@@ -114,7 +124,6 @@ pub(crate) struct PagefindInboundConfig {
 
     #[clap(
         long,
-        short,
         help = "Only log errors while indexing the site. Does not impact the web-facing search."
     )]
     #[clap(required = false)]
@@ -138,6 +147,14 @@ pub(crate) struct PagefindInboundConfig {
     #[clap(required = false)]
     #[serde(default = "defaults::default_false")]
     pub(crate) keep_index_url: bool,
+
+    #[clap(
+        long,
+        help = "Output the Pagefind Playground to <bundle_dir>/playground/ when building the search index. By default, this is only available via --serve."
+    )]
+    #[clap(required = false)]
+    #[serde(default = "defaults::default_false")]
+    pub(crate) write_playground: bool,
 
     #[clap(long)]
     #[clap(required = false, hide = true)]
@@ -177,6 +194,8 @@ pub struct PagefindServiceConfig {
     pub(crate) logfile: Option<String>,
     /// Keep \"index.html\" at the end of search result paths. Defaults to false, stripping \"index.html\".
     pub(crate) keep_index_url: Option<bool>,
+    /// Output the Pagefind Playground to <bundle_dir>/playground/ when building the search index.
+    pub(crate) write_playground: Option<bool>,
 }
 
 mod defaults {
@@ -204,10 +223,12 @@ pub(crate) struct SearchOptions {
     pub(crate) exclude_selectors: Vec<String>,
     pub(crate) glob: String,
     pub(crate) force_language: Option<String>,
+    pub(crate) include_characters: Vec<char>,
     pub(crate) version: &'static str,
     pub(crate) logger: Logger,
     pub(crate) keep_index_url: bool,
     pub(crate) running_as_service: bool,
+    pub(crate) write_playground: bool,
     pub(crate) config_warnings: ConfigWarnings,
 }
 
@@ -269,6 +290,11 @@ impl SearchOptions {
                 site_source.join(subdir)
             };
 
+            let mut include_characters = WORD_SYMBOLS.to_vec();
+            if let Some(custom_include_characters) = config.include_characters {
+                include_characters.extend(custom_include_characters.chars());
+            }
+
             Ok(Self {
                 working_directory,
                 site_source,
@@ -277,6 +303,7 @@ impl SearchOptions {
                 exclude_selectors: config.exclude_selectors,
                 glob: config.glob,
                 force_language: config.force_language,
+                include_characters,
                 version: env!("CARGO_PKG_VERSION"),
                 logger: Logger::new(
                     log_level,
@@ -285,6 +312,7 @@ impl SearchOptions {
                 ),
                 keep_index_url: config.keep_index_url,
                 running_as_service: config.service,
+                write_playground: config.write_playground,
                 config_warnings: warnings,
             })
         }

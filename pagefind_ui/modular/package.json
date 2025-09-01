@@ -8,11 +8,11 @@
     "start": "PAGEFIND_DEV=true node ./build.js",
     "build": "node ./build.js"
   },
-  "author": "Cloudcannon",
+  "author": "Pagefind",
   "license": "MIT",
   "devDependencies": {
     "bcp-47": "^2.1.0",
-    "esbuild": "^0.19.0",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-import-glob": "^0.1.1",
     "typescript": "^5.2.2"
   },

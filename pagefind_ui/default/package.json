@@ -8,7 +8,7 @@
     "start": "PAGEFIND_DEV=true node ./build.js",
     "build": "node ./build.js"
   },
-  "author": "Cloudcannon",
+  "author": "Pagefind",
   "license": "MIT",
   "devDependencies": {
     "bcp-47": "^2.1.0",

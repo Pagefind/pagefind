@@ -111,6 +111,7 @@ instance.add(new ResultList({
 | Option                | Description                                                               |
 |-----------------------|---------------------------------------------------------------------------|
 | `containerElement`    | A selector to an element that the results should be placed within         |
+| `showImages`          | Whether to show images in the results. Defaults to `true`                 |
 | `placeholderTemplate` | A function that returns the template for a result that has not yet loaded |
 | `resultTemplate`      | A function that returns the template for a search result                  |
 

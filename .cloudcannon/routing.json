@@ -1,0 +1,9 @@
+{
+  "routes": [
+    {
+      "from": "/docs/implementation-service/",
+      "to": "https://cloudcannon.com/pagefind-implementation/",
+      "status": 301
+    }
+  ]
+}

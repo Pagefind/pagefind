@@ -19,7 +19,7 @@ from . import python_root, setup_logging
 log = logging.getLogger(__name__)
 # constants
 HOMEPAGE = "https://pagefind.app"
-REPO = "https://github.com/CloudCannon/pagefind/"
+REPO = "https://github.com/pagefind/pagefind/"
 REQUIRED_PYTHON_VERSION = "~=3.9"
 
 
@@ -34,7 +34,7 @@ assert src_dir.is_dir(), f"{src_dir} is not a directory"
 LLVM_TRIPLES_TO_PYTHON_WHEEL_PLATFORMS = {
     # LLVM triple: Python platform
     # only the LLVM triples that are produced in CI are listed here; see
-    # https://github.com/CloudCannon/pagefind/releases/latest
+    # https://github.com/pagefind/pagefind/releases/latest
     # the python platform mapping is copied from zig-pypi's script.
     # See also: https://github.com/PyO3/maturin/blob/main/src/auditwheel/manylinux-policy.json
     # See also: https://github.com/PyO3/maturin/blob/main/src/auditwheel/musllinux-policy.json
@@ -43,6 +43,7 @@ LLVM_TRIPLES_TO_PYTHON_WHEEL_PLATFORMS = {
     "aarch64-unknown-linux-musl": "manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64",
     "x86_64-apple-darwin": "macosx_12_0_arm64",
     "x86_64-pc-windows-msvc": "win_amd64",
+    # "x86_64-unknown-freebsd": "freebsd_11_4_amd64",  # FreeBSD not supported by PyPI
     "x86_64-unknown-linux-musl": "manylinux_2_12_x86_64.manylinux2010_x86_64.musllinux_1_1_x86_64",
 }
 
@@ -191,7 +192,7 @@ def write_pagefind_bin_only_wheel(
             "Summary": "Pagefind is a library for performant, low-bandwidth, fully static search.",
             "Description-Content-Type": "text/markdown",
             "License": "MIT",
-            "Author": "CloudCannon",
+            "Author": "Pagefind",
             "Classifier": [
                 "License :: OSI Approved :: MIT License",
                 "Development Status :: 3 - Alpha",  # FIXME: update when package name stabilized

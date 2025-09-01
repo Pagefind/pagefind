@@ -1,8 +1,8 @@
 ---
 title: "Migrating to Pagefind 1.0"
 nav_title: "Migrating to Pagefind 1.0"
-nav_section: Resources
-weight: 81
+nav_section: Hidden
+weight: 0
 ---
 
 Migrating from Pagefind 0.x to Pagefind 1.0 will work seamlessly in almost all cases, but there are some things to be aware of.
@@ -11,7 +11,7 @@ Migrating from Pagefind 0.x to Pagefind 1.0 will work seamlessly in almost all c
 
 This page summarises the notable changes to existing behavior that Pagefind 1.0 introduces.
 
-For all ✨ new ✨ 1.0 features, see the full [release notes on GitHub](https://github.com/CloudCannon/pagefind/releases).
+For all ✨ new ✨ 1.0 features, see the full [release notes on GitHub](https://github.com/pagefind/pagefind/releases).
 
 ## New default output location
 
@@ -98,7 +98,7 @@ let search = await pagefind.search("term");
 ```
 {{< /diffcode >}}
 
-Previously, importing the Pagefind javascript would immediately load your index metadata, and the Pagefind WebAssembly. This prevented configuring Pagefind before loading these assets, for example to specify a custom `bundlePath`.  
+Previously, importing the Pagefind javascript would immediately load your index metadata, and the Pagefind WebAssembly. This prevented configuring Pagefind before loading these assets, for example to specify a custom `bundlePath`.
 In Pagefind 1.0, you can now configure Pagefind before initializing:
 
 {{< diffcode >}}
@@ -116,6 +116,6 @@ let search = await pagefind.search("term");
 
 This change is not breaking, as calling any other function such as `pagefind.search()` will trigger initialization, meaning all existing code will continue to run.
 
-This **does** change timings for people using the JavaScript API. If your code is not updated, Pagefind will start downloading dependencies at the time of search, rather than the time of import. 
+This **does** change timings for people using the JavaScript API. If your code is not updated, Pagefind will start downloading dependencies at the time of search, rather than the time of import.
 
 It is now recommended to add a call to `pagefind.init()` when importing the package, or when your search interface gains focus, to help dependencies load before a user types a search query.

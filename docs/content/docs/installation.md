@@ -15,7 +15,7 @@ For users with a NodeJS toolchain already installed, Pagefind publishes a [wrapp
 npx pagefind --site "public"
 ```
 
-This package includes the correct [binary of the relevant release](https://github.com/CloudCannon/pagefind/releases) as a dependency for your platform.
+This package includes the correct [binary of the relevant release](https://github.com/pagefind/pagefind/releases) as a dependency for your platform.
 
 Specific versions can be run by passing a version tag:
 
@@ -38,7 +38,7 @@ python3 -m pip install 'pagefind[extended]'
 python3 -m pagefind --site "public"
 ```
 
-This package includes the correct [binary of the relevant release](https://github.com/CloudCannon/pagefind/releases) as a dependency for your platform.
+This package includes the correct [binary of the relevant release](https://github.com/pagefind/pagefind/releases) as a dependency for your platform.
 
 Specific versions can be installed by passing a version:
 
@@ -57,7 +57,7 @@ python3 -m pip install 'pagefind[bin]'
 
 ## Downloading a precompiled binary
 
-If you prefer to install Pagefind yourself, you can download a [precompiled release from GitHub](https://github.com/CloudCannon/pagefind/releases) and run the binary directly:
+If you prefer to install Pagefind yourself, you can download a [precompiled release from GitHub](https://github.com/pagefind/pagefind/releases) and run the binary directly:
 
 ```bash
 ./pagefind --site "public"

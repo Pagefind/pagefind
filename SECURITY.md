@@ -2,10 +2,9 @@
 
 ## Reporting a Vulnerability
 
-To report a suspected vulnerability, please either:
+To report a suspected vulnerability, please:
 
-- Privately report a vulnerability through GitHub at https://github.com/CloudCannon/pagefind/security
-- Email support@cloudcannon.com.
+- Privately report a vulnerability through GitHub at https://github.com/pagefind/pagefind/security
 
 Please do not report any suspected vulnerabilities through public issues.
 

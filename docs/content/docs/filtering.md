@@ -14,12 +14,12 @@ To configure filters in Pagefind, pages are associated to filter keys and values
 <h1>My Blog Post</h1>
 <p>
     Author:
-+    <span data-pagefind-filter="author">CloudCannon</span>
++    <span data-pagefind-filter="author">bglw</span>
 </p>
 ```
 {{< /diffcode >}}
 
-An element tagged with `data-pagefind-filter` will associate that page with the filter name, and capture the contents of the element as the filter value. In the above example, the page would be tagged as `author: ["CloudCannon"]`.
+An element tagged with `data-pagefind-filter` will associate that page with the filter name, and capture the contents of the element as the filter value. In the above example, the page would be tagged as `author: ["bglw"]`.
 
 Filters can have multiple values per page, so the following is also valid:
 
@@ -28,14 +28,14 @@ Filters can have multiple values per page, so the following is also valid:
 <h1>Hello World</h1>
 <p>
     Authors:
-+    <span data-pagefind-filter="author">CloudCannon</span>
++    <span data-pagefind-filter="author">Pagefind</span>
     and
 +    <span data-pagefind-filter="author">Liam Bigelow</span>
 </p>
 ```
 {{< /diffcode >}}
 
-Which produces: `author: ["CloudCannon", "Liam Bigelow"]`.
+Which produces: `author: ["Pagefind", "Liam Bigelow"]`.
 
 ## Capturing a filter value from an attribute
 
@@ -44,7 +44,7 @@ If the data you want to filter on exists as an attribute, you can use the syntax
 {{< diffcode >}}
 ```html
 <head>
-    <meta 
+    <meta
 +        data-pagefind-filter="author[content]"
         content="Pagefind"
         property="og:site_name">
@@ -60,11 +60,11 @@ If your value doesn't already exist on the page, you can use the syntax `filter_
 
 {{< diffcode >}}
 ```html
-<h1 data-pagefind-filter="author:CloudCannon">Hello World</h1>
+<h1 data-pagefind-filter="author:bglw">Hello World</h1>
 ```
 {{< /diffcode >}}
 
-This will tag this page as `author: ["CloudCannon"]`. The element this is set on does not matter, meaning this attribute can be located anywhere that is convenient in your site templating.
+This will tag this page as `author: ["bglw"]`. The element this is set on does not matter, meaning this attribute can be located anywhere that is convenient in your site templating.
 
 ## Specifying multiple filters on a single element
 
@@ -95,7 +95,7 @@ This will produce the filter values for the page:
 
 ## Notes
 
-> The `data-pagefind-filter` attribute does not need to be within the `<body>`, or the `data-pagefind-body` tag. 
+> The `data-pagefind-filter` attribute does not need to be within the `<body>`, or the `data-pagefind-body` tag.
 
 > The `data-pagefind-filter` attribute will still apply if set on or within a `data-pagefind-ignore` element.
 

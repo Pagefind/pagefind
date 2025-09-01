@@ -28,7 +28,7 @@ steps:
           for file in files:
             if "pagefind.js" in file["path"]:
               print(file["content"])
-              print(f"JS is at {file["path"]}")
+              print(f"JS is at {file['path']}")
 
           fragments = [file for file in files if "fragment" in file["path"]]
           print(f"{len(fragments)} fragment(s)")
