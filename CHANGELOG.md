@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v1.4.0 (September 1, 2025)
+
 ### Core Features & Improvements
 * Added the "Include Characters" option to allow indexing of specific special characters.
   * See [📘 Indexing Special Characters](https://pagefind.app/docs/indexing/#indexing-special-characters).
