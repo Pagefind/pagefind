@@ -56,7 +56,7 @@ charabia = { version = "0.9.3", optional = true, default-features = false, featu
 ] }
 unicode-segmentation = "1.10.1"
 emojis = "0.7.2"
-hashbrown = { version = "0.13.1", features = ["serde"] }
+hashbrown = { version = "0.16.0", features = ["serde"] }
 either = "1.9.0"
 regex = "1.1"
 minicbor = { version = "2.1.1", features = ["alloc", "derive"] }
