@@ -6,10 +6,14 @@ ext="$PWD/target/release/pagefind_extended"
 
 cd wrappers/python
 
-# set up the python virtual environment
-poetry install --no-root # for dev dependencies
+if [ ! -d .venv ]; then
+  uv venv
+fi
 export VIRTUAL_ENV="${PWD}/.venv"
-export PATH="$VIRTUAL_ENV/bin:$PATH"
+export PATH="$VIRTUAL_ENV/bin:$VIRTUAL_ENV/Scripts:$PATH"
+
+# set up the python virtual environment
+uv sync # includes dev dependencies
 
 # build and install the binary-only wheels
 
@@ -25,7 +29,7 @@ python3 -m scripts.build.binary_only_wheel \
 
 python3 -m scripts.build.api_package
 
-poetry build # build the source-only distribution for the python API
+uv build # build the source-only distribution for the python API
 # install all the wheels
 pip install ./dist/*.whl --force-reinstall
 pip show --verbose pagefind

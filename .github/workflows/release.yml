@@ -121,14 +121,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Set up poetry
-        run: ./wrappers/python/scripts/ci/github/setup_poetry.sh
+      - name: Set up uv
+        run: ./wrappers/python/scripts/ci/github/uv.sh
 
       - name: cache venv
         uses: actions/cache@v4
         with:
           path: wrappers/python/.venv
-          key: ${{ runner.os }}-poetry-3.12-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-uv-3.12-${{ hashFiles('**/uv.lock') }}
 
       - name: Install dev dependencies
         run: ./wrappers/python/scripts/ci/github/install_dev_dependencies.sh

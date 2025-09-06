@@ -20,10 +20,10 @@ stat ./.venv/bin/python \
   || echo "missing .venv/bin/python{.exe}"
 
 echo
-echo " poetry ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ "
+echo " uv ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ "
 echo
 
-command -v poetry || echo "missing poetry"
+command -v uv || echo "missing uv"
 
 echo
 echo " mypy ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ "

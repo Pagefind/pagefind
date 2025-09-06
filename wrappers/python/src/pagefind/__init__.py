@@ -11,7 +11,7 @@
 # from pathlib import Path
 # pyproject = Path("pyproject.toml") # note the CWD is the project root
 # assert pyproject.is_file(), f"expected {pyproject.absolute()} to be a file"
-# version = tomllib.load(pyproject.open("rb"))["tool"]["poetry"]["version"]
+# version = tomllib.load(pyproject.open("rb"))["project"]["version"]
 # print(f'__version__ = "{version}"')
 # ]]]
 __version__ = "0.0.0a0"

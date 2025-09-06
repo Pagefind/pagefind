@@ -1,10 +1,6 @@
-# HACK: This script is a hack to build the API package without using poetry to lock the
-# optional dependencies. It might be preferable to use setuptools directly rather than
-# work around poetry.
-
+# patch the version number in pyproject.toml
 import logging
 import subprocess
-import re
 from argparse import ArgumentParser
 
 from . import python_root, setup_logging
@@ -34,10 +30,6 @@ def main() -> None:
         if "0.0.0a0" in line:
             line = line.replace("0.0.0a0", version)
             log.debug("patching: %s", line)
-        elif line.endswith("#!!opt"):
-            line = line.removeprefix("# ").removesuffix("#!!opt")
-            line = re.sub(r'version = "[^"]+"', f'version = "~={version}"', line)
-            log.debug("patching: %s", line)
         temp += line + "\n"
     log.debug("patched pyproject.toml", extra={"updated": temp})
 
@@ -49,7 +41,7 @@ def main() -> None:
         log.debug("wrote patched pyproject.toml")
 
     log.info("Building API package")
-    subprocess.run(["poetry", "build"], check=True)
+    subprocess.run(["uv", "build"], check=True)
     with pyproject_toml.open("w") as f:  # restore the original
         f.write(original)
         log.debug("restored original pyproject.toml")

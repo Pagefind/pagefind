@@ -1,13 +1,45 @@
-
-[tool.poetry]
+[project]
 name = "pagefind"
 version = "0.0.0a0"
 # note this^^^^^^^ version will be replaced by scripts/build/api_package.py
 description = "Python API for Pagefind"
-authors = ["Pagefind"]
+authors = [{ name = "Pagefind" }]
 license = "MIT"
+requires-python = ">=3.9"
 readme = "README.md"
-include = []
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Markup :: HTML",
+]
+# Note: we *aren't* including an `entry-points` section here to avoid clobbering
+# the user's natively-installed `pagefind` binary. Using `python3 -m pagefind`
+# is an informatively-namespaced alternative that doesn't add too many keystrokes.
+# See https://packaging.python.org/en/latest/specifications/entry-points/
+
+[project.optional-dependencies]
+bin = ["pagefind_bin>=1,<2"]
+extended = ["pagefind_bin_extended>=1,<2"]
+
+# during the building of the `pagefind` python package, the pagefind binary packages
+# may not yet be published. Thus, `uv lock` will fail if we bump up the minimum
+# required version to >=2. This is a problem for later, and a good incentive to publish a
+# transitional package that works with 1.x and 2.0 codebases.
+
+
+[dependency-groups]
+dev = [
+    "ruff==0.12.11",
+    "mypy>=1.10.1,<2",
+    "wheel>=0.43.0,<0.44",
+    "cogapp>=3.4.1,<4",
+    "twine>=5.1.1,<6",
+    "docutils>=0.21.2,<0.22",
+    "hatchling>=1.27.0",
+    "uv>=0.8.15",
+]
+
+[tool.hatch.build.targets.sdist]
 exclude = [
     "dist",
     "output",
@@ -15,53 +47,22 @@ exclude = [
     "*.egg-info",
     "*.log",
     ".venv",
-    "pagefind_python_bin", # poetry has a *.pth file in its .venv that causes
+    "pagefind_python_bin", # uv has a *.pth file in its .venv that causes
     # directories in src/ to be preferentially imported. To allow testing
     # `import pagefind_bin`, we use ./src/pagefind_python_bin as a workaround.
 ]
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Topic :: Text Processing :: Indexing",
-    "Topic :: Text Processing :: Markup :: HTML",
+
+[tool.hatch.build.targets.wheel]
+exclude = [
+    "dist",
+    "output",
+    "*.whl",
+    "*.egg-info",
+    "*.log",
+    ".venv",
+    "pagefind_python_bin",
 ]
 
-# Note: we *aren't* including an `entry-points` section here to avoid clobbering
-# the user's natively-installed `pagefind` binary. Using `python3 -m pagefind`
-# is an informatively-namespaced alternative that doesn't add too many keystrokes.
-# See https://packaging.python.org/en/latest/specifications/entry-points/
-
-[tool.poetry.dependencies]
-python = ">=3.9"
-
-# during the building of the `pagefind` python package, the pagefind binary packages
-# aren't yet published. Thus, `poetry lock` will fail if we include them here.
-# However, `poetry build` fails to include the binary package extras in
-# `pagefind`'s distribution info if these lines are commented out. Thus,
-# we temporarily uncomment these lines during the build process, and then re-comment
-# them afterwards
-
-# these next two lines are owned by ./scripts/build/api_package.py
-# pagefind_bin = { version = "~=1", optional = true } #!!opt
-# pagefind_bin_extended = { version = "~=1", optional = true } #!!opt
-
-[tool.poetry.extras]
-bin = ["pagefind_bin"]
-extended = ["pagefind_bin_extended"]
-
-[tool.poetry.group.dev.dependencies]
-ruff = "0.12.11"
-mypy = "^1.10.1"
-wheel = "^0.43.0"
-cogapp = "^3.4.1"
-twine = "^5.1.1"
-docutils = "^0.21.2"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-# note that poetry can currently only build `purelib`s, or pure-python wheels.
-# (see https://python-poetry.org/docs/cli#build)
-# This means poetry can't handle building wheels that contain pagefind's binaries,
-#  which are necessarily platform-dependent.
-# For more information on purelibs/pure-python wheels, see
-# https://peps.python.org/pep-0427/#what-s-the-deal-with-purelib-vs-platlib
+requires = ["hatchling"]
+build-backend = "hatchling.build"
