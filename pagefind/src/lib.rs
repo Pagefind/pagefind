@@ -117,9 +117,19 @@ impl SearchState {
             );
         }
 
+        let pages_with_data: Vec<_> = self
+            .fossicked_pages
+            .iter()
+            .filter(|d| {
+                if used_custom_body && !d.has_custom_body && !d.force_inclusion {
+                    return false;
+                }
+                !d.word_data.is_empty()
+            })
+            .collect();
+
         if self.options.root_selector == "html" {
-            let pages_without_html = self
-                .fossicked_pages
+            let pages_without_html = pages_with_data
                 .iter()
                 .filter(|p| !p.has_html_element)
                 .map(|p| format!("  * {:?} has no <html> element", p.fragment.data.url))
@@ -137,13 +147,6 @@ impl SearchState {
         }
 
         log.status("[Reading languages]");
-
-        let pages_with_data = self.fossicked_pages.iter().filter(|d| {
-            if used_custom_body && !d.has_custom_body && !d.force_inclusion {
-                return false;
-            }
-            !d.word_data.is_empty()
-        });
 
         let mut language_map: HashMap<String, Vec<fossick::FossickedData>> = HashMap::new();
         for page in pages_with_data {
