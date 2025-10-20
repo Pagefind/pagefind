@@ -1,0 +1,32 @@
+name: Web Components Tests > Pagefind Web Components searches
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-input input");
+      let e = new Event('input', {bubbles:true, cancelable:true});
+      input.value = "world";
+      input.dispatchEvent(e);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("1") && summary.textContent.includes("world"));
+      toolproof.assert(summary.textContent.includes("1"));
+      toolproof.assert(summary.textContent.includes("world"));
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      toolproof.assert(results !== null, "Results container should exist");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 1);
+      let items = results.querySelectorAll("li");
+      toolproof.assert(items.length === 1, `Expected 1 result, got ${items.length}`);

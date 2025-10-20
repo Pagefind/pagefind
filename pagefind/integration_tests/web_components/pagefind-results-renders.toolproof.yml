@@ -1,0 +1,56 @@
+name: Web Components Tests > Pagefind Results renders correctly
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Cat Page</h1><p>This page is about
+      cats.</p></body></html>
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Dog Page</h1><p>This page is about
+      dogs.</p></body></html>
+  - step: I have a "public/bird/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Bird Page</h1><p>This page is about
+      birds.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-input input");
+      let e = new Event('input', {bubbles:true, cancelable:true});
+      input.value = "page";
+      input.dispatchEvent(e);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      toolproof.assert(results !== null, "Results container should exist");
+      toolproof.assert(results.getAttribute("role") === "listbox", "Results should have listbox role");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 3);
+      let items = results.querySelectorAll("li");
+      toolproof.assert(items.length === 3, `Expected 3 results, got ${items.length}`);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("a").length === 3);
+      let links = results.querySelectorAll("a");
+      toolproof.assert(links.length === 3, `Expected 3 result links, got ${links.length}`);
+      let titles = Array.from(links).map(a => a.textContent);
+      toolproof.assert(titles.includes("Cat Page"), "Should have Cat Page result");
+      toolproof.assert(titles.includes("Dog Page"), "Should have Dog Page result");
+      toolproof.assert(titles.includes("Bird Page"), "Should have Bird Page result");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let excerpts = results.querySelectorAll(".pagefind-modular-list-excerpt");
+      toolproof.assert(excerpts.length === 3, `Expected 3 excerpts, got ${excerpts.length}`);

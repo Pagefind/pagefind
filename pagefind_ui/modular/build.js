@@ -73,6 +73,17 @@ const build = async () => {
   const compiledMJS = await esbuild.build(esbuildModuleOptions);
   console.log(`Module Build: `, compiledMJS);
 
+  // Web Components Build
+  const esbuildWCOptions = {
+    ...commonOpts,
+    outdir: path.join(__dirname, `../../pagefind/vendor/`),
+    entryPoints: [path.join(__dirname, "web-components.js")],
+    entryNames: `pagefind_web_components.${version}`,
+    minify: true,
+  };
+  const compiledWC = await esbuild.build(esbuildWCOptions);
+  console.log(`Web Components Build: `, compiledWC);
+
   fs.copyFileSync(
     path.join(__dirname, `css/ui.css`),
     path.join(

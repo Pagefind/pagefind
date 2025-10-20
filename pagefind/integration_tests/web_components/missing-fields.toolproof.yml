@@ -1,0 +1,59 @@
+name: Web Components Tests > Missing field warnings work correctly
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-modular-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-input placeholder="Search..." preload></pagefind-input>
+      <pagefind-results>
+        <template data-template="result">
+          <li class="test-result">
+            <h2 pagefind-text="title"></h2>
+            <span pagefind-text="author"></span>
+            <span pagefind-text="category"></span>
+            <span pagefind-text="nonexistent_field"></span>
+          </li>
+        </template>
+      </pagefind-results>
+      <script src="/pagefind/pagefind-web-components.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/first/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>First Result</h1><p>Some
+      content.</p></body></html>
+  - step: I have a "public/second/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Second Result</h1><p>More
+      content.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-input input");
+      let e = new Event('input', {bubbles:true, cancelable:true});
+      input.value = "content";
+      input.dispatchEvent(e);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".test-result").length > 0);
+  # Should warn about missing fields (author, category, nonexistent_field)
+  - snapshot: In my browser, the console
+    snapshot_content: |-
+      ╎- 'WRN: [Pagefind]: Field "author" not found in result object'
+      ╎- 'WRN: [Pagefind]: Field "category" not found in result object'
+      ╎- 'WRN: [Pagefind]: Field "nonexistent_field" not found in result object'
+  # Elements without data should still exist in the DOM (just empty)
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let firstResult = results.querySelector(".test-result");
+      let spans = firstResult.querySelectorAll("span");
+      toolproof.assert(spans.length === 3, `Expected 3 spans, got ${spans.length}`);

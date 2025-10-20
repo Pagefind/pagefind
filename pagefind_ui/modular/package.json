@@ -21,7 +21,19 @@
     "css/ui.css",
     "modular.js",
     "modular-core.js",
+    "web-components.js",
     "components/**",
-    "helpers/**"
-  ]
+    "helpers/**",
+    "web-components/**"
+  ],
+  "exports": {
+    ".": {
+      "import": "./npm_dist/mjs/modular-core.mjs",
+      "require": "./npm_dist/cjs/modular-core.cjs"
+    },
+    "./web-components": {
+      "import": "./web-components/index.js"
+    },
+    "./css/ui.css": "./css/ui.css"
+  }
 }

@@ -1,0 +1,73 @@
+name: Web Components Tests > Custom templates work correctly
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-modular-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-input placeholder="Search..." preload></pagefind-input>
+      <pagefind-results>
+        <template data-template="result">
+          <li class="custom-result">
+            <h2 class="custom-title" pagefind-text="title"></h2>
+            <a class="custom-link" pagefind-href="url" pagefind-text="url"></a>
+            <div class="custom-excerpt" pagefind-html="excerpt"></div>
+          </li>
+        </template>
+        <template data-template="placeholder">
+          <li class="custom-loading">Loading custom result...</li>
+        </template>
+      </pagefind-results>
+      <script src="/pagefind/pagefind-web-components.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/first/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>First Result</h1><p>This is the first
+      result page.</p></body></html>
+  - step: I have a "public/second/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Second Result</h1><p>This is the second
+      result page.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-input input");
+      let e = new Event('input', {bubbles:true, cancelable:true});
+      input.value = "result";
+      input.dispatchEvent(e);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".custom-result").length === 2);
+      let customResults = results.querySelectorAll(".custom-result");
+      toolproof.assert(customResults.length === 2, `Expected 2 custom results, got ${customResults.length}`);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let customTitle = results.querySelector(".custom-title");
+      toolproof.assert(customTitle !== null, "Custom title element should exist");
+      toolproof.assert(customTitle.tagName === "H2", "Custom title should be H2");
+      let titles = Array.from(results.querySelectorAll(".custom-title")).map(t => t.textContent);
+      toolproof.assert(titles.includes("First Result"), "Should have 'First Result' title");
+      toolproof.assert(titles.includes("Second Result"), "Should have 'Second Result' title");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let links = results.querySelectorAll(".custom-link");
+      toolproof.assert(links.length === 2, `Expected 2 custom links, got ${links.length}`);
+      let hrefs = Array.from(links).map(a => a.href);
+      toolproof.assert(hrefs.some(h => h.includes("/first/")), "Should have link to /first/");
+      toolproof.assert(hrefs.some(h => h.includes("/second/")), "Should have link to /second/");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let excerpts = results.querySelectorAll(".custom-excerpt");
+      toolproof.assert(excerpts.length === 2, `Expected 2 custom excerpts, got ${excerpts.length}`);

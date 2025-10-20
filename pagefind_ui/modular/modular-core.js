@@ -28,6 +28,7 @@ export class Instance {
       filters: [],
       loading: [],
       results: [],
+      error: [],
     };
 
     this.components = [];
@@ -185,6 +186,15 @@ export class Instance {
         } else {
           console.error("no known script location");
         }
+
+        // Dispatch error event
+        this.__dispatch__("error", {
+          type: "bundle_load_failed",
+          message: "Could not load search bundle",
+          bundlePath: this.options.bundlePath,
+          error: e
+        });
+        return;
       }
 
       await imported_pagefind.options(this.pagefindOptions || {});
