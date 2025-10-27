@@ -1,0 +1,75 @@
+name: Web Components Tests > Attribute Sanitization
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-modular-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-input placeholder="Search..." preload></pagefind-input>
+      <pagefind-results>
+        <template data-template="result">
+          <li class="sani">
+            <h2 pagefind-text="title"></h2>
+            <!-- Test event handler blocking -->
+            <a pagefind-href="url" pagefind-onclick="alert('xss')">Normal Link</a>
+            <img pagefind-src="image" pagefind-onerror="alert('xss')">
+            <!-- Test javascript: URL blocking (uses malicious metadata from page) -->
+            <a pagefind-href="malicious_url" class="malicious-link">Malicious Link</a>
+            <img pagefind-src="malicious_src" class="malicious-img">
+          </li>
+        </template>
+      </pagefind-results>
+      <script src="/pagefind/pagefind-web-components.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/page/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en">
+      <head>
+        <meta data-pagefind-meta="malicious_url[content]" content="javascript:alert('xss')">
+        <meta data-pagefind-meta="malicious_src[content]" content="javascript:alert('xss')">
+      </head>
+      <body><h1>Test Page</h1><p>Some content here.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-input input");
+      let e = new Event('input', {bubbles:true, cancelable:true});
+      input.value = "content";
+      input.dispatchEvent(e);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".sani").length > 0);
+  - snapshot: In my browser, the console
+    snapshot_content: |-
+      ╎- 'WRN: [Pagefind]: Blocked unsafe attribute directive: pagefind-onclick'
+      ╎- 'WRN: [Pagefind]: Field "image" not found in result object'
+      ╎- 'WRN: [Pagefind]: Blocked unsafe attribute directive: pagefind-onerror'
+      ╎- 'WRN: [Pagefind]: Blocked unsafe href value: javascript:alert(''xss'')'
+      ╎- 'WRN: [Pagefind]: Blocked unsafe src value: javascript:alert(''xss'')'
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let links = results.querySelectorAll("a");
+
+      // Check that onclick event handler was not set on any link
+      links.forEach(link => {
+        toolproof.assert(link.onclick === null, "onclick should not be set");
+        toolproof.assert(!link.hasAttribute('onclick'), "onclick attribute should not exist");
+      });
+
+      // Check that javascript: href was blocked
+      let maliciousLink = results.querySelector(".malicious-link");
+      toolproof.assert(maliciousLink !== null, "Malicious link should exist in DOM");
+      toolproof.assert(!maliciousLink.href.includes("javascript:"), "javascript: href should be blocked");
+
+      // Check that javascript: src was blocked on img
+      let maliciousImg = results.querySelector(".malicious-img");
+      toolproof.assert(maliciousImg !== null, "Malicious img should exist in DOM");
+      toolproof.assert(!maliciousImg.src.includes("javascript:"), "javascript: src should be blocked");
+      toolproof.assert(!maliciousImg.hasAttribute('onerror'), "onerror attribute should not exist");
