@@ -36,24 +36,6 @@ export class PagefindInput extends PagefindElement {
         this.render();
     }
 
-    setupLazyLoading(callback) {
-        this.readAttributes();
-        this.render();
-
-        const handler = () => {
-            callback();
-            if (this.inputEl) {
-                this.inputEl.removeEventListener('focus', handler);
-                this.inputEl.removeEventListener('input', handler);
-            }
-        };
-
-        if (this.inputEl) {
-            this.inputEl.addEventListener('focus', handler, { once: true });
-            this.inputEl.addEventListener('input', handler, { once: true });
-        }
-    }
-
     render() {
         this.innerHTML = "";
 
@@ -151,37 +133,14 @@ export class PagefindInput extends PagefindElement {
         }
     }
 
-    setupAria() {
-        // Find related results component
-        const results = this.findRelatedComponent('pagefind-results');
-
-        if (results) {
-            // Ensure both have IDs
-            this.ensureId("pagefind-input");
-            if (!results.id) {
-                results.id = results.ensureId ? results.ensureId("pagefind-results") : `pagefind-results-${Date.now()}`;
-            }
-
-            // Set ARIA attributes
-            this.inputEl.setAttribute('aria-controls', results.id);
-            this.inputEl.setAttribute('role', 'combobox');
-            this.inputEl.setAttribute('aria-expanded', 'false');
-            this.inputEl.setAttribute('aria-autocomplete', 'list');
-
-            // Update aria-expanded when there are results
-            if (this.instance) {
-                this.instance.on("results", (searchResults) => {
-                    if (searchResults?.results?.length > 0) {
-                        this.inputEl.setAttribute('aria-expanded', 'true');
-                    } else {
-                        this.inputEl.setAttribute('aria-expanded', 'false');
-                    }
-                });
-            }
-        }
+    reconcileAria() {
+        // Input is just a search input - no combobox semantics since we don't implement keyboard navigation
+        // ARIA live region in summary provides result announcements
     }
 
     register(instance) {
+        instance.registerInput(this);
+
         // Listen for search events to sync input value
         instance.on("search", (term, _filters) => {
             if (this.inputEl && document.activeElement !== this.inputEl) {

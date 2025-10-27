@@ -32,6 +32,7 @@ export class Instance {
     };
 
     this.components = [];
+    this.componentsByType = {};
 
     this.searchTerm = "";
     this.searchFilters = {};
@@ -63,6 +64,76 @@ export class Instance {
   add(component) {
     component?.register?.(this);
     this.components.push(component);
+  }
+
+  registerInput(component) {
+    this._registerComponent(component, "input");
+  }
+
+  registerResults(component) {
+    this._registerComponent(component, "results");
+  }
+
+  registerSummary(component) {
+    this._registerComponent(component, "summary");
+  }
+
+  registerFilter(component) {
+    this._registerComponent(component, "filter");
+  }
+
+  registerSort(component) {
+    this._registerComponent(component, "sort");
+  }
+
+  registerUtility(component, subtype = null) {
+    this._registerComponent(component, "utility", subtype);
+  }
+
+  _registerComponent(component, type, subtype = null) {
+    if (!this.componentsByType[type]) {
+      this.componentsByType[type] = [];
+    }
+
+    component.componentType = type;
+    component.componentSubtype = subtype;
+    this.componentsByType[type].push(component);
+    this.components.push(component);
+
+    // Trigger ARIA reconciliation for all components
+    this.reconcileAria();
+  }
+
+  getInputs() {
+    return this.componentsByType['input'] || [];
+  }
+
+  getResults() {
+    return this.componentsByType['results'] || [];
+  }
+
+  getSummaries() {
+    return this.componentsByType['summary'] || [];
+  }
+
+  getFilters() {
+    return this.componentsByType['filter'] || [];
+  }
+
+  getSorts() {
+    return this.componentsByType['sort'] || [];
+  }
+
+  getUtilities(subtype = null) {
+    const utilities = this.componentsByType['utility'] || [];
+    if (subtype === null) {
+      return utilities;
+    }
+    return utilities.filter(u => u.componentSubtype === subtype);
+  }
+
+  reconcileAria() {
+    this.components.forEach(c => c.reconcileAria?.());
   }
 
   on(event, callback) {

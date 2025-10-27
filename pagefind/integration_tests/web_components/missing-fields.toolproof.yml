@@ -6,7 +6,8 @@ steps:
       <!DOCTYPE html><html lang="en"><head>
       <link href="/pagefind/pagefind-modular-ui.css" rel="stylesheet">
       </head><body>
-      <pagefind-input placeholder="Search..." preload></pagefind-input>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input placeholder="Search..."></pagefind-input>
       <pagefind-results>
         <template data-template="result">
           <li class="test-result">

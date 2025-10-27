@@ -18,7 +18,8 @@ steps:
       <!-- Second instance (default) -->
       <div id="main-search">
         <h2>Main Search</h2>
-        <pagefind-input placeholder="Search site..." preload></pagefind-input>
+        <pagefind-config preload></pagefind-config>
+        <pagefind-input placeholder="Search site..."></pagefind-input>
         <pagefind-summary></pagefind-summary>
         <pagefind-results></pagefind-results>
       </div>

@@ -36,43 +36,18 @@ export class PagefindElement extends HTMLElement {
     if (this._initialized) return;
     this._initialized = true;
 
-    const instanceName = this.getAttribute("instance") || "default";
-    const manager = getInstanceManager();
-
-    const shouldPreload =
-      this.hasAttribute("preload") ||
-      manager.getInstanceConfig(instanceName)?.preload;
-    const hasCustomLazyLoading =
-      this.setupLazyLoading !== PagefindElement.prototype.setupLazyLoading;
-
-    if (shouldPreload || !hasCustomLazyLoading) {
-      this.initializeComponent(instanceName, manager);
-    } else {
-      this.setupLazyLoading(() => {
-        this.initializeComponent(instanceName, manager);
-      });
-    }
-  }
-
-  /**
-   * Initialize the component and register with the instance
-   * Called either immediately (preload) or lazily (default)
-   */
-  initializeComponent(instanceName, manager) {
-    if (this._componentInitialized) return;
-    this._componentInitialized = true;
-
-    this.instance = manager.getInstance(instanceName);
-
+    // Always render the component UI
     this.init();
 
+    // Always get/create the instance (instance itself is lazy)
+    const instanceName = this.getAttribute("instance") || "default";
+    const manager = getInstanceManager();
+    this.instance = manager.getInstance(instanceName);
+
+    // Register with instance
     if (this.register && typeof this.register === "function") {
       this.register(this.instance);
     }
-
-    requestAnimationFrame(() => {
-      this.setupAria();
-    });
   }
 
   disconnectedCallback() {
@@ -112,47 +87,11 @@ export class PagefindElement extends HTMLElement {
     return this.id;
   }
 
-  findRelatedComponent(tagName, sameInstance = true) {
-    const components = Array.from(document.querySelectorAll(tagName));
-
-    if (!sameInstance) {
-      return components[0] || null;
-    }
-
-    const instanceName = this.getAttribute("instance") || "default";
-
-    const matched = components.find((comp) => {
-      const compInstance = comp.getAttribute("instance") || "default";
-      return compInstance === instanceName;
-    });
-
-    return matched || null;
-  }
-
-  findAllRelatedComponents(tagName, sameInstance = true) {
-    const components = Array.from(document.querySelectorAll(tagName));
-
-    if (!sameInstance) {
-      return components;
-    }
-
-    const instanceName = this.getAttribute("instance") || "default";
-
-    return components.filter((comp) => {
-      const compInstance = comp.getAttribute("instance") || "default";
-      return compInstance === instanceName;
-    });
-  }
-
   init() {}
 
-  setupAria() {}
+  reconcileAria() {}
 
   register(instance) {}
-
-  setupLazyLoading(callback) {
-    callback();
-  }
 
   showError(error) {
     const errorEl = document.createElement("div");

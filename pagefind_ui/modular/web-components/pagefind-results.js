@@ -30,8 +30,7 @@ const placeholderTemplate = () => {
 
 const resultTemplate = (result, showImages) => {
     const wrapper = new El("li")
-        .class("pagefind-modular-list-result")
-        .attrs({ role: "option" });
+        .class("pagefind-modular-list-result");
 
     if (showImages && result?.meta?.image) {
         const thumb = new El("div").class("pagefind-modular-list-thumb").addTo(wrapper);
@@ -263,7 +262,6 @@ export class PagefindResults extends PagefindElement {
         this.containerEl = new El("ul")
             .class("pagefind-modular-results")
             .attrs({
-                role: "listbox",
                 "aria-label": "Search results"
             })
             .addTo(this);
@@ -276,6 +274,8 @@ export class PagefindResults extends PagefindElement {
     }
 
     register(instance) {
+        instance.registerResults(this);
+
         instance.on("results", (results) => {
             if (!this.containerEl) return;
 
@@ -309,18 +309,9 @@ export class PagefindResults extends PagefindElement {
         });
     }
 
-    setupAria() {
+    reconcileAria() {
+        // Ensure this results component has an ID so inputs can reference it
         this.ensureId("pagefind-results");
-
-        const input = this.findRelatedComponent('pagefind-input');
-
-        if (input?.inputEl && this.instance) {
-            this.instance.on("results", (searchResults) => {
-                if (!input.inputEl) return;
-                const hasResults = searchResults?.results?.length > 0;
-                input.inputEl.setAttribute('aria-expanded', hasResults ? 'true' : 'false');
-            });
-        }
     }
 
     update() {

@@ -1,32 +1,24 @@
-import { getInstanceManager } from "./instance-manager.js";
+import { PagefindElement } from "./base-element.js";
 
-export class PagefindConfig extends HTMLElement {
-    constructor() {
-        super();
-        this._configured = false;
+export class PagefindConfig extends PagefindElement {
+    init() {
+        // Hide the config element
+        this.setAttribute("hidden", "");
     }
 
-    connectedCallback() {
-        if (this._configured) return;
-        this._configured = true;
+    register(instance) {
+        instance.registerUtility(this);
 
-        const instanceName = this.getAttribute("instance") || "default";
-        const manager = getInstanceManager();
-
-        const config = {};
-
+        // Configure the instance before it initializes
         const bundlePath = this.getAttribute("bundle-path");
         if (bundlePath) {
-            config.bundlePath = bundlePath;
+            instance.options.bundlePath = bundlePath;
         }
 
+        // Trigger load if preload is set
         if (this.hasAttribute("preload")) {
-            config.preload = true;
+            instance.triggerLoad();
         }
-
-        manager.setInstanceOptions(instanceName, config);
-
-        this.setAttribute("hidden", "");
     }
 }
 

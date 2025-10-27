@@ -32,7 +32,7 @@ steps:
     js: |-
       let results = await toolproof.querySelector("pagefind-results ul");
       toolproof.assert(results !== null, "Results container should exist");
-      toolproof.assert(results.getAttribute("role") === "listbox", "Results should have listbox role");
+      toolproof.assert(results.getAttribute("aria-label") === "Search results", "Results should have aria-label");
   - step: In my browser, I evaluate {js}
     js: |-
       let results = await toolproof.querySelector("pagefind-results ul");

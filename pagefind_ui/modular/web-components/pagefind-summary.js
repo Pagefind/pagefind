@@ -33,9 +33,10 @@ export class PagefindSummary extends PagefindElement {
         this.appendChild(this.containerEl);
     }
 
-    setupAria() {}
+    reconcileAria() {}
 
     register(instance) {
+        instance.registerSummary(this);
         instance.on("search", (term, _filters) => {
             this.term = term;
         });

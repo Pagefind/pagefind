@@ -1,14 +1,11 @@
 import { Instance } from "../modular-core.js";
 
-const instanceConfigs = new WeakMap();
-
 class InstanceManager {
     constructor() {
         this.instances = new Map();
         this.defaultOptions = {
             bundlePath: this.detectBundlePath(),
         };
-        this._pendingOptions = new Map();
     }
 
     detectBundlePath() {
@@ -33,38 +30,15 @@ class InstanceManager {
             return this.instances.get(name);
         }
 
-        const pendingOptions = this._pendingOptions.get(name) || {};
-
         const instanceOptions = {
             ...this.defaultOptions,
             ...options,
-            ...pendingOptions,
         };
 
         const instance = new Instance(instanceOptions);
         this.instances.set(name, instance);
 
-        instanceConfigs.set(instance, pendingOptions);
-
-        this._pendingOptions.delete(name);
-
         return instance;
-    }
-
-    setInstanceOptions(name, options) {
-        if (this.instances.has(name)) {
-            console.warn(`[Pagefind Web Components]: Instance "${name}" already exists, options cannot be changed`);
-            return;
-        }
-
-        this._pendingOptions.set(name, options);
-    }
-
-    getInstanceConfig(name) {
-        if (this.instances.has(name)) {
-            return instanceConfigs.get(this.instances.get(name)) || {};
-        }
-        return this._pendingOptions.get(name) || {};
     }
 
     hasInstance(name) {
