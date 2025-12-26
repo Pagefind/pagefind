@@ -122,7 +122,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up uv
-        run: ./wrappers/python/scripts/ci/github/uv.sh
+        run: ./wrappers/python/scripts/ci/github/setup_uv.sh
 
       - name: cache venv
         uses: actions/cache@v4

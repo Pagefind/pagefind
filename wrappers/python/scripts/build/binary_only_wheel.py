@@ -136,6 +136,18 @@ def write_wheel(
 ) -> Path:
     wheel_name = f"{name}-{version}-{tag}.whl"
     dist_info = f"{name}-{version}.dist-info"
+
+    # The WHEEL file must contain the original compatibility tags in their
+    # expanded form.
+    # see https://packaging.python.org/en/latest/specifications/binary-distribution-format/#file-contents
+    # see https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#compressed-tag-sets
+    expanded_tags = []
+    pytag, abitag, platformtag = tag.split("-")
+    for x in pytag.split("."):
+        for y in abitag.split("."):
+            for z in platformtag.split("."):
+                expanded_tags.append("-".join((x, y, z)))
+
     return write_wheel_file(
         (out_dir / wheel_name),
         {
@@ -155,7 +167,7 @@ def write_wheel(
                     "Wheel-Version": "1.0",
                     "Generator": "scripts/build/binary_only_wheel.py",
                     "Root-Is-Purelib": "false",  # see https://packaging.python.org/en/latest/specifications/binary-distribution-format/#what-s-the-deal-with-purelib-vs-platlib
-                    "Tag": tag,
+                    "Tag": expanded_tags,
                 }
             ),
         },
