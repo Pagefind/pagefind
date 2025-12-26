@@ -43,6 +43,7 @@ dev = [
 exclude = [
     "dist",
     "output",
+    "vendor", # binary tarballs downloaded during CI for building pagefind_bin wheels
     "*.whl",
     "*.egg-info",
     "*.log",
