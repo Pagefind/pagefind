@@ -143,10 +143,10 @@ def write_wheel(
     # see https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#compressed-tag-sets
     expanded_tags = []
     pytag, abitag, platformtag = tag.split("-")
-    for x in pytag.split('.'):
-        for y in abitag.split('.'):
-            for z in platformtag.split('.'):
-                expanded_tags.append('-'.join((x, y, z)))
+    for x in pytag.split("."):
+        for y in abitag.split("."):
+            for z in platformtag.split("."):
+                expanded_tags.append("-".join((x, y, z)))
 
     return write_wheel_file(
         (out_dir / wheel_name),
