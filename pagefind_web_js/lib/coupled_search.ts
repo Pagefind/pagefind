@@ -510,47 +510,50 @@ export class PagefindInstance {
       // Loaded language is not valid
     }
     const term_chunks: string[] = [];
-    let segments: string[];
 
-    // TODO: resolve type error for Intl.Segmenter
-    //@ts-ignore: Property 'Segmenter' does not exist on type 'typeof Intl'
+    // Segment the query twice: outer for word segmentation (targeting non-whitespace
+    // delimited languages), and inner for grapheme segmentation (targeting proper emoji handling)
     if (trueLanguage && typeof Intl.Segmenter !== "undefined") {
-      //@ts-ignore: Property 'Segmenter' does not exist on type 'typeof Intl'
-      const segmenter = new Intl.Segmenter(trueLanguage, {
+      const wordSegmenter = new Intl.Segmenter(trueLanguage, {
+        granularity: "word",
+      });
+      const graphemeSegmenter = new Intl.Segmenter(trueLanguage, {
         granularity: "grapheme",
       });
-      segments = [...segmenter.segment(term)].map(
-        ({ segment }: { segment: string }) => segment,
-      );
-    } else {
-      segments = [...term];
-    }
 
-    for (const segment of segments) {
-      if (this.includeCharacters?.includes(segment)) {
-        term_chunks.push(segment);
-      } else if (
-        !/^\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}$/u.test(segment)
-      ) {
-        term_chunks.push(segment.toLocaleLowerCase());
+      for (const { segment: word } of wordSegmenter.segment(term)) {
+        const wordChunks: string[] = [];
+        for (const { segment: grapheme } of graphemeSegmenter.segment(word)) {
+          if (this.includeCharacters?.includes(grapheme)) {
+            wordChunks.push(grapheme);
+          } else if (
+            !/^\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}$/u.test(grapheme)
+          ) {
+            wordChunks.push(grapheme.toLocaleLowerCase());
+          }
+        }
+
+        if (wordChunks.length > 0) {
+          term_chunks.push(wordChunks.join(""));
+        }
       }
-
-      /**
-       * Notes:
-       * Regex to match the Rust \w class if we need it:
-       * /^\p{Pc}|\p{LC}|\p{Ll}|\p{Lm}|\p{Lo}|\p{Lt}|\p{Lu}|\p{Nd}|\p{Nl}|\p{No}|\s$/u
-       * ES2024 regex to match emoji if we need it:
-       * /\p{RGI_Emoji}/v
-       */
+      term = term_chunks
+        .join(" ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    } else {
+      for (const char of term) {
+        if (this.includeCharacters?.includes(char)) {
+          term_chunks.push(char);
+        } else if (!/^\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}$/u.test(char)) {
+          term_chunks.push(char.toLocaleLowerCase());
+        }
+      }
+      term = term_chunks
+        .join("")
+        .replace(/\s{2,}/g, " ")
+        .trim();
     }
-
-    // TODO: We could use the "word" granularity for Intl.Segmenter to handle
-    // segmentation for non-whitespace-delimited languages.
-
-    term = term_chunks
-      .join("")
-      .replace(/\s{2,}/g, " ")
-      .trim();
 
     log(`Normalized search term to ${term}`);
 
