@@ -1,0 +1,45 @@
+name: >-
+  Pagefind segments search terms for CJK languages
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/zh/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>这是一段简单的测试文本</p>
+      </body>
+      </html>
+  - step: I have a "public/zh/other.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>这是简单的文本</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/zh/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search1 = await pagefind.search("一段");
+      let search2 = await pagefind.search("简单测试");
+      let search3 = await pagefind.search("是一段");
+      let search4 = await pagefind.search("简单");
+
+      return {
+        "一段": search1.results.length,
+        "简单测试": search2.results.length,
+        "是一段": search3.results.length,
+        "简单": search4.results.length
+      };
+    expected:
+      一段: 1
+      简单测试: 1
+      是一段: 1
+      简单: 2
