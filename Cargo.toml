@@ -3,3 +3,8 @@
 members = ["pagefind", "pagefind_stem"]
 exclude = ["pagefind_web"]
 resolver = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
