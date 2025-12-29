@@ -1,0 +1,54 @@
+name: Diacritics Tests > Pagefind handles non-Latin diacritics and combining characters
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/vietnamese/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="vi"><head></head><body><h1>Chào mừng đến Việt Nam</h1></body></html>
+  - step: I have a "public/german/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="de"><head></head><body><h1>München is a German city</h1></body></html>
+  - step: I have a "public/swedish/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="sv"><head></head><body><h1>Välkommen till Malmö</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/vietnamese/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("viet");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /vietnamese/
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("mung");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /vietnamese/
+  - step: In my browser, I load "/german/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("munchen");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /german/
+  - step: In my browser, I load "/swedish/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("malmo");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /swedish/

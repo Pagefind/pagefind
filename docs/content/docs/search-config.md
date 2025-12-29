@@ -79,6 +79,22 @@ If set, Pagefind will add the search term as a query parameter under the same na
 
 If using the [Pagefind highlight script](/docs/highlighting/), make sure this is configured to match.
 
+### Exact Diacritics
+
+```json
+{
+    "exactDiacritics": true
+}
+```
+
+Defaults to `false`. When set to `true`, diacritics (accents such as àéö) are treated as fully distinct characters.
+
+By default, Pagefind normalizes diacritics so that searching for "cafe" will match pages containing "café" and vice versa. When diacritics are normalized, exact matches are still preferred via the [`ranking.diacriticSimilarity`](/docs/ranking/#configuring-diacritic-similarity) parameter.
+
+When `exactDiacritics` is set to `true`:
+- Searching for "café" will only match pages containing "café"
+- Searching for "cafe" will only match pages containing "cafe"
+
 ### Ranking
 
 See [customize ranking](/docs/ranking/)

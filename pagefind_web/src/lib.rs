@@ -21,6 +21,16 @@ pub struct PageWord {
     locs: Vec<(u8, u32)>,
 }
 
+pub struct WordVariant {
+    pub form: String,
+    pub pages: Vec<PageWord>,
+}
+
+pub struct WordData {
+    pub pages: Vec<PageWord>,
+    pub additional_variants: Vec<WordVariant>,
+}
+
 pub struct IndexChunk {
     from: String,
     to: String,
@@ -40,7 +50,7 @@ pub struct SearchIndex {
     average_page_length: f32,
     chunks: Vec<IndexChunk>,
     filter_chunks: BTreeMap<String, String>,
-    words: BTreeMap<String, Vec<PageWord>>,
+    words: BTreeMap<String, WordData>,
     filters: BTreeMap<String, BTreeMap<String, Vec<u32>>>,
     sorts: BTreeMap<String, Vec<u32>>,
     ranking_weights: RankingWeights,
@@ -73,6 +83,11 @@ pub struct RankingWeights {
     /// Numbers between 0.0 and 1.0 will interpolate between the two ranking methods.
     /// Must be clamped to 0..=1
     pub term_frequency: f32,
+    /// Controls how much boost is applied when the search query diacritics match the indexed word exactly.
+    /// At 1.0, searching for "café" will boost pages containing "café" by 100% over pages containing "cafe".
+    /// At 0.0, no boost is applied and all diacritic variants are treated equally.
+    /// Must be >= 0
+    pub diacritic_similarity: f32,
 }
 
 impl Default for RankingWeights {
@@ -82,6 +97,7 @@ impl Default for RankingWeights {
             page_length: 0.75,
             term_saturation: 1.4,
             term_frequency: 1.0,
+            diacritic_similarity: 0.8,
         }
     }
 }
@@ -174,6 +190,13 @@ pub fn set_ranking_weights(ptr: *mut SearchIndex, weights: &str) -> *mut SearchI
         .and_then(|v| v.read_float())
     {
         search_index.ranking_weights.term_frequency = term_frequency.clamp(0.0, 1.0);
+    }
+
+    if let Ok(diacritic_similarity) = weights
+        .get_key_value("diacritic_similarity")
+        .and_then(|v| v.read_float())
+    {
+        search_index.ranking_weights.diacritic_similarity = diacritic_similarity.max(0.0);
     }
 
     Box::into_raw(search_index)
@@ -354,7 +377,15 @@ pub fn filters(ptr: *mut SearchIndex) -> String {
 }
 
 #[wasm_bindgen]
-pub fn search(ptr: *mut SearchIndex, query: &str, filter: &str, sort: &str, exact: bool) -> String {
+pub fn search(
+    ptr: *mut SearchIndex,
+    query: &str,
+    original_query: &str,
+    filter: &str,
+    sort: &str,
+    exact: bool,
+    exact_diacritics: bool,
+) -> String {
     let search_index = unsafe { Box::from_raw(ptr) };
     let mut output = String::new();
     {
@@ -370,9 +401,9 @@ pub fn search(ptr: *mut SearchIndex, query: &str, filter: &str, sort: &str, exac
 
         let filter_set = search_index.filter(filter);
         let (unfiltered_results, mut results) = if exact {
-            search_index.exact_term(query, filter_set)
+            search_index.exact_term(query, original_query, filter_set, exact_diacritics)
         } else {
-            search_index.search_term(query, filter_set)
+            search_index.search_term(query, original_query, filter_set, exact_diacritics)
         };
         let unfiltered_total = unfiltered_results.len();
         debug!({ format!("Raw total of {} results", unfiltered_total) });

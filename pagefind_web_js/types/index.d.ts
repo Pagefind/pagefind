@@ -22,7 +22,7 @@ declare global {
      */
     mergeFilter?: Object;
     /**
-     * If set, will ass the search term as a query parameter under this key, for use with Pagefind's highlighting script.
+     * If set, will add the search term as a query parameter under this key, for use with Pagefind's highlighting script.
      */
     highlightParam?: string;
     language?: string;
@@ -37,6 +37,13 @@ declare global {
      */
     ranking?: PagefindRankingWeights;
     /**
+     * If set, diacritics are treated as fully distinct words.
+     * This means searching for "café" will only match pages containing "café", not "cafe".
+     * When false (default), diacritics are normalized and all variants match,
+     * with ranking.diacriticSimilarity applied to favor close matches.
+     */
+    exactDiacritics?: boolean;
+    /**
      * Force Pagefind to run on the main thread instead of using a web worker.
      *
      * By default, Pagefind will use a web worker for search operations when available,
@@ -47,33 +54,40 @@ declare global {
 
   type PagefindRankingWeights = {
     /**
-            Controls page ranking based on similarity of terms to the search query (in length).
-            Increasing this number means pages rank higher when they contain words very close to the query,
-            e.g. if searching for `part` then `party` will boost a page higher than one containing `partition`.
-            Minimum value is 0.0, where `party` and `partition` would be viewed equally.
-        */
+      Controls page ranking based on similarity of terms to the search query (in length).
+      Increasing this number means pages rank higher when they contain words very close to the query,
+      e.g. if searching for `part` then `party` will boost a page higher than one containing `partition`.
+      Minimum value is 0.0, where `party` and `partition` would be viewed equally.
+    */
     termSimilarity?: Number;
     /**
-            Controls how much effect the average page length has on ranking.
-            Maximum value is 1.0, where ranking will strongly favour pages that are shorter than the average page on the site.
-            Minimum value is 0.0, where ranking will exclusively look at term frequency, regardless of how long a document is.
-        */
+      Controls how much effect the average page length has on ranking.
+      Maximum value is 1.0, where ranking will strongly favour pages that are shorter than the average page on the site.
+      Minimum value is 0.0, where ranking will exclusively look at term frequency, regardless of how long a document is.
+    */
     pageLength?: Number;
     /**
-            Controls how quickly a term saturates on the page and reduces impact on the ranking.
-            Maximum value is 2.0, where pages will take a long time to saturate, and pages with very high term frequencies will take over.
-            As this number trends to 0, it does not take many terms to saturate and allow other paramaters to influence the ranking.
-            Minimum value is 0.0, where terms will saturate immediately and results will not distinguish between one term and many.
-        */
+      Controls how quickly a term saturates on the page and reduces impact on the ranking.
+      Maximum value is 2.0, where pages will take a long time to saturate, and pages with very high term frequencies will take over.
+      As this number trends to 0, it does not take many terms to saturate and allow other paramaters to influence the ranking.
+      Minimum value is 0.0, where terms will saturate immediately and results will not distinguish between one term and many.
+    */
     termSaturation?: Number;
     /**
-            Controls how much ranking uses term frequency versus raw term count.
-            Maximum value is 1.0, where term frequency fully applies and is the main ranking factor.
-            Minimum value is 0.0, where term frequency does not apply, and pages are ranked based on the raw sum of words and weights.
-            Values between 0.0 and 1.0 will interpolate between the two ranking methods.
-            Reducing this number is a good way to boost longer documents in your search results, as they no longer get penalized for having a low term frequency.
-         */
+      Controls how much ranking uses term frequency versus raw term count.
+      Maximum value is 1.0, where term frequency fully applies and is the main ranking factor.
+      Minimum value is 0.0, where term frequency does not apply, and pages are ranked based on the raw sum of words and weights.
+      Values between 0.0 and 1.0 will interpolate between the two ranking methods.
+      Reducing this number is a good way to boost longer documents in your search results, as they no longer get penalized for having a low term frequency.
+      */
     termFrequency?: Number;
+    /**
+      Controls how much boost is applied when the search query diacritics match the indexed word exactly.
+      At 1.0, searching for "café" will boost pages containing "café" by 100% over pages containing "cafe".
+      At 0.0, no boost is applied and all diacritic variants are treated equally.
+      Must be >= 0
+    */
+    diacriticSimilarity?: Number;
   };
 
   /** Options that can be passed to pagefind.search() */

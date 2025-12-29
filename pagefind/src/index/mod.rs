@@ -9,7 +9,7 @@ use crate::{
 use anyhow::{bail, Result};
 use index_filter::{FilterIndex, PackedValue};
 use index_metadata::{MetaChunk, MetaIndex, MetaPage};
-use index_words::{PackedPage, PackedWord, WordIndex};
+use index_words::{PackedPage, PackedVariant, PackedWord, WordIndex};
 
 use self::index_metadata::MetaSort;
 
@@ -124,44 +124,85 @@ pub async fn build_indexes(
         });
     }
 
+    // Helper function to convert positions to a PackedPage
+    fn positions_to_packed_page(
+        mut positions: Vec<FossickedWord>,
+        page_number: usize,
+    ) -> PackedPage {
+        // A page weight of 1 is encoded as 25. Since most words should be this weight,
+        // we want to sort them to be first in the locations array to reduce filesize
+        // when we inline weight changes
+        positions.sort_by_cached_key(|p| if p.weight == 25 { 0 } else { p.weight });
+
+        let mut current_weight = 25;
+        let mut weighted_positions = Vec::with_capacity(positions.len());
+        // Calculate our output list of positions with weights.
+        // This is a vec of page positions, with a change in weight for subsequent positions
+        // denoted by a negative integer.
+        for FossickedWord {
+            position, weight, ..
+        } in positions
+        {
+            if weight != current_weight {
+                weighted_positions.extend([(weight as i32) * -1 - 1, position as i32]);
+                current_weight = weight;
+            } else {
+                weighted_positions.push(position as i32)
+            }
+        }
+
+        PackedPage {
+            page_number,
+            locs: weighted_positions,
+        }
+    }
+
     for page in pages.into_iter() {
-        for (word, mut positions) in page.word_data {
-            // A page weight of 1 is encoded as 25. Since most words should be this weight,
-            // we want to sort them to be first in the locations array to reduce filesize
-            // when we inline weight changes
-            positions.sort_by_cached_key(|p| if p.weight == 25 { 0 } else { p.weight });
+        for (word, positions) in page.word_data {
+            // Group positions by original_word for this page
+            let mut normalized_positions: Vec<FossickedWord> = Vec::new();
+            let mut variant_positions: HashMap<String, Vec<FossickedWord>> = HashMap::new();
 
-            let mut current_weight = 25;
-            let mut weighted_positions = Vec::with_capacity(positions.len());
-            // Calculate our output list of positions with weights.
-            // This is a vec of page positions, with a change in weight for subsequent positions
-            // denoted by a negative integer.
-            positions
-                .into_iter()
-                .for_each(|FossickedWord { position, weight }| {
-                    if weight != current_weight {
-                        weighted_positions.extend([(weight as i32) * -1 - 1, position as i32]);
-                        current_weight = weight;
-                    } else {
-                        weighted_positions.push(position as i32)
-                    }
-                });
+            for fossicked in positions {
+                if fossicked.original_word.is_none() {
+                    // No diacritics - original matches normalized form
+                    normalized_positions.push(fossicked);
+                } else {
+                    // Original form differs (has diacritics) - stored instead in additional_variants
+                    variant_positions
+                        .entry(fossicked.original_word.clone().unwrap())
+                        .or_default()
+                        .push(fossicked);
+                }
+            }
 
-            let packed_page = PackedPage {
-                page_number: page.fragment.page_number,
-                locs: weighted_positions,
-            };
+            let packed_word = word_map.entry(word.clone()).or_insert_with(|| PackedWord {
+                word: word.clone(),
+                pages: Vec::new(),
+                additional_variants: Vec::new(),
+            });
 
-            match word_map.get_mut(&word) {
-                Some(packed) => packed.pages.push(packed_page),
-                None => {
-                    word_map.insert(
-                        word.clone(),
-                        PackedWord {
-                            word,
-                            pages: vec![packed_page],
-                        },
-                    );
+            if !normalized_positions.is_empty() {
+                packed_word.pages.push(positions_to_packed_page(
+                    normalized_positions,
+                    page.fragment.page_number,
+                ));
+            }
+
+            for (variant_form, variant_pos) in variant_positions {
+                let variant_page = positions_to_packed_page(variant_pos, page.fragment.page_number);
+
+                if let Some(existing_variant) = packed_word
+                    .additional_variants
+                    .iter_mut()
+                    .find(|v| v.form == variant_form)
+                {
+                    existing_variant.pages.push(variant_page);
+                } else {
+                    packed_word.additional_variants.push(PackedVariant {
+                        form: variant_form,
+                        pages: vec![variant_page],
+                    });
                 }
             }
         }
@@ -413,6 +454,7 @@ mod tests {
                         PackedWord {
                             word: word.into(),
                             pages: vec![page],
+                            additional_variants: vec![],
                         },
                     );
                 }
