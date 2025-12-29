@@ -272,9 +272,9 @@ pub async fn build_indexes(
         );
     }
 
-    // TODO: Parameterize these chunk sizes via options
+    // TODO: Parameterize these chunk sizes via byte size rather than word count
     let word_count = word_map.len();
-    let chunks = chunk_index(word_map, 20000);
+    let chunks = chunk_index(word_map, options.index_chunk_size);
     meta.index_chunks = chunk_meta(&chunks);
 
     let mut word_indexes: HashMap<String, Vec<u8>> = HashMap::new();
@@ -366,7 +366,11 @@ fn chunk_meta(indexes: &[Vec<PackedWord>]) -> Vec<MetaChunk> {
         for i in 0..named_chunks.len() - 1 {
             let chunks = &mut named_chunks[i..=i + 1];
             let prefixes = get_prefixes((&chunks[0].to, &chunks[1].from));
-            chunks[0].to = prefixes.0;
+            // Only trim 'to' if it won't create an invalid range (to < from)
+            if prefixes.0 >= chunks[0].from {
+                chunks[0].to = prefixes.0;
+            }
+            // Always trim the next chunk's 'from'
             chunks[1].from = prefixes.1;
         }
     }
@@ -451,7 +455,7 @@ mod tests {
             meta[0],
             MetaChunk {
                 from: "apple".into(),
-                to: "app".into(),
+                to: "apple".into(), // Not trimmed to "app" since that would make to < from
                 hash: "".into(),
             }
         );

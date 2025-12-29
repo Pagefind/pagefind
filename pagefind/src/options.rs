@@ -211,6 +211,9 @@ mod defaults {
     pub fn default_false() -> bool {
         false
     }
+    pub fn default_index_chunk_size() -> usize {
+        20000
+    }
 }
 
 // The configuration object used internally
@@ -230,6 +233,7 @@ pub(crate) struct SearchOptions {
     pub(crate) running_as_service: bool,
     pub(crate) write_playground: bool,
     pub(crate) config_warnings: ConfigWarnings,
+    pub(crate) index_chunk_size: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -314,6 +318,10 @@ impl SearchOptions {
                 running_as_service: config.service,
                 write_playground: config.write_playground,
                 config_warnings: warnings,
+                index_chunk_size: env::var("PAGEFIND_UNSTABLE_INDEX_CHUNK_SIZE")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(defaults::default_index_chunk_size()),
             })
         }
     }

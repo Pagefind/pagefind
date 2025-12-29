@@ -222,13 +222,46 @@ pub fn add_synthetic_filter(ptr: *mut SearchIndex, filter: &str) -> *mut SearchI
 
 #[wasm_bindgen]
 pub fn request_indexes(ptr: *mut SearchIndex, query: &str) -> String {
-    let mut indexes = try_request_indexes(ptr, query, false);
-    if indexes.is_empty() && !query.trim().is_empty() {
-        debug!({
-            "No index chunks found with strict boundaries. Loading all possible extension chunks."
-        });
-        indexes = try_request_indexes(ptr, query, true);
+    debug!({ format!("Finding the index chunks needed for {:?}", query) });
+
+    let search_index = unsafe { Box::from_raw(ptr) };
+    let mut indexes = Vec::new();
+
+    for term in query.split(' ') {
+        let strict_chunks: Vec<_> = search_index
+            .chunks
+            .iter()
+            .filter(|chunk| term >= &chunk.from && term <= &chunk.to)
+            .collect();
+
+        if !strict_chunks.is_empty() {
+            for chunk in strict_chunks {
+                debug!({ format!("Need {:?} for {:?} (strict)", chunk.hash, term) });
+                indexes.push(chunk.hash.clone());
+            }
+        } else {
+            // No strict match - try loose matching for prefix/extension matches.
+            debug!({ format!("No strict match for {:?}, trying loose match", term) });
+            for chunk in search_index.chunks.iter().filter(|chunk| {
+                let from_char_count = term.chars().count().min(chunk.from.chars().count());
+                let to_char_count = term.chars().count().min(chunk.to.chars().count());
+
+                let term_pre: String = term.chars().take(from_char_count).collect();
+                let chunk_pre: String = chunk.from.chars().take(from_char_count).collect();
+                let term_post: String = term.chars().take(to_char_count).collect();
+                let chunk_post: String = chunk.to.chars().take(to_char_count).collect();
+
+                term_pre >= chunk_pre && term_post <= chunk_post
+            }) {
+                debug!({ format!("Need {:?} for {:?} (loose)", chunk.hash, term) });
+                indexes.push(chunk.hash.clone());
+            }
+        }
     }
+
+    let _ = Box::into_raw(search_index);
+    indexes.sort();
+    indexes.dedup();
 
     let mut output = String::new();
     {
@@ -239,59 +272,6 @@ pub fn request_indexes(ptr: *mut SearchIndex, query: &str) -> String {
     }
 
     output
-}
-
-fn try_request_indexes(ptr: *mut SearchIndex, query: &str, load_all_possible: bool) -> Vec<String> {
-    debug!({
-        format! {"Finding the index chunks needed for {:?}", query}
-    });
-
-    let search_index = unsafe { Box::from_raw(ptr) };
-    let mut indexes = Vec::new();
-    let terms = query.split(' ');
-
-    for term in terms {
-        let term_index = search_index.chunks.iter().find(|chunk| {
-            if load_all_possible {
-                // Trim chunk boundaries and search terms to the shortest of either,
-                // so that we load any chunk that may contain an extension or prefix of the search term
-                let from_length = term.len().min(chunk.from.len());
-                let to_length = term.len().min(chunk.to.len());
-
-                let (Some(term_pre), Some(chunk_pre)) =
-                    (term.get(0..from_length), chunk.from.get(0..from_length))
-                else {
-                    return false;
-                };
-
-                let (Some(term_post), Some(chunk_post)) =
-                    (term.get(0..to_length), chunk.to.get(0..to_length))
-                else {
-                    return false;
-                };
-
-                term_pre >= chunk_pre && term_post <= chunk_post
-            } else {
-                term >= &chunk.from && term <= &chunk.to
-            }
-        });
-        if let Some(index) = term_index {
-            debug!({
-                format! {"Need {:?} for {:?}", index.hash, term}
-            });
-            indexes.push(index.hash.clone())
-        } else {
-            debug!({
-                format! {"No hash found for {:?}", term}
-            })
-        }
-    }
-
-    let _ = Box::into_raw(search_index);
-    indexes.sort();
-    indexes.dedup();
-
-    indexes
 }
 
 #[wasm_bindgen]

@@ -1,0 +1,38 @@
+name: Index Chunking > Multi-word search falls back to loose matching per-term
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have the environment variable "PAGEFIND_UNSTABLE_INDEX_CHUNK_SIZE" set to "4"
+  - step: I have a "public/apple-only/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>apple</p>
+      </body></html>
+
+  - step: I have a "public/banana-only/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>banana</p>
+      </body></html>
+
+  - step: I have a "public/apple-and-banana/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>apple banana</p>
+      </body></html>
+
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+
+  # Search for "apple ban" - should find the page with both words
+  # "apple" matches strictly, "ban" needs loose mode to match "banana"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("apple ban");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /apple-and-banana/
