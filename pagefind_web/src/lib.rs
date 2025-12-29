@@ -227,34 +227,46 @@ pub fn request_indexes(ptr: *mut SearchIndex, query: &str) -> String {
     let search_index = unsafe { Box::from_raw(ptr) };
     let mut indexes = Vec::new();
 
-    for term in query.split(' ') {
-        let strict_chunks: Vec<_> = search_index
-            .chunks
-            .iter()
-            .filter(|chunk| term >= &chunk.from && term <= &chunk.to)
-            .collect();
-
-        if !strict_chunks.is_empty() {
-            for chunk in strict_chunks {
-                debug!({ format!("Need {:?} for {:?} (strict)", chunk.hash, term) });
-                indexes.push(chunk.hash.clone());
+    for raw_term in query.split(' ') {
+        // Check both the raw term and its stemmed versions, as the
+        // chunk boundaries sit on the _stemmed_ words, which in some cases can get funky.
+        let stemmed = stems_from_term(raw_term);
+        let mut terms_to_check = vec![raw_term];
+        for stem in &stemmed {
+            if stem != raw_term {
+                terms_to_check.push(stem.as_ref());
             }
-        } else {
-            // No strict match - try loose matching for prefix/extension matches.
-            debug!({ format!("No strict match for {:?}, trying loose match", term) });
-            for chunk in search_index.chunks.iter().filter(|chunk| {
-                let from_char_count = term.chars().count().min(chunk.from.chars().count());
-                let to_char_count = term.chars().count().min(chunk.to.chars().count());
+        }
 
-                let term_pre: String = term.chars().take(from_char_count).collect();
-                let chunk_pre: String = chunk.from.chars().take(from_char_count).collect();
-                let term_post: String = term.chars().take(to_char_count).collect();
-                let chunk_post: String = chunk.to.chars().take(to_char_count).collect();
+        for term in terms_to_check {
+            let strict_chunks: Vec<_> = search_index
+                .chunks
+                .iter()
+                .filter(|chunk| term >= &chunk.from && term <= &chunk.to)
+                .collect();
 
-                term_pre >= chunk_pre && term_post <= chunk_post
-            }) {
-                debug!({ format!("Need {:?} for {:?} (loose)", chunk.hash, term) });
-                indexes.push(chunk.hash.clone());
+            if !strict_chunks.is_empty() {
+                for chunk in strict_chunks {
+                    debug!({ format!("Need {:?} for {:?} (strict)", chunk.hash, term) });
+                    indexes.push(chunk.hash.clone());
+                }
+            } else {
+                // No strict match - try loose matching for prefix/extension matches.
+                debug!({ format!("No strict match for {:?}, trying loose match", term) });
+                for chunk in search_index.chunks.iter().filter(|chunk| {
+                    let from_char_count = term.chars().count().min(chunk.from.chars().count());
+                    let to_char_count = term.chars().count().min(chunk.to.chars().count());
+
+                    let term_pre: String = term.chars().take(from_char_count).collect();
+                    let chunk_pre: String = chunk.from.chars().take(from_char_count).collect();
+                    let term_post: String = term.chars().take(to_char_count).collect();
+                    let chunk_post: String = chunk.to.chars().take(to_char_count).collect();
+
+                    term_pre >= chunk_pre && term_post <= chunk_post
+                }) {
+                    debug!({ format!("Need {:?} for {:?} (loose)", chunk.hash, term) });
+                    indexes.push(chunk.hash.clone());
+                }
             }
         }
     }
