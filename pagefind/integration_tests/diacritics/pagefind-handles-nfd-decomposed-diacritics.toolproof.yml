@@ -1,0 +1,56 @@
+name: Diacritics Tests > Pagefind handles NFD decomposed diacritics
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  # Vietnamese text with combining characters
+  - step: I have a "public/viet1/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="vi"><head></head><body><h1>Việt Nam</h1></body></html>
+  # Different diacritics on the same base word
+  - step: I have a "public/viet2/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="vi"><head></head><body><h1>Viët is a test</h1></body></html>
+  # Control page - starts with "vi" but shouldn't match "viet"
+  # (unless query is pared back)
+  - step: I have a "public/control/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Watch a video</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/viet1/"
+  # Forms of "viet" should match both Vietnamese pages but NOT video
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("viet");
+      return search.results.length;
+    expected: 2
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("việt");
+      return search.results.length;
+    expected: 2
+  # Now with exact diacritics - each form should match only its own page
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.options({ exactDiacritics: true });
+      let search = await pagefind.search("việt");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /viet1/
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.options({ exactDiacritics: true });
+      let search = await pagefind.search("viët");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /viet2/

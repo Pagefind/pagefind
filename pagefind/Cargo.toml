@@ -55,6 +55,7 @@ charabia = { version = "0.9.3", optional = true, default-features = false, featu
     "thai",
 ] }
 unicode-segmentation = "1.10.1"
+unicode-normalization = "0.1"
 emojis = "0.7.2"
 hashbrown = { version = "0.13.1", features = ["serde"] }
 either = "1.9.0"

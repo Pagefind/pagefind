@@ -5,7 +5,7 @@ use std::{
     ops::{Add, AddAssign, Div},
 };
 
-use crate::{util::*, PageWord, RankingWeights};
+use crate::{util::*, PageWord, RankingWeights, WordData};
 use bit_set::BitSet;
 use pagefind_stem::Stemmer;
 
@@ -25,6 +25,7 @@ struct MatchingPageWord<'a> {
     word_str: &'a str,
     length_bonus: f32,
     num_pages_matching: usize,
+    diacritic_bonus: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +67,25 @@ pub struct ScoringMetrics {
     pub raw_tf: f32,
     pub pagefind_tf: f32,
     pub score: f32,
+}
+
+/// Returns a multiplier based on how well the original query matches the word variant diacritics.
+fn diacritic_bonus(
+    original_query_term: &str,
+    variant_form: &str,
+    diacritic_similarity: f32,
+) -> f32 {
+    if diacritic_similarity > 0.0 && diacritics_match(original_query_term, variant_form) {
+        1.0 + diacritic_similarity
+    } else {
+        1.0
+    }
+}
+
+fn diacritics_match(original_query_term: &str, variant_form: &str) -> bool {
+    variant_form == original_query_term
+        || variant_form.starts_with(original_query_term)
+        || original_query_term.starts_with(variant_form)
 }
 
 /// Returns a score between 0.0 and 1.0 for the given word.
@@ -154,21 +174,39 @@ impl SearchIndex {
     pub fn exact_term(
         &self,
         term: &str,
+        original_query: &str,
         filter_results: Option<BitSet>,
+        exact_diacritics: bool,
     ) -> (Vec<usize>, Vec<PageSearchResult>) {
         debug!({
             format! {"Searching {:?}", term}
         });
 
+        let original_terms: Vec<&str> = original_query.split(' ').collect();
+        let split_term = stems_from_term(term);
+
         let mut unfiltered_results: Vec<usize> = vec![];
         let mut maps = Vec::new();
         let mut words = Vec::new();
-        for term in stems_from_term(term) {
-            if let Some(word_index) = self.words.get(term.as_ref()) {
-                words.extend(word_index);
+
+        for (term_idx, term) in split_term.iter().enumerate() {
+            if let Some(word_data) = self.words.get(term.as_ref()) {
+                let original_term = original_terms.get(term_idx).copied().unwrap_or("");
                 let mut set = BitSet::new();
-                for page in word_index {
-                    set.insert(page.page as usize);
+
+                if !exact_diacritics || diacritics_match(original_term, term) {
+                    words.extend(&word_data.pages);
+                    for page in &word_data.pages {
+                        set.insert(page.page as usize);
+                    }
+                }
+                for variant in &word_data.additional_variants {
+                    if !exact_diacritics || diacritics_match(original_term, &variant.form) {
+                        words.extend(&variant.pages);
+                        for page in &variant.pages {
+                            set.insert(page.page as usize);
+                        }
+                    }
                 }
                 maps.push(set);
             } else {
@@ -278,7 +316,9 @@ impl SearchIndex {
     pub fn search_term(
         &self,
         term: &str,
+        original_query: &str,
         filter_results: Option<BitSet>,
+        exact_diacritics: bool,
     ) -> (Vec<usize>, Vec<PageSearchResult>) {
         debug!({
             format! {"Searching {:?}", term}
@@ -290,27 +330,51 @@ impl SearchIndex {
         let mut maps = Vec::new();
         let mut words: Vec<MatchingPageWord> = Vec::new();
         let split_term = stems_from_term(term);
+        let original_terms: Vec<&str> = original_query.split(' ').collect();
 
-        for term in split_term.iter() {
+        for (term_idx, term) in split_term.iter().enumerate() {
+            let original_term = original_terms.get(term_idx).copied().unwrap_or("");
+
             let mut word_maps = Vec::new();
-            for (word, word_index) in self.find_word_extensions(&term) {
+            for (word, word_data) in self.find_word_extensions(&term) {
                 let length_differential: u8 = (word.len().abs_diff(term.len()) + 1)
                     .try_into()
                     .unwrap_or(std::u8::MAX);
+                let length_bonus =
+                    word_length_bonus(length_differential, self.ranking_weights.term_similarity);
 
-                words.extend(word_index.iter().map(|pageword| MatchingPageWord {
-                    word: pageword,
-                    word_str: &word,
-                    length_bonus: word_length_bonus(
-                        length_differential,
-                        self.ranking_weights.term_similarity,
-                    ),
-                    num_pages_matching: word_index.len(),
-                }));
-                let mut set = BitSet::new();
-                for page in word_index {
-                    set.insert(page.page as usize);
+                let mut matching_word_variants = Vec::new();
+                if !exact_diacritics || diacritics_match(original_term, word) {
+                    matching_word_variants.push((word, &word_data.pages));
                 }
+                for variant in &word_data.additional_variants {
+                    if !exact_diacritics || diacritics_match(original_term, &variant.form) {
+                        matching_word_variants.push((&variant.form, &variant.pages));
+                    }
+                }
+
+                let num_pages_matching: usize =
+                    matching_word_variants.iter().map(|(_, p)| p.len()).sum();
+                let mut set = BitSet::new();
+
+                for (form, pages) in matching_word_variants {
+                    let boost = diacritic_bonus(
+                        original_term,
+                        form,
+                        self.ranking_weights.diacritic_similarity,
+                    );
+                    words.extend(pages.iter().map(|pageword| MatchingPageWord {
+                        word: pageword,
+                        word_str: word,
+                        length_bonus,
+                        num_pages_matching,
+                        diacritic_bonus: boost,
+                    }));
+                    for page in pages {
+                        set.insert(page.page as usize);
+                    }
+                }
+
                 word_maps.push(set);
             }
             if let Some(result) = union_maps(word_maps) {
@@ -445,7 +509,7 @@ impl SearchIndex {
                     .map(|(word_str, weighted_term_frequency)| {
                         let matched_word = words
                             .iter()
-                            .find(|w| w.word_str == word_str)
+                            .find(|w| w.word_str == word_str && w.word.page as usize == page_index)
                             .expect("word should be in the initial set");
 
                         let params = || BM25Params {
@@ -474,7 +538,7 @@ impl SearchIndex {
                             verbose_scores.push((word_str.to_string(), score, params()));
                         }
 
-                        score.score
+                        score.score * matched_word.diacritic_bonus
                     });
 
             let page_score = word_scores.sum();
@@ -505,7 +569,7 @@ impl SearchIndex {
         (unfiltered_results, pages)
     }
 
-    fn find_word_extensions(&self, term: &str) -> Vec<(&String, &Vec<PageWord>)> {
+    fn find_word_extensions(&self, term: &str) -> Vec<(&String, &WordData)> {
         let mut extensions = vec![];
         let mut longest_prefix = None;
         for (key, results) in self.words.iter() {

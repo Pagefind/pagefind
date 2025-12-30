@@ -1,0 +1,30 @@
+name: Diacritics Tests > Pagefind handles Arabic diacritics (tashkeel)
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/arabic-vocalized/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html dir="rtl"
+      lang="ar"><head></head><body><h1>كِتَابٌ</h1></body></html>
+  - step: I have a "public/arabic-plain/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html dir="rtl"
+      lang="ar"><head></head><body><h1>كتاب</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/arabic-vocalized/"
+  # Search without diacritics should find both pages
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("كتاب");
+      return search.results.length;
+    expected: 2
+  # Search with diacritics should also find both pages
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("كِتَابٌ");
+      return search.results.length;
+    expected: 2

@@ -11,6 +11,11 @@ const asyncSleep = async (ms = 100) => {
   return new Promise((r) => setTimeout(r, ms));
 };
 
+const normalizeDiacritics = (str: string): string => {
+  // e.g. "café" -> "cafe"
+  return str.normalize("NFD").replace(/\p{M}/gu, "");
+};
+
 // Environment detection
 const isBrowser = () =>
   typeof window !== "undefined" && typeof document !== "undefined";
@@ -28,6 +33,7 @@ export class PagefindInstance {
   mergeFilter: Object;
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
+  exactDiacritics: boolean;
 
   loaded_chunks: Record<string, Promise<void>>;
   loaded_filters: Record<string, Promise<void>>;
@@ -78,6 +84,7 @@ export class PagefindInstance {
     this.mergeFilter = opts.mergeFilter ?? {};
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
+    this.exactDiacritics = opts.exactDiacritics ?? false;
 
     this.loaded_chunks = {};
     this.loaded_filters = {};
@@ -118,6 +125,7 @@ export class PagefindInstance {
       "mergeFilter",
       "highlightParam",
       "ranking",
+      "exactDiacritics",
     ];
     for (const [k, v] of Object.entries(options)) {
       if (k === "mergeFilter") {
@@ -134,6 +142,8 @@ export class PagefindInstance {
         if (k === "mergeFilter" && typeof v === "object") this.mergeFilter = v;
         if (k === "highlightParam" && typeof v === "string")
           this.highlightParam = v;
+        if (k === "exactDiacritics" && typeof v === "boolean")
+          this.exactDiacritics = v;
       } else if (!["basePath"].includes(k)) {
         console.warn(
           `Unknown Pagefind option ${k}. Allowed options: [${opts.join(", ")}]`,
@@ -171,6 +181,7 @@ export class PagefindInstance {
       page_length: ranking.pageLength ?? null,
       term_saturation: ranking.termSaturation ?? null,
       term_frequency: ranking.termFrequency ?? null,
+      diacritic_similarity: ranking.diacriticSimilarity ?? null,
     };
     let ptr = await this.getPtr();
     this.raw_ptr = this.backend.set_ranking_weights(
@@ -555,6 +566,8 @@ export class PagefindInstance {
         .trim();
     }
 
+    const originalTerm = term;
+    term = normalizeDiacritics(term);
     log(`Normalized search term to ${term}`);
 
     if (!term?.length && !filter_only) {
@@ -605,9 +618,11 @@ export class PagefindInstance {
     let result = this.backend.search(
       ptr,
       term,
+      originalTerm,
       filter_list,
       sort_list,
       exact_search,
+      this.exactDiacritics,
     ) as string;
     log(`Got the raw search result: ${result}`);
 

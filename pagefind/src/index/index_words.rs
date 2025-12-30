@@ -16,6 +16,17 @@ pub struct PackedWord {
     pub word: String,
     #[n(1)]
     pub pages: Vec<PackedPage>,
+    #[n(2)]
+    pub additional_variants: Vec<PackedVariant>,
+}
+
+/// A variant of a word with different diacritics (e.g., "café" vs "cafe")
+#[derive(Encode, Clone, Debug)]
+pub struct PackedVariant {
+    #[n(0)]
+    pub form: String,
+    #[n(1)]
+    pub pages: Vec<PackedPage>,
 }
 
 /// A set of locations on a given page

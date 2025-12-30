@@ -124,3 +124,24 @@ await pagefind.options({
 - The minimum value is `0.0`, where terms will saturate immediately and results will not distinguish between one term and many.
 
 Decreasing the `termSaturation` parameter is a good way to suppress pages that are ranking well due to an extremely high number of search terms existing in their content.
+
+## Configuring Diacritic Similarity
+
+{{< diffcode >}}
+```javascript
+await pagefind.options({
++    ranking: {
++        diacriticSimilarity: 0.8 // default value
++    }
+});
+```
+{{< /diffcode >}}
+
+`diacriticSimilarity` controls how much boost is applied when the diacritics (accents such as àéö) in the search query match the indexed content exactly.
+
+When searching with diacritics normalized (the default behavior), this parameter determines the ranking bonus for exact diacritic matches:
+
+- At `1.0`, searching for "café" will boost pages containing "café" by 100% over pages containing "cafe", and vice versa.
+- The minimum value is `0.0`, which treats all diacritic variants equally.
+
+This parameter has no effect when [`exactDiacritics`](/docs/search-config/#exact-diacritics) is set to `true`, as non-matching diacritic variants will not appear in results at all.

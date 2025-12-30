@@ -1,4 +1,4 @@
-use super::{PageWord, SearchIndex};
+use super::{PageWord, SearchIndex, WordData, WordVariant};
 use crate::util::*;
 use minicbor::{decode, Decoder};
 
@@ -8,11 +8,24 @@ use minicbor::{decode, Decoder};
     [
         {
             String,             // word
-            [
+            [                   // pages
                 {
                     u32,        // page number
                     [
                         u32,    // page location
+                        ...
+                    ]
+                },
+                ...
+            ],
+            [                   // additional_variants
+                {
+                    String,     // variant form
+                    [           // variant pages
+                        {
+                            u32,    // page number
+                            [u32]   // locations
+                        },
                         ...
                     ]
                 },
@@ -25,6 +38,41 @@ use minicbor::{decode, Decoder};
 */
 
 impl SearchIndex {
+    fn decode_pages(decoder: &mut Decoder) -> Result<Vec<PageWord>, decode::Error> {
+        let pages_count = consume_arr_len!(decoder);
+        let mut page_arr = Vec::with_capacity(pages_count as usize);
+        for _ in 0..pages_count {
+            consume_fixed_arr!(decoder);
+            let mut page = PageWord {
+                page: consume_num!(decoder),
+                locs: vec![],
+            };
+
+            let word_locations = consume_arr_len!(decoder);
+            let mut weight = 25;
+            for _ in 0..word_locations {
+                let loc = consume_inum!(decoder);
+                // Negative numbers represent a change in the weighting of subsequent words.
+                if loc.is_negative() {
+                    let abs_weight = (loc + 1) * -1;
+                    weight = if abs_weight > 255 {
+                        255
+                    } else {
+                        abs_weight.try_into().unwrap_or_default()
+                    };
+                    debug!({
+                        format!("Encountered word position {loc:#?}, weighting subsequent words as {weight:#?}")
+                    });
+                } else {
+                    page.locs.push((weight, loc as u32));
+                }
+            }
+
+            page_arr.push(page);
+        }
+        Ok(page_arr)
+    }
+
     pub fn decode_index_chunk(&mut self, index_bytes: &[u8]) -> Result<(), decode::Error> {
         debug!({ format!("Decoding {:#?} index bytes", index_bytes.len()) });
         let mut decoder = Decoder::new(index_bytes);
@@ -35,42 +83,43 @@ impl SearchIndex {
         let words = consume_arr_len!(decoder);
         debug!({ format!("Reading {:#?} words", words) });
         for _ in 0..words {
-            consume_fixed_arr!(decoder);
+            let word_arr_len = match decoder.array()? {
+                Some(n) => n,
+                None => return Err(decode::Error::message("Word array length not specified")),
+            };
+
             let key = consume_string!(decoder);
+            let pages = Self::decode_pages(&mut decoder)?;
 
-            let pages = consume_arr_len!(decoder);
-            let mut page_arr = Vec::with_capacity(pages as usize);
-            for _ in 0..pages {
-                consume_fixed_arr!(decoder);
-                let mut page = PageWord {
-                    page: consume_num!(decoder),
-                    locs: vec![],
-                };
-
-                let word_locations = consume_arr_len!(decoder);
-                let mut weight = 25;
-                for _ in 0..word_locations {
-                    let loc = consume_inum!(decoder);
-                    // Negative numbers represent a change in the weighting of subsequent words.
-                    if loc.is_negative() {
-                        let abs_weight = (loc + 1) * -1;
-                        weight = if abs_weight > 255 {
-                            255
-                        } else {
-                            abs_weight.try_into().unwrap_or_default()
-                        };
-                        debug!({
-                            format!("Encountered word position {loc:#?}, weighting subsequent words as {weight:#?}")
-                        });
-                    } else {
-                        page.locs.push((weight, loc as u32));
-                    }
+            // We generally don't strive for backwards compat in our indexes,
+            // but where possible we include some just in case.
+            // Here, we handle parsing older indexes that do not include the
+            // additional_variants field within each word.
+            // In a future release we can remove this compat.
+            let additional_variants = if word_arr_len >= 3 {
+                let variants_count = consume_arr_len!(decoder);
+                let mut variants = Vec::with_capacity(variants_count as usize);
+                for _ in 0..variants_count {
+                    consume_fixed_arr!(decoder);
+                    let form = consume_string!(decoder);
+                    let variant_pages = Self::decode_pages(&mut decoder)?;
+                    variants.push(WordVariant {
+                        form,
+                        pages: variant_pages,
+                    });
                 }
+                variants
+            } else {
+                Vec::new()
+            };
 
-                page_arr.push(page);
-            }
-
-            self.words.insert(key, page_arr);
+            self.words.insert(
+                key,
+                WordData {
+                    pages,
+                    additional_variants,
+                },
+            );
         }
         debug!({ "Finished reading words" });
 

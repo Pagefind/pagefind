@@ -16,6 +16,7 @@ use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::{AsyncReadExt, BufReader};
 use tokio::time::{sleep, Duration};
+use unicode_normalization::UnicodeNormalization;
 
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
 use crate::SearchOptions;
@@ -31,6 +32,27 @@ lazy_static! {
     static ref PRIVATE_PAGEFIND: Regex = Regex::new("___PAGEFIND_[\\S]+\\s?").unwrap();
 }
 
+/// Normalize diacritics, if required, before indexing
+/// (context: we index "café" as "cafe" for retrieval purposes,
+/// but we do still store each variant in the index,
+/// so matching diacritics are preferred when ranking search results)
+fn normalize_diacritics(word: &str) -> Option<String> {
+    if word.is_ascii() {
+        return None;
+    }
+
+    let normalized: String = word
+        .nfd()
+        .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+        .collect();
+
+    if normalized != word {
+        Some(normalized)
+    } else {
+        None
+    }
+}
+
 pub mod parser;
 mod splitting;
 
@@ -38,6 +60,8 @@ mod splitting;
 pub struct FossickedWord {
     pub position: u32,
     pub weight: u8,
+    /// The original word before diacritic normalization, if it differs from the normalized form.
+    pub original_word: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -213,16 +237,25 @@ impl Fossicker {
 
         let mut content = String::with_capacity(data.digest.len());
 
-        let mut store_word = |full_word: &str, word_index: usize, word_weight: u8| {
+        let mut store_word = |original_word: &str, word_index: usize, word_weight: u8| {
+            let diacritic_normalized = normalize_diacritics(original_word);
+
             let word = if let Some(stemmer) = &stemmer {
-                stemmer.stem(&full_word).into_owned()
+                stemmer
+                    .stem(diacritic_normalized.as_deref().unwrap_or(original_word))
+                    .into_owned()
             } else {
-                full_word.to_string()
+                diacritic_normalized
+                    .clone()
+                    .unwrap_or_else(|| original_word.to_string())
             };
 
             let entry = FossickedWord {
                 position: word_index.try_into().unwrap(),
                 weight: word_weight,
+                original_word: diacritic_normalized
+                    .is_some()
+                    .then(|| original_word.to_string()),
             };
             if let Some(repeat) = map.get_mut(&word) {
                 repeat.push(entry);
@@ -663,14 +696,16 @@ mod tests {
                     "hello".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 1 * 24
+                        weight: 1 * 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "world".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 1 * 24
+                        weight: 1 * 24,
+                        original_word: None,
                     }]
                 )
             ])
@@ -682,7 +717,7 @@ mod tests {
         let mut f = test_fossick(
             [
                 "<html><body>",
-                "<p>He&amp;llo htmltag&lt;head&gt; *before mid*dle after*</p>",
+                "<p>He&amp;llo htmltag&lt;head&gt; *beföre mid*dle after*</p>",
                 "</body></html>",
             ]
             .concat(),
@@ -695,7 +730,7 @@ mod tests {
 
         assert_eq!(
             digest,
-            "He&llo htmltag<head> *before mid*dle after*.".to_string()
+            "He&llo htmltag<head> *beföre mid*dle after*.".to_string()
         );
         assert_eq!(
             words,
@@ -704,84 +739,96 @@ mod tests {
                     "he".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "llo".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "hello".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 24
+                        weight: 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "htmltag<head>".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 24
+                        weight: 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "htmltag".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "head".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "*before".to_string(),
                     vec![FossickedWord {
                         position: 2,
-                        weight: 24
+                        weight: 24,
+                        original_word: Some("*beföre".to_string()),
                     }]
                 ),
                 (
                     "before".to_string(),
                     vec![FossickedWord {
                         position: 2,
-                        weight: 24
+                        weight: 24,
+                        original_word: Some("beföre".to_string()),
                     }]
                 ),
                 (
                     "mid*dle".to_string(),
                     vec![FossickedWord {
                         position: 3,
-                        weight: 24
+                        weight: 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "mid".to_string(),
                     vec![FossickedWord {
                         position: 3,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "dle".to_string(),
                     vec![FossickedWord {
                         position: 3,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "after*".to_string(),
                     vec![FossickedWord {
                         position: 4,
-                        weight: 24
+                        weight: 24,
+                        original_word: None,
                     }]
                 )
             ])
@@ -814,49 +861,56 @@ mod tests {
                     "the".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 1 * 24
+                        weight: 1 * 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "quick".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 2 * 24
+                        weight: 2 * 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "brown".to_string(),
                     vec![FossickedWord {
                         position: 2,
-                        weight: 2 * 24
+                        weight: 2 * 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "fox".to_string(),
                     vec![FossickedWord {
                         position: 3,
-                        weight: 1 * 24
+                        weight: 1 * 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "jumps".to_string(),
                     vec![FossickedWord {
                         position: 4,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "over".to_string(),
                     vec![FossickedWord {
                         position: 5,
-                        weight: 12
+                        weight: 12,
+                        original_word: None,
                     }]
                 ),
                 (
                     "ryan".to_string(),
                     vec![FossickedWord {
                         position: 6,
-                        weight: 1
+                        weight: 1,
+                        original_word: None,
                     }]
                 )
             ])
@@ -891,35 +945,43 @@ mod tests {
                 vec![
                     FossickedWord {
                         position: 0,
-                        weight: 7 * 24
+                        weight: 7 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 1,
-                        weight: 6 * 24
+                        weight: 6 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 2,
-                        weight: 5 * 24
+                        weight: 5 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 3,
-                        weight: 4 * 24
+                        weight: 4 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 4,
-                        weight: 3 * 24
+                        weight: 3 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 5,
-                        weight: 2 * 24
+                        weight: 2 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 6,
-                        weight: 1 * 24
+                        weight: 1 * 24,
+                        original_word: None,
                     },
                     FossickedWord {
                         position: 7,
-                        weight: 0 * 24
+                        weight: 0 * 24,
+                        original_word: None,
                     }
                 ]
             )])
@@ -973,28 +1035,32 @@ mod tests {
                     "the".to_string(),
                     vec![FossickedWord {
                         position: 0,
-                        weight: 24
+                        weight: 24,
+                        original_word: None,
                     }]
                 ),
                 (
                     "quick".to_string(),
                     vec![FossickedWord {
                         position: 1,
-                        weight: 240
+                        weight: 240,
+                        original_word: None,
                     }]
                 ),
                 (
                     "brown".to_string(),
                     vec![FossickedWord {
                         position: 2,
-                        weight: 0
+                        weight: 0,
+                        original_word: None,
                     }]
                 ),
                 (
                     "fox".to_string(),
                     vec![FossickedWord {
                         position: 3,
-                        weight: 240
+                        weight: 240,
+                        original_word: None,
                     }]
                 )
             ])
