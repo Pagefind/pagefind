@@ -1,0 +1,46 @@
+name: Index Chunking > Chunk loading should use stemmed search terms
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have the environment variable "PAGEFIND_UNSTABLE_INDEX_CHUNK_SIZE" set to "4"
+
+  - step: I have a "public/words/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>aardvark apple foxtrot zebra</p>
+      </body></html>
+
+  - step: I have a "public/rebase/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>rebase</p>
+      </body></html>
+
+  - step: I have a "public/rebasemerge/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>rebasemerging</p>
+      </body></html>
+
+  - macro: I run Pagefind
+
+  # Introspect the metadata to ensure we split the chunks between rebase and rebasemerging
+  - step: I run "gunzip -c public/pagefind/pagefind.en_*.pf_meta | strings"
+  # a: cbor 1 char / chunk from "f" / e: cbor 5 chars / chunk to "rebas" / jen_: start of chunk name
+  - stdout should contain "aferebasjen_"
+  # f: cbor 6 chas / chunk from "rebase" / e: cbor 5 chars / chunk to "zebra" / jen_: start of chunk name
+  - stdout should contain "frebaseezebrajen_"
+
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+
+  # Searching "rebase" should find both "rebase" and "rebaseMerging",
+  # which are in adjacent chunks, with the former in the "rebas" chunk.
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("rebase");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url).sort();
+    expected:
+      - /rebase/
+      - /rebasemerge/

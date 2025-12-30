@@ -1,0 +1,32 @@
+name: Index Chunking > Prefix search works with unicode characters
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have the environment variable "PAGEFIND_UNSTABLE_INDEX_CHUNK_SIZE" set to "4"
+  - step: I have a "public/cafe/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>café</p>
+      </body></html>
+
+  - step: I have a "public/cafeine/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>caféine</p>
+      </body></html>
+
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+
+  # Search for "caf" prefix - should find both café pages
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("caf");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url).sort();
+    expected:
+      - /cafe/
+      - /cafeine/
