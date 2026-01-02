@@ -21,6 +21,7 @@ class InternalPagefindServiceConfig(TypedDict, total=False):
     logfile: Optional[str]
     keep_index_url: Optional[bool]
     write_playground: Optional[bool]
+    include_characters: Optional[str]
 
 
 class InternalNewIndexRequest(TypedDict):

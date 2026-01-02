@@ -196,6 +196,9 @@ pub struct PagefindServiceConfig {
     pub(crate) keep_index_url: Option<bool>,
     /// Output the Pagefind Playground to <bundle_dir>/playground/ when building the search index.
     pub(crate) write_playground: Option<bool>,
+    #[patch(as_option)]
+    /// Include these characters when indexing and searching words.
+    pub(crate) include_characters: Option<String>,
 }
 
 mod defaults {

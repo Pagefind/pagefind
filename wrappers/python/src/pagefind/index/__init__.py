@@ -54,6 +54,11 @@ class IndexConfig(TypedDict, total=False):
 
     Defaults to false, ensuring the playground isn't available on a live site.
     """
+    include_characters: Optional[str]
+    """Include these characters when indexing and searching words.
+
+    Useful for sites documenting technical topics such as programming languages.
+    """
     output_path: Optional[str]
     """
     The folder to output the search bundle into, relative to the processed site.
