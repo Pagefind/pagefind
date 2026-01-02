@@ -41,15 +41,22 @@ impl SearchIndex {
     fn decode_pages(decoder: &mut Decoder) -> Result<Vec<PageWord>, decode::Error> {
         let pages_count = consume_arr_len!(decoder);
         let mut page_arr = Vec::with_capacity(pages_count as usize);
+        let mut cumulative_page = 0;
+
         for _ in 0..pages_count {
             consume_fixed_arr!(decoder);
+            let page_delta = consume_num!(decoder);
+            cumulative_page += page_delta;
+
             let mut page = PageWord {
-                page: consume_num!(decoder),
+                page: cumulative_page,
                 locs: vec![],
             };
 
             let word_locations = consume_arr_len!(decoder);
             let mut weight = 25;
+            let mut last_position = 0;
+
             for _ in 0..word_locations {
                 let loc = consume_inum!(decoder);
                 // Negative numbers represent a change in the weighting of subsequent words.
@@ -58,13 +65,17 @@ impl SearchIndex {
                     weight = if abs_weight > 255 {
                         255
                     } else {
-                        abs_weight.try_into().unwrap_or_default()
+                        abs_weight as u8
                     };
+                    // First position after weight change is absolute
+                    last_position = 0;
                     debug!({
-                        format!("Encountered word position {loc:#?}, weighting subsequent words as {weight:#?}")
+                        format!("Encountered weight marker {loc:#?}, weighting subsequent words as {weight:#?}")
                     });
                 } else {
-                    page.locs.push((weight, loc as u32));
+                    // Delta-encoded position
+                    last_position += loc as u32;
+                    page.locs.push((weight, last_position));
                 }
             }
 
