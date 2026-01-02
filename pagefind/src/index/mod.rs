@@ -131,11 +131,15 @@ pub async fn build_indexes(
     ) -> PackedPage {
         // A page weight of 1 is encoded as 25. Since most words should be this weight,
         // we want to sort them to be first in the locations array to reduce filesize
-        // when we inline weight changes
-        positions.sort_by_cached_key(|p| if p.weight == 25 { 0 } else { p.weight });
+        // when we inline weight changes.
+        // We then sort by position within each weight group,
+        // which helps us delta encode the index.
+        positions.sort_by_cached_key(|p| (if p.weight == 25 { 0 } else { p.weight }, p.position));
 
         let mut current_weight = 25;
         let mut weighted_positions = Vec::with_capacity(positions.len());
+        let mut last_position = 0;
+
         // Calculate our output list of positions with weights.
         // This is a vec of page positions, with a change in weight for subsequent positions
         // denoted by a negative integer.
@@ -144,10 +148,15 @@ pub async fn build_indexes(
         } in positions
         {
             if weight != current_weight {
-                weighted_positions.extend([(weight as i32) * -1 - 1, position as i32]);
+                // Weight change: emit marker + absolute position, new delta base
+                weighted_positions.push((weight as i32) * -1 - 1);
+                weighted_positions.push(position as i32);
+                last_position = position;
                 current_weight = weight;
             } else {
-                weighted_positions.push(position as i32)
+                // emit delta from previous position
+                weighted_positions.push((position - last_position) as i32);
+                last_position = position;
             }
         }
 
@@ -320,9 +329,32 @@ pub async fn build_indexes(
 
     let mut word_indexes: HashMap<String, Vec<u8>> = HashMap::new();
     for (i, chunk) in chunks.into_iter().enumerate() {
+        // Delta-encode page numbers within each word's page list
+        let delta_chunk: Vec<PackedWord> = chunk
+            .into_iter()
+            .map(|mut word| {
+                let mut last_page: usize = 0;
+                for page in &mut word.pages {
+                    let delta = page.page_number - last_page;
+                    last_page = page.page_number;
+                    page.page_number = delta;
+                }
+                // Also handle additional_variants
+                for variant in &mut word.additional_variants {
+                    let mut last_page: usize = 0;
+                    for page in &mut variant.pages {
+                        let delta = page.page_number - last_page;
+                        last_page = page.page_number;
+                        page.page_number = delta;
+                    }
+                }
+                word
+            })
+            .collect();
+
         let mut word_index: Vec<u8> = Vec::new();
         let _ = minicbor::encode::<WordIndex, &mut Vec<u8>>(
-            WordIndex { words: chunk },
+            WordIndex { words: delta_chunk },
             word_index.as_mut(),
         );
 
