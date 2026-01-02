@@ -58,6 +58,7 @@ export const createIndex = (config) => new Promise((resolve, reject) => {
                 logfile: config?.logfile,
                 keep_index_url: config?.keepIndexUrl,
                 write_playground: config?.writePlayground,
+                include_characters: config?.includeCharacters,
             }
         }, (response) => {
             /** @type {function(InternalResponsePayload): Omit<NewIndexResponse, 'errors'>?} */

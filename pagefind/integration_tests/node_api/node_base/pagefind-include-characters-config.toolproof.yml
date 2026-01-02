@@ -1,0 +1,44 @@
+name: Node API Base Tests > Pagefind includeCharacters config
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex({
+               includeCharacters: "@^",
+           });
+           await index.addHTMLFile({sourcePath: "page_a/index.html", content: "<html lang='en'><body><h1>Talking about a @things</h1></body></html>"});
+           await index.addHTMLFile({sourcePath: "page_b/index.html", content: "<html lang='en'><body><h1>Configure %a^b^c^d things</h1></body></html>"});
+           await index.writeFiles();
+           console.log(`Successfully wrote files`);
+       }
+
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: stdout should contain "Successfully wrote files"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("@things");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+
+      toolproof.assert_eq(pages.length, 1);
+      toolproof.assert_eq(pages[0].url, "/page_a/");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("a^b^c^d");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+
+      toolproof.assert_eq(pages.length, 1);
+      toolproof.assert_eq(pages[0].url, "/page_b/");
+  - step: In my browser, the console should be empty

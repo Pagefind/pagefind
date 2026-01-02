@@ -50,6 +50,12 @@ export interface PagefindServiceConfig {
      * Defaults to false, ensuring the playground isn't available on a live site.
      */
     writePlayground?: boolean,
+    /**
+     * Include these characters when indexing and searching words.
+     * Useful for sites documenting technical topics such as programming languages.
+     * @example "<>$"
+     */
+    includeCharacters?: string,
 }
 
 
