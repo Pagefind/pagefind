@@ -20,6 +20,13 @@ const normalizeDiacritics = (str: string): string => {
 const isBrowser = () =>
   typeof window !== "undefined" && typeof document !== "undefined";
 
+// Languages that need non-whitespace segmentation.
+const needsWordSegmentation = (lang: string | null): boolean => {
+  if (!lang) return false;
+  const primaryLang = lang.split("-")[0].toLowerCase();
+  return ["zh", "ja", "th"].includes(primaryLang);
+};
+
 export class PagefindInstance {
   backend: any;
   decoder: TextDecoder;
@@ -522,36 +529,53 @@ export class PagefindInstance {
     }
     const term_chunks: string[] = [];
 
-    // Segment the query twice: outer for word segmentation (targeting non-whitespace
-    // delimited languages), and inner for grapheme segmentation (targeting proper emoji handling)
     if (trueLanguage && typeof Intl.Segmenter !== "undefined") {
-      const wordSegmenter = new Intl.Segmenter(trueLanguage, {
-        granularity: "word",
-      });
       const graphemeSegmenter = new Intl.Segmenter(trueLanguage, {
         granularity: "grapheme",
       });
 
-      for (const { segment: word } of wordSegmenter.segment(term)) {
-        const wordChunks: string[] = [];
-        for (const { segment: grapheme } of graphemeSegmenter.segment(word)) {
+      if (needsWordSegmentation(trueLanguage)) {
+        // CJK languages: segment by word first, then by grapheme
+        const wordSegmenter = new Intl.Segmenter(trueLanguage, {
+          granularity: "word",
+        });
+
+        for (const { segment: word } of wordSegmenter.segment(term)) {
+          const wordChunks: string[] = [];
+          for (const { segment: grapheme } of graphemeSegmenter.segment(word)) {
+            if (this.includeCharacters?.includes(grapheme)) {
+              wordChunks.push(grapheme);
+            } else if (
+              !/^\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}$/u.test(grapheme)
+            ) {
+              wordChunks.push(grapheme.toLocaleLowerCase());
+            }
+          }
+
+          if (wordChunks.length > 0) {
+            term_chunks.push(wordChunks.join(""));
+          }
+        }
+        term = term_chunks
+          .join(" ")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+      } else {
+        // Non-CJK languages: use grapheme segmentation only (preserves compound words)
+        for (const { segment: grapheme } of graphemeSegmenter.segment(term)) {
           if (this.includeCharacters?.includes(grapheme)) {
-            wordChunks.push(grapheme);
+            term_chunks.push(grapheme);
           } else if (
             !/^\p{Pd}|\p{Pe}|\p{Pf}|\p{Pi}|\p{Po}|\p{Ps}$/u.test(grapheme)
           ) {
-            wordChunks.push(grapheme.toLocaleLowerCase());
+            term_chunks.push(grapheme.toLocaleLowerCase());
           }
         }
-
-        if (wordChunks.length > 0) {
-          term_chunks.push(wordChunks.join(""));
-        }
+        term = term_chunks
+          .join("")
+          .replace(/\s{2,}/g, " ")
+          .trim();
       }
-      term = term_chunks
-        .join(" ")
-        .replace(/\s{2,}/g, " ")
-        .trim();
     } else {
       for (const char of term) {
         if (this.includeCharacters?.includes(char)) {
