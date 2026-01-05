@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap, HashSet},
     ops::{Add, AddAssign, Div},
 };
 
@@ -18,14 +18,39 @@ pub struct PageSearchResult {
     pub page_score: f32,
     pub word_locations: Vec<BalancedWordScore>,
     pub verbose_scores: Option<Vec<(String, ScoringMetrics, BM25Params)>>,
+    pub matched_meta_fields: Vec<String>,
+    pub verbose_meta_scores: Option<Vec<VerboseMetaScore>>,
+}
+
+/// Verbose metadata scoring info for the playground.
+/// Shows how each metadata field contributes to the meta boost.
+#[derive(Debug, Clone)]
+pub struct VerboseMetaScore {
+    pub field_name: String,
+    pub field_weight: f32,
+    pub matched_terms: Vec<String>,
+    pub matched_idf: f32,
+    pub query_total_idf: f32,
+    pub coverage: f32,
+    pub coverage_boost: f32,
+}
+
+/// Query term IDF breakdown for the playground.
+/// Shows the IDF contribution of each search term.
+#[derive(Debug, Clone)]
+pub struct QueryTermIdf {
+    pub term: String,
+    pub idf: f32,
 }
 
 struct MatchingPageWord<'a> {
     word: &'a PageWord,
     word_str: &'a str,
     length_bonus: f32,
-    num_pages_matching: usize,
     diacritic_bonus: f32,
+    /// Index into the original query terms
+    /// (for looking up the combined IDF score of the original term)
+    query_term_index: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -34,6 +59,7 @@ struct VerboseWordLocation<'a> {
     weight: u8,
     word_location: u32,
     length_bonus: f32,
+    query_term_index: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -100,6 +126,14 @@ fn word_length_bonus(differential: u8, term_similarity_ranking: f32) -> f32 {
     (base * term_similarity_ranking).exp() / max_value
 }
 
+/// Calculate the Inverse Document Frequency for a term.
+fn calculate_idf(total_pages: usize, pages_containing_term: usize) -> f32 {
+    (total_pages as f32 - pages_containing_term as f32 + 0.5)
+        .div(pages_containing_term as f32 + 0.5)
+        .add(1.0)
+        .ln()
+}
+
 fn calculate_bm25_word_score(
     BM25Params {
         weighted_term_frequency,
@@ -116,10 +150,7 @@ fn calculate_bm25_word_score(
     let k1 = ranking.term_saturation;
     let b = ranking.page_length;
 
-    let idf = (total_pages as f32 - pages_containing_term as f32 + 0.5)
-        .div(pages_containing_term as f32 + 0.5)
-        .add(1.0) // Prevent IDF from ever being negative
-        .ln();
+    let idf = calculate_idf(total_pages, pages_containing_term);
 
     let bm25_tf = (k1 + 1.0) * weighted_with_length
         / (k1 * (1.0 - b + b * (document_length / average_page_length)) + weighted_with_length);
@@ -150,6 +181,7 @@ fn calculate_individual_word_score(
         weight,
         length_bonus,
         word_location,
+        query_term_index: _,
     }: VerboseWordLocation,
     playground_mode: bool,
 ) -> BalancedWordScore {
@@ -251,6 +283,8 @@ impl SearchIndex {
                 format! {"Word locations {:?}", word_locations}
             });
 
+            let mut found_match = false;
+
             if let (Some(loc_0), Some(loc_rest)) = (word_locations.get(0), word_locations.get(1..))
             {
                 'indexes: for (_, pos) in loc_0 {
@@ -279,11 +313,93 @@ impl SearchIndex {
                         }))
                         .collect(),
                         verbose_scores: None, // TODO: bring playground info to quoted searches
+                        matched_meta_fields: vec![],
+                        verbose_meta_scores: None, // TODO: bring playground info to quoted searches
                     };
                     pages.push(search_result);
+                    found_match = true;
                     break 'indexes;
                 }
-            } else {
+            }
+
+            if !found_match {
+                let meta_word_locations: Vec<HashMap<u16, Vec<u32>>> = words
+                    .iter()
+                    .filter_map(|p| {
+                        if p.page as usize == page_index && !p.meta_locs.is_empty() {
+                            let mut by_field: HashMap<u16, Vec<u32>> = HashMap::new();
+                            for &(field_id, position) in &p.meta_locs {
+                                by_field.entry(field_id).or_default().push(position);
+                            }
+                            Some(by_field)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if meta_word_locations.len() >= split_term.len() {
+                    let all_field_ids: HashSet<u16> = meta_word_locations
+                        .iter()
+                        .flat_map(|m| m.keys().copied())
+                        .collect();
+
+                    'fields: for field_id in all_field_ids {
+                        let field_positions: Vec<&Vec<u32>> = meta_word_locations
+                            .iter()
+                            .filter_map(|m| m.get(&field_id))
+                            .collect();
+
+                        if field_positions.len() != meta_word_locations.len() {
+                            continue 'fields;
+                        }
+
+                        if let (Some(loc_0), Some(loc_rest)) =
+                            (field_positions.get(0), field_positions.get(1..))
+                        {
+                            'meta_indexes: for pos in *loc_0 {
+                                let mut i = *pos;
+                                for subsequent in loc_rest {
+                                    i += 1;
+                                    if !subsequent.iter().any(|p| *p == i) {
+                                        continue 'meta_indexes;
+                                    }
+                                }
+                                let page = match self.pages.get(page_index) {
+                                    Some(p) => p,
+                                    None => std::process::abort(),
+                                };
+
+                                let field_name = self.meta_fields.get(field_id as usize);
+                                let meta_boost = field_name
+                                    .and_then(|name| {
+                                        self.ranking_weights.meta_weights.get(name).copied()
+                                    })
+                                    .unwrap_or(1.0);
+
+                                let search_result = PageSearchResult {
+                                    page: page.hash.clone(),
+                                    page_index,
+                                    page_score: meta_boost,
+                                    page_length: page.word_count,
+                                    word_locations: vec![],
+                                    verbose_scores: None,
+                                    matched_meta_fields: field_name
+                                        .map(|n| vec![n.clone()])
+                                        .unwrap_or_default(),
+                                    verbose_meta_scores: None,
+                                };
+                                pages.push(search_result);
+                                found_match = true;
+                                break 'fields;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Single word handling - only for single-word exact searches
+            if !found_match && split_term.len() == 1 {
                 let page = match self.pages.get(page_index) {
                     Some(p) => p,
                     None => std::process::abort(),
@@ -304,6 +420,8 @@ impl SearchIndex {
                             })
                             .collect(),
                         verbose_scores: None, // TODO: bring playground info to quoted searches
+                        matched_meta_fields: vec![],
+                        verbose_meta_scores: None, // TODO: bring playground info to quoted searches
                     };
                     pages.push(search_result);
                 }
@@ -319,7 +437,7 @@ impl SearchIndex {
         original_query: &str,
         filter_results: Option<BitSet>,
         exact_diacritics: bool,
-    ) -> (Vec<usize>, Vec<PageSearchResult>) {
+    ) -> (Vec<usize>, Vec<PageSearchResult>, Option<Vec<QueryTermIdf>>) {
         debug!({
             format! {"Searching {:?}", term}
         });
@@ -331,6 +449,10 @@ impl SearchIndex {
         let mut words: Vec<MatchingPageWord> = Vec::new();
         let split_term = stems_from_term(term);
         let original_terms: Vec<&str> = original_query.split(' ').collect();
+        // Track combined page count for each original query term.
+        // We use this to calculate a true-minimum IDF score when ranking,
+        // for example we calculate the IDF of all to* words.
+        let mut combined_page_counts: Vec<usize> = Vec::with_capacity(split_term.len());
 
         for (term_idx, term) in split_term.iter().enumerate() {
             let original_term = original_terms.get(term_idx).copied().unwrap_or("");
@@ -353,8 +475,6 @@ impl SearchIndex {
                     }
                 }
 
-                let num_pages_matching: usize =
-                    matching_word_variants.iter().map(|(_, p)| p.len()).sum();
                 let mut set = BitSet::new();
 
                 for (form, pages) in matching_word_variants {
@@ -367,8 +487,8 @@ impl SearchIndex {
                         word: pageword,
                         word_str: word,
                         length_bonus,
-                        num_pages_matching,
                         diacritic_bonus: boost,
+                        query_term_index: term_idx,
                     }));
                     for page in pages {
                         set.insert(page.page as usize);
@@ -378,7 +498,10 @@ impl SearchIndex {
                 word_maps.push(set);
             }
             if let Some(result) = union_maps(word_maps) {
+                combined_page_counts.push(result.len());
                 maps.push(result);
+            } else {
+                combined_page_counts.push(0);
             }
         }
         // In the case where a search term was passed, but not found,
@@ -409,7 +532,31 @@ impl SearchIndex {
 
         let results = match intersect_maps(maps) {
             Some(map) => map,
-            None => return (vec![], vec![]),
+            None => return (vec![], vec![], None),
+        };
+
+        // Calculate total IDF for original query terms.
+        // Each term's IDF is based on the combined page count of all its extensions.
+        // (in other words: "how common is any word starting with this prefix").
+        let query_total_idf: f32 = combined_page_counts
+            .iter()
+            .map(|&count| calculate_idf(total_pages, count))
+            .sum();
+
+        // Collect verbose query IDF breakdown for playground mode
+        let verbose_query_idfs = if self.playground_mode {
+            Some(
+                split_term
+                    .iter()
+                    .zip(combined_page_counts.iter())
+                    .map(|(term, &count)| QueryTermIdf {
+                        term: term.to_string(),
+                        idf: calculate_idf(total_pages, count),
+                    })
+                    .collect(),
+            )
+        } else {
+            None
         };
 
         let mut pages: Vec<PageSearchResult> = vec![];
@@ -431,6 +578,7 @@ impl SearchIndex {
                                     weight: *weight,
                                     word_location: *location,
                                     length_bonus: w.length_bonus,
+                                    query_term_index: w.query_term_index,
                                 }),
                         )
                     } else {
@@ -439,6 +587,19 @@ impl SearchIndex {
                 })
                 .flatten()
                 .collect();
+
+            let mut meta_field_matches: HashMap<u16, HashMap<&str, f32>> = HashMap::new();
+            for w in words.iter() {
+                if w.word.page as usize == page_index && !w.word.meta_locs.is_empty() {
+                    let idf = calculate_idf(total_pages, combined_page_counts[w.query_term_index]);
+                    for &(field_id, _position) in &w.word.meta_locs {
+                        meta_field_matches
+                            .entry(field_id)
+                            .or_default()
+                            .insert(w.word_str, idf);
+                    }
+                }
+            }
             word_locations
                 .sort_unstable_by_key(|VerboseWordLocation { word_location, .. }| *word_location);
 
@@ -450,43 +611,59 @@ impl SearchIndex {
                 Vec::with_capacity(word_locations.len());
             let mut weighted_words: BTreeMap<&str, usize> = BTreeMap::new();
 
-            if let Some(mut working_word) = word_locations.get(0).cloned() {
-                for next_word in word_locations.into_iter().skip(1) {
-                    // If we're matching the same position again (this Vec is in location order)
-                    if working_word.word_location == next_word.word_location {
-                        if next_word.weight < working_word.weight {
-                            // If the new word is weighted _lower_ than the working word,
-                            // we want to use the lower value. (Lowest weight wins)
-                            working_word.weight = next_word.weight;
-                            working_word.length_bonus = next_word.length_bonus;
-                        } else if next_word.weight == working_word.weight {
-                            // If the new word is weighted the same,
-                            // we want to combine them to boost matching both halves of a compound word
-                            working_word.weight += next_word.weight;
-                            working_word.length_bonus += next_word.length_bonus;
-                        }
-                        // We don't want to do anything if the new word is weighted higher
-                        // (Lowest weight wins)
-                    } else {
-                        weighted_words
-                            .entry(working_word.word_str)
-                            .or_default()
-                            .add_assign(working_word.weight as usize);
+            // Group words by position to handle compound words properly.
+            // When multiple query terms match the same position (e.g., "git" and "absorb"
+            // both matching "git-absorb"), each term should contribute to weighted_words.
+            let mut position_groups: Vec<Vec<VerboseWordLocation>> = vec![];
+            let mut current_position: Option<u32> = None;
 
-                        unique_word_locations.push(calculate_individual_word_score(
-                            working_word,
-                            self.playground_mode,
-                        ));
-                        working_word = next_word;
-                    }
+            for word in word_locations.into_iter() {
+                if current_position == Some(word.word_location) {
+                    position_groups.last_mut().unwrap().push(word);
+                } else {
+                    current_position = Some(word.word_location);
+                    position_groups.push(vec![word]);
                 }
-                weighted_words
-                    .entry(working_word.word_str)
-                    .or_default()
-                    .add_assign(working_word.weight as usize);
+            }
+
+            for group in position_groups {
+                let mut seen_terms: BTreeMap<usize, (&str, u8, f32)> = BTreeMap::new();
+
+                for word in &group {
+                    seen_terms.entry(word.query_term_index).or_insert((
+                        word.word_str,
+                        word.weight,
+                        word.length_bonus,
+                    ));
+                }
+
+                let min_weight: u8 = seen_terms.values().map(|(_, w, _)| *w).min().unwrap_or(1);
+                let is_compound = seen_terms.len() > 1;
+                let effective_weight = if is_compound {
+                    // Boost for matching multiple query terms at same position
+                    min_weight.saturating_mul(seen_terms.len() as u8)
+                } else {
+                    min_weight
+                };
+
+                for (_, (word_str, _, _)) in &seen_terms {
+                    weighted_words
+                        .entry(*word_str)
+                        .or_default()
+                        .add_assign(effective_weight as usize);
+                }
+
+                let first = group.first().unwrap();
+                let combined_length_bonus: f32 = seen_terms.values().map(|(_, _, lb)| *lb).sum();
 
                 unique_word_locations.push(calculate_individual_word_score(
-                    working_word,
+                    VerboseWordLocation {
+                        word_str: first.word_str,
+                        weight: effective_weight,
+                        word_location: first.word_location,
+                        length_bonus: combined_length_bonus,
+                        query_term_index: first.query_term_index,
+                    },
                     self.playground_mode,
                 ));
             }
@@ -512,12 +689,15 @@ impl SearchIndex {
                             .find(|w| w.word_str == word_str && w.word.page as usize == page_index)
                             .expect("word should be in the initial set");
 
+                        let pages_containing_original_query_term =
+                            combined_page_counts[matched_word.query_term_index];
+
                         let params = || BM25Params {
                             weighted_term_frequency: (weighted_term_frequency as f32) / 24.0,
                             document_length: page.word_count as f32,
                             average_page_length: self.average_page_length,
                             total_pages,
-                            pages_containing_term: matched_word.num_pages_matching,
+                            pages_containing_term: pages_containing_original_query_term,
                             length_bonus: matched_word.length_bonus,
                         };
 
@@ -541,7 +721,64 @@ impl SearchIndex {
                         score.score * matched_word.diacritic_bonus
                     });
 
-            let page_score = word_scores.sum();
+            let base_page_score: f32 = word_scores.sum();
+
+            let mut meta_boost: f32 = 0.0;
+            let mut verbose_meta_scores = if self.playground_mode {
+                Some(vec![])
+            } else {
+                None
+            };
+            for (field_id, word_idfs) in &meta_field_matches {
+                if let Some(field_name) = self.meta_fields.get(*field_id as usize) {
+                    let field_weight = self
+                        .ranking_weights
+                        .meta_weights
+                        .get(field_name)
+                        .copied()
+                        .unwrap_or(1.0);
+                    let matched_idf: f32 = word_idfs.values().sum();
+                    let coverage = matched_idf / query_total_idf;
+                    let coverage_boost = if query_total_idf > 0.0 {
+                        // Squared coverage to penalize partial meta matches.
+                        // That is, matching just the word "The" in a title is nearly meaningless.
+                        field_weight * matched_idf * coverage * coverage
+                    } else {
+                        0.0
+                    };
+                    meta_boost += coverage_boost;
+                    debug!({
+                        format!(
+                            "Meta boost: field '{}' matched {} words (IDF {:.2} of {:.2} total), weight {}, coverage boost {:.2}",
+                            field_name,
+                            word_idfs.len(),
+                            matched_idf,
+                            query_total_idf,
+                            field_weight,
+                            coverage_boost
+                        )
+                    });
+
+                    if let Some(ref mut scores) = verbose_meta_scores {
+                        scores.push(VerboseMetaScore {
+                            field_name: field_name.clone(),
+                            field_weight,
+                            matched_terms: word_idfs.keys().map(|s| s.to_string()).collect(),
+                            matched_idf,
+                            query_total_idf,
+                            coverage,
+                            coverage_boost,
+                        });
+                    }
+                }
+            }
+
+            let page_score = base_page_score + meta_boost;
+
+            let matched_meta_fields: Vec<String> = meta_field_matches
+                .keys()
+                .filter_map(|field_id| self.meta_fields.get(*field_id as usize).cloned())
+                .collect();
 
             let search_result = PageSearchResult {
                 page: page.hash.clone(),
@@ -550,6 +787,8 @@ impl SearchIndex {
                 page_length: page.word_count,
                 word_locations: unique_word_locations,
                 verbose_scores,
+                matched_meta_fields,
+                verbose_meta_scores,
             };
 
             debug!({
@@ -566,7 +805,7 @@ impl SearchIndex {
                 .unwrap_or(Ordering::Equal)
         });
 
-        (unfiltered_results, pages)
+        (unfiltered_results, pages, verbose_query_idfs)
     }
 
     fn find_word_extensions(&self, term: &str) -> Vec<(&String, &WordData)> {

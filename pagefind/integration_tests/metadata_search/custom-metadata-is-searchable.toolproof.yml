@@ -1,0 +1,43 @@
+name: Metadata Search > Custom metadata fields are searchable
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/with-author/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Blog Post</title>
+      </head>
+      <body>
+          <span data-pagefind-meta="author">Hercules</span>
+          <p data-pagefind-body>This is a blog post about programming.</p>
+      </body>
+      </html>
+  - step: I have a "public/no-author/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Another Post</title>
+      </head>
+      <body>
+          <span>Hercules</span>
+          <p data-pagefind-body>This is a blog post about programming.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Search for author name that only exists in metadata
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("Hercules");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /with-author/

@@ -1,0 +1,31 @@
+name: Metadata Search > Pages match when search term only exists in metadata
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/recipe/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Recipe Page</title>
+      </head>
+      <body>
+          <h1 data-pagefind-meta="headline">Delicious Chocolate Dessert</h1>
+          <p data-pagefind-body>Mix the ingredients and bake for 30 minutes.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # "chocolate" only appears in the headline metadata, not the body
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("chocolate");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /recipe/

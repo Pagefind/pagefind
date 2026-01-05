@@ -1,0 +1,41 @@
+name: Metadata Search > Exact phrases can be matched in title
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/phrase-in-title/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>The Quick Brown Fox</title>
+      </head>
+      <body>
+          <p>A page about animals and nature.</p>
+      </body>
+      </html>
+  - step: I have a "public/words-scattered/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Quick Guide to Brown Animals</title>
+      </head>
+      <body>
+          <p>The fox is a mammal.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Search for exact phrase - only title with contiguous words should match
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search(`"quick brown"`);
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /phrase-in-title/

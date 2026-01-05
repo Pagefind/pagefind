@@ -8,7 +8,7 @@ steps:
       <!DOCTYPE html>
       <html>
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>
@@ -19,7 +19,7 @@ steps:
       <!DOCTYPE html>
       <html>
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p>I am a mystery document</p>

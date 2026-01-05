@@ -1,0 +1,102 @@
+name: Metadata Search > Body content beats weak title matches
+# This is a hopefully-not-too-brittle test, trying to guard the premise that
+# common words in the title (say, "the") don't mess up the rankings by
+# lifting that page above genuinely good body results.
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <html>
+      <head></head>
+      <body>
+          <p data-result-baseline>Nothing</p>
+          <p data-result-default>Nothing</p>
+      </body>
+      </html>
+  # Page with "the" in title but weak body content for xylophone
+  - step: I have a "public/weak-title/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>The Complete Reference</title>
+      </head>
+      <body>
+          <p>a xylophone is a type of percussion instrument.</p>
+      </body>
+      </html>
+  # Page with generic title but body focused on xylophone
+  - step: I have a "public/strong-body/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Percussion Instruments</title>
+      </head>
+      <body>
+          <p>The xylophone is a beautiful percussion instrument. Playing xylophone
+          requires practice and dedication. Many xylophone musicians start young.
+          A quality xylophone produces clear, resonant tones. Professional xylophone
+          performances can be breathtaking. Consider buying a xylophone today.</p>
+      </body>
+      </html>
+  # Filler pages to make "the" extremely common for IDF
+  - step: I have a "public/filler1/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head><title>Filler</title></head>
+      <body><p>The quick brown fox.</p></body></html>
+  - step: I have a "public/filler2/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head><title>Filler</title></head>
+      <body><p>The lazy dog sleeps.</p></body></html>
+  - step: I have a "public/filler3/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head><title>Filler</title></head>
+      <body><p>The sun is bright.</p></body></html>
+  - step: I have a "public/filler4/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head><title>Filler</title></head>
+      <body><p>The rain falls down.</p></body></html>
+  - step: I have a "public/filler5/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head><title>Filler</title></head>
+      <body><p>The wind blows cold.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      // First search: no title weight
+
+      await pagefind.options({ ranking: { metaWeights: { title: 1.0 } } });
+      let baselineSearch = await pagefind.search("the xylophone");
+      let baselineUrls = await Promise.all(
+        baselineSearch.results.map(async r => (await r.data()).url)
+      );
+
+      // Second search: default title weight
+
+      await pagefind.options({ ranking: { metaWeights: { title: 5.0 } } });
+      let defaultSearch = await pagefind.search("the xylophone");
+      let defaultUrls = await Promise.all(
+        defaultSearch.results.map(async r => (await r.data()).url)
+      );
+
+      document.querySelector('[data-result-baseline]').innerText = baselineUrls.join(', ');
+      document.querySelector('[data-result-default]').innerText = defaultUrls.join(', ');
+  - step: In my browser, the console should be empty
+  # Without the title meta weight contributing, it should be a no brainer
+  # that we get the /strong-body/ result
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let baseline = await toolproof.querySelector("[data-result-baseline]");
+      toolproof.assert_eq(baseline.innerHTML, `/strong-body/, /weak-title/`);
+  # All going well, even with the title boosting, "the" in the title is not enough
+  # to rank /weak-title/ any different
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultResult = await toolproof.querySelector("[data-result-default]");
+      toolproof.assert_eq(defaultResult.innerHTML, `/strong-body/, /weak-title/`);

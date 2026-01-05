@@ -6,7 +6,7 @@ steps:
       <!DOCTYPE html>
       <html lang="en">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
 
           </head>
           <body>
@@ -18,9 +18,9 @@ steps:
   - step: stderr should contain "pre-1.0 compatibility mode"
   - step: The file "public/_pagefind/pagefind.js" should not be empty
   - step: I run "ls -lh public/_pagefind/wasm.unknown.pagefind"
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: I run "ls -lh public/_pagefind/wasm.en.pagefind"
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: The file "public/_pagefind/pagefind-entry.json" should contain "en"
   - step: I serve the directory "public"
   - step: In my browser, I load "/"

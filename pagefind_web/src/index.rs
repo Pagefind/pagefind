@@ -44,13 +44,17 @@ impl SearchIndex {
         let mut cumulative_page = 0;
 
         for _ in 0..pages_count {
-            consume_fixed_arr!(decoder);
+            let page_arr_len = match decoder.array()? {
+                Some(n) => n,
+                None => return Err(decode::Error::message("Page array length not specified")),
+            };
             let page_delta = consume_num!(decoder);
             cumulative_page += page_delta;
 
             let mut page = PageWord {
                 page: cumulative_page,
                 locs: vec![],
+                meta_locs: vec![],
             };
 
             let word_locations = consume_arr_len!(decoder);
@@ -76,6 +80,27 @@ impl SearchIndex {
                     // Delta-encoded position
                     last_position += loc as u32;
                     page.locs.push((weight, last_position));
+                }
+            }
+
+            // Decode meta_locs if present
+            if page_arr_len >= 3 {
+                let meta_locations = consume_arr_len!(decoder);
+                let mut current_field: u16 = 0;
+                let mut last_meta_position: u32 = 0;
+                for _ in 0..meta_locations {
+                    let loc = consume_inum!(decoder);
+                    // Negative numbers switch to a different meta id
+                    if loc.is_negative() {
+                        current_field = (-loc - 1) as u16;
+                        last_meta_position = 0;
+                        debug!({
+                            format!("Encountered meta field switch to field_id {current_field:#?}")
+                        });
+                    } else {
+                        last_meta_position += loc as u32;
+                        page.meta_locs.push((current_field, last_meta_position));
+                    }
                 }
             }
 

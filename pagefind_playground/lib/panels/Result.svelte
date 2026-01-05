@@ -225,6 +225,50 @@
             </div>
         </details>
 
+        {#if result.verbose_meta_scores?.length}
+            <details>
+                <summary>Metadata Scoring</summary>
+
+                <div class="inner">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Weight</th>
+                                <th>Matched Terms</th>
+                                <th>Matched IDF</th>
+                                <th>Query IDF</th>
+                                <th>Coverage</th>
+                                <th>Boost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {#each result.verbose_meta_scores as ms}
+                                <tr>
+                                    <td>{ms.field_name}</td>
+                                    <td>{ms.field_weight.toFixed(1)}</td>
+                                    <td>{ms.matched_terms.join(", ")}</td>
+                                    <td>{ms.matched_idf.toFixed(4)}</td>
+                                    <td>{ms.query_total_idf.toFixed(4)}</td>
+                                    <td>{(ms.coverage * 100).toFixed(1)}%</td>
+                                    <td class="hl"
+                                        >{ms.coverage_boost.toFixed(4)}</td
+                                    >
+                                </tr>
+                            {/each}
+                        </tbody>
+                    </table>
+                    <p>
+                        Total meta boost: <span class="hl"
+                            >{result.verbose_meta_scores
+                                .reduce((s, ms) => s + ms.coverage_boost, 0)
+                                .toFixed(4)}</span
+                        >
+                    </p>
+                </div>
+            </details>
+        {/if}
+
         <details>
             <summary
                 >Custom Metadata ({Object.keys(loadedData.meta)

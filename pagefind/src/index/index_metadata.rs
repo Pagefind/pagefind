@@ -15,6 +15,8 @@ pub struct MetaIndex {
     pub filters: Vec<MetaFilter>,
     #[n(4)]
     pub sorts: Vec<MetaSort>,
+    #[n(5)]
+    pub meta_fields: Vec<String>,
 }
 
 /// Communicates the pagefind/index/*.pf_index file we need to load

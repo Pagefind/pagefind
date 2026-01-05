@@ -7,7 +7,7 @@ steps:
       <!DOCTYPE html>
       <html lang="en">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
               <link rel="pre-1.0-signal" href="_pagefind" >
           </head>
           <body>
@@ -19,7 +19,7 @@ steps:
       <!DOCTYPE html>
       <html lang="pt-br">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p>I am a Portuguese document (trust me — quilométricas — see?)</p>

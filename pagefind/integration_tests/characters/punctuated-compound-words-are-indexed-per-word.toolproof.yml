@@ -4,27 +4,27 @@ steps:
   - step: I have a "public/hyphen/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>beet-root</p></body></html>
+      lang="en"><head></head><body><p>x beet-root x</p></body></html>
   - step: I have a "public/period/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>image.png</p></body></html>
+      lang="en"><head></head><body><p>x image.png x</p></body></html>
   - step: I have a "public/camel/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>WKWebVIEWComponent</p></body></html>
+      lang="en"><head></head><body><p>x WKWebVIEWComponent x</p></body></html>
   - step: I have a "public/underscore/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>Word_Boundaries</p></body></html>
+      lang="en"><head></head><body><p>x Word_Boundaries x</p></body></html>
   - step: I have a "public/slash/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>sandwich/salad</p></body></html>
+      lang="en"><head></head><body><p>x sandwich/salad x</p></body></html>
   - step: I have a "public/comma/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><p>Cloud,Cannon</p></body></html>
+      lang="en"><head></head><body><p>x Cloud,Cannon x</p></body></html>
   - macro: I run Pagefind
   - step: stdout should contain "Running Pagefind"
   - step: The file "public/pagefind/pagefind.js" should not be empty

@@ -1,0 +1,47 @@
+name: Metadata Search > Custom metaWeights can be configured
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/body-only/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Generic Page</title>
+      </head>
+      <body>
+          <p>This page is all about astronomy. Astronomy is fascinating. Learn astronomy here.</p>
+      </body>
+      </html>
+  - step: I have a "public/title-match/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Astronomy Guide</title>
+      </head>
+      <body>
+          <p>A brief page about stars.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # With title weight at 1, body-only should rank first (more of the body matches)
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.options({
+        ranking: {
+          metaWeights: { title: 1.0 }
+        }
+      });
+      let search = await pagefind.search("astronomy");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /body-only/
+      - /title-match/

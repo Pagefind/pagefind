@@ -104,6 +104,17 @@ impl SearchIndex {
             self.sorts.insert(sort_key, sorted_pages);
         }
 
+        debug!({ "Reading meta_fields array" });
+        if let Ok(meta_fields_count) = decoder.array() {
+            if let Some(count) = meta_fields_count {
+                debug!({ format!("Reading {:#?} meta fields", count) });
+                self.meta_fields = Vec::with_capacity(count as usize);
+                for _ in 0..count {
+                    self.meta_fields.push(consume_string!(decoder));
+                }
+            }
+        }
+
         debug!({ "Finished decoding metadata" });
 
         Ok(())

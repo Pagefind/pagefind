@@ -1,7 +1,8 @@
 use hashbrown::HashMap;
+use std::collections::BTreeSet;
 
 use crate::{
-    fossick::{FossickedData, FossickedWord},
+    fossick::{FossickedData, FossickedWord, MetaFossickedWord},
     index::index_metadata::MetaFilter,
     utils::full_hash,
     SearchOptions,
@@ -52,6 +53,7 @@ pub async fn build_indexes(
         index_chunks: Vec::new(),
         filters: Vec::new(),
         sorts: Vec::new(),
+        meta_fields: Vec::new(),
     };
 
     /*
@@ -124,6 +126,12 @@ pub async fn build_indexes(
         });
     }
 
+    let mut meta_fields_set: BTreeSet<String> = BTreeSet::new();
+    for page in pages.iter() {
+        meta_fields_set.extend(page.fragment.data.meta.keys().cloned());
+    }
+    meta.meta_fields = meta_fields_set.into_iter().collect();
+
     // Helper function to convert positions to a PackedPage
     fn positions_to_packed_page(
         mut positions: Vec<FossickedWord>,
@@ -163,10 +171,19 @@ pub async fn build_indexes(
         PackedPage {
             page_number,
             locs: weighted_positions,
+            meta_locs: vec![],
         }
     }
 
     for page in pages.into_iter() {
+        // Meta field IDs were assigned per-page,
+        // but need to be remapped to the global meta_fields order.
+        let page_field_order: Vec<&String> = page.fragment.data.meta.keys().collect();
+        let field_id_map: Vec<u16> = page_field_order
+            .iter()
+            .map(|name| meta.meta_fields.iter().position(|f| f == *name).unwrap() as u16)
+            .collect();
+
         for (word, positions) in page.word_data {
             // Group positions by original_word for this page
             let mut normalized_positions: Vec<FossickedWord> = Vec::new();
@@ -211,6 +228,82 @@ pub async fn build_indexes(
                     packed_word.additional_variants.push(PackedVariant {
                         form: variant_form,
                         pages: vec![variant_page],
+                    });
+                }
+            }
+        }
+
+        for (word, meta_positions) in page.meta_word_data {
+            let mut normalized_meta_positions: Vec<MetaFossickedWord> = Vec::new();
+            let mut variant_meta_positions: HashMap<String, Vec<MetaFossickedWord>> =
+                HashMap::new();
+
+            for mut meta_fossicked in meta_positions {
+                meta_fossicked.field_id = field_id_map[meta_fossicked.field_id as usize];
+                if let Some(original) = meta_fossicked.original_word.clone() {
+                    variant_meta_positions
+                        .entry(original)
+                        .or_default()
+                        .push(meta_fossicked);
+                } else {
+                    normalized_meta_positions.push(meta_fossicked);
+                }
+            }
+
+            let packed_word = word_map.entry(word.clone()).or_insert_with(|| PackedWord {
+                word: word.clone(),
+                pages: Vec::new(),
+                additional_variants: Vec::new(),
+            });
+
+            if !normalized_meta_positions.is_empty() {
+                let meta_locs = meta_positions_to_packed(normalized_meta_positions);
+
+                if let Some(existing_page) = packed_word
+                    .pages
+                    .iter_mut()
+                    .find(|p| p.page_number == page.fragment.page_number)
+                {
+                    existing_page.meta_locs = meta_locs;
+                } else {
+                    packed_word.pages.push(PackedPage {
+                        page_number: page.fragment.page_number,
+                        locs: vec![],
+                        meta_locs,
+                    });
+                }
+            }
+
+            // Handle diacritic variants in meta
+            for (variant_form, variant_pos) in variant_meta_positions {
+                let meta_locs = meta_positions_to_packed(variant_pos);
+
+                if let Some(existing_variant) = packed_word
+                    .additional_variants
+                    .iter_mut()
+                    .find(|v| v.form == variant_form)
+                {
+                    if let Some(existing_page) = existing_variant
+                        .pages
+                        .iter_mut()
+                        .find(|p| p.page_number == page.fragment.page_number)
+                    {
+                        existing_page.meta_locs = meta_locs;
+                    } else {
+                        existing_variant.pages.push(PackedPage {
+                            page_number: page.fragment.page_number,
+                            locs: vec![],
+                            meta_locs,
+                        });
+                    }
+                } else {
+                    packed_word.additional_variants.push(PackedVariant {
+                        form: variant_form,
+                        pages: vec![PackedPage {
+                            page_number: page.fragment.page_number,
+                            locs: vec![],
+                            meta_locs,
+                        }],
                     });
                 }
             }
@@ -410,7 +503,11 @@ fn chunk_index(word_map: HashMap<String, PackedWord>, chunk_size: usize) -> Vec<
     let mut index_chunk = Vec::new();
     let mut index_chunk_size = 0;
     for word in words.into_iter() {
-        index_chunk_size += word.pages.iter().map(|p| p.locs.len() + 1).sum::<usize>();
+        index_chunk_size += word
+            .pages
+            .iter()
+            .map(|p| p.locs.len() + p.meta_locs.len() + 1)
+            .sum::<usize>();
         index_chunk.push(word);
         if index_chunk_size >= chunk_size {
             index_chunks.push(index_chunk.clone());
@@ -472,6 +569,36 @@ fn parse_float_sort(value: &str) -> Option<f32> {
     lexical_core::parse::<f32>(value.as_bytes()).ok()
 }
 
+/// Encode meta positions with field ID markers.
+/// Negative numbers switch field IDs, positive numbers are delta-encoded positions.
+/// e.g., [-1, 0, 5, -4, 2] means: field 0 positions [0, 5], field 3 positions [2]
+fn meta_positions_to_packed(mut positions: Vec<MetaFossickedWord>) -> Vec<i32> {
+    if positions.is_empty() {
+        return vec![];
+    }
+
+    positions.sort_by_key(|p| (p.field_id, p.position));
+
+    let mut current_field: Option<u16> = None;
+    let mut last_position: u32 = 0;
+    let mut result = Vec::with_capacity(positions.len() + 8);
+
+    for MetaFossickedWord {
+        field_id, position, ..
+    } in positions
+    {
+        if Some(field_id) != current_field {
+            result.push(-((field_id as i32) + 1));
+            current_field = Some(field_id);
+            last_position = 0;
+        }
+        result.push((position - last_position) as i32);
+        last_position = position;
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,7 +608,11 @@ mod tests {
     }
     impl Mock for HashMap<String, PackedWord> {
         fn word(&mut self, word: &str, page_number: usize, locs: Vec<i32>) {
-            let page = PackedPage { page_number, locs };
+            let page = PackedPage {
+                page_number,
+                locs,
+                meta_locs: vec![],
+            };
             match self.get_mut(word) {
                 Some(w) => w.pages.push(page),
                 None => {

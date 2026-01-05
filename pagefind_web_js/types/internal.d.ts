@@ -18,6 +18,7 @@ export type PagefindSearchResponse = {
   unfiltered_total: number;
   results: PagefindSearchResponseResult[];
   search_keywords?: string[];
+  query_term_idfs?: { t: string; i: number }[];
 };
 
 export type PagefindSearchResponseResult = {
@@ -31,6 +32,8 @@ export type PagefindSearchResponseResult = {
   params?: PagefindSearchResponseResultParams;
   /** verbose playground info */
   scores?: PagefindSearchResponseResultScore[];
+  /** Matched metadata fields */
+  mf: string[];
 };
 
 export type PagefindSearchResponseResultParams = {

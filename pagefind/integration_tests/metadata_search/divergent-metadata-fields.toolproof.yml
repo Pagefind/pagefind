@@ -1,0 +1,48 @@
+name: Metadata Search > Divergent metadata fields have consistent field IDs
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  # Page with only title metadata
+  - step: I have a "public/title-only/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Quantum Physics</title>
+      </head>
+      <body>
+          <p>A page about science.</p>
+      </body>
+      </html>
+  # Page with author and title metadata
+  - step: I have a "public/author-and-title/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Classical Mechanics</title>
+      </head>
+      <body>
+          <span data-pagefind-meta="author">Einstein</span>
+          <p>Another page about science.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Ensuring that the matched meta field is mapped correctly
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("quantum");
+      let result = search.results[0];
+      let data = result ? await result.data() : null;
+      let fields = result?.matchedMetaFields || [];
+      return { url: data?.url, fields };
+    expected:
+      url: /title-only/
+      fields:
+        - title

@@ -6,7 +6,7 @@ steps:
       <!DOCTYPE html>
       <html lang="en">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>

@@ -88,6 +88,15 @@ declare global {
       Must be >= 0
     */
     diacriticSimilarity?: Number;
+    /**
+      Controls boost weights for metadata field matches.
+      Keys are meta field names (e.g., "title", "description").
+      Increasing values boost scores when a search term matches in that meta field.
+      Default: {"title": 5.0} meaning title matches get 5x boost.
+      Provided weights are merged with defaults.
+      Example: { description: 2.0 } — adds description boost while keeping the default title boost.
+    */
+    metaWeights?: Record<string, number>;
   };
 
   /** Options that can be passed to pagefind.search() */
@@ -123,6 +132,16 @@ declare global {
     };
     /** Verbose information on stemming returned in the Pagefind Playground */
     search_keywords?: string[];
+    /** Verbose query term IDF breakdown returned in the Pagefind Playground */
+    query_term_idfs?: PagefindQueryTermIdf[];
+  };
+
+  /** Query term IDF info for playground mode */
+  type PagefindQueryTermIdf = {
+    /** The search term (stemmed form) */
+    term: string;
+    /** IDF value for this term */
+    idf: number;
   };
 
   /** The main results object returned from a call to pagefind.search() */
@@ -143,6 +162,8 @@ declare global {
     }[];
     /** Verbose information on stemming returned in the Pagefind Playground */
     search_keywords?: string[];
+    /** Verbose query term IDF breakdown returned in the Pagefind Playground */
+    query_term_idfs?: PagefindQueryTermIdf[];
     /** Verbose information on what environment the Pagefind search was executed in [worker, mainthread] */
     search_environment?: string;
   };
@@ -159,6 +180,14 @@ declare global {
     params?: PagefindTermParams;
     /** Verbose information returned in the Pagefind playground mode */
     scores?: PagefindTermScore[];
+    /**
+     * Which metadata fields (e.g., "title", "author") matched the search query.
+     * Present when search terms were found in metadata fields, allowing consumers to
+     * indicate matches came from metadata rather than body content.
+     */
+    matchedMetaFields?: string[];
+    /** Verbose metadata scoring returned in the Pagefind Playground */
+    verbose_meta_scores?: PagefindMetaScore[];
     /**
      * Calling data() loads the final data fragment needed to display this result.
      *
@@ -201,6 +230,24 @@ declare global {
     pages_containing_term: number;
     /** Length bonus */
     length_bonus: number;
+  };
+
+  /** Verbose metadata scoring info returned in the Pagefind Playground */
+  type PagefindMetaScore = {
+    /** Metadata field name */
+    field_name: string;
+    /** Configured weight for this field */
+    field_weight: number;
+    /** Which search terms matched in this field */
+    matched_terms: string[];
+    /** Sum of IDF for matched terms */
+    matched_idf: number;
+    /** Total IDF across all query terms */
+    query_total_idf: number;
+    /** Coverage ratio (matched_idf / query_total_idf) */
+    coverage: number;
+    /** Final boost contribution from this field */
+    coverage_boost: number;
   };
 
   /** The useful data Pagefind provides for a search result */

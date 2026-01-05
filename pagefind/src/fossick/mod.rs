@@ -16,41 +16,19 @@ use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::{AsyncReadExt, BufReader};
 use tokio::time::{sleep, Duration};
-use unicode_normalization::UnicodeNormalization;
 
+use crate::fossick::splitting::get_indexable_words;
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
 use crate::SearchOptions;
 use parser::DomParser;
 
 use self::parser::DomParserResult;
-use self::splitting::get_discrete_words;
 
 lazy_static! {
     static ref NEWLINES: Regex = Regex::new("(\n|\r\n)+").unwrap();
     static ref TRIM_NEWLINES: Regex = Regex::new("^[\n\r\\s]+|[\n\r\\s]+$").unwrap();
     static ref EXTRANEOUS_SPACES: Regex = Regex::new("\\s{2,}").unwrap();
     static ref PRIVATE_PAGEFIND: Regex = Regex::new("___PAGEFIND_[\\S]+\\s?").unwrap();
-}
-
-/// Normalize diacritics, if required, before indexing
-/// (context: we index "café" as "cafe" for retrieval purposes,
-/// but we do still store each variant in the index,
-/// so matching diacritics are preferred when ranking search results)
-fn normalize_diacritics(word: &str) -> Option<String> {
-    if word.is_ascii() {
-        return None;
-    }
-
-    let normalized: String = word
-        .nfd()
-        .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
-        .collect();
-
-    if normalized != word {
-        Some(normalized)
-    } else {
-        None
-    }
 }
 
 pub mod parser;
@@ -64,11 +42,20 @@ pub struct FossickedWord {
     pub original_word: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct MetaFossickedWord {
+    pub field_id: u16,
+    pub position: u32,
+    /// The original word before diacritic normalization, if it differs from the normalized form.
+    pub original_word: Option<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct FossickedData {
     pub url: String,
     pub fragment: PageFragment,
     pub word_data: HashMap<String, Vec<FossickedWord>>,
+    pub meta_word_data: HashMap<String, Vec<MetaFossickedWord>>,
     pub sort: BTreeMap<String, String>,
     pub has_custom_body: bool,
     pub force_inclusion: bool,
@@ -237,33 +224,6 @@ impl Fossicker {
 
         let mut content = String::with_capacity(data.digest.len());
 
-        let mut store_word = |original_word: &str, word_index: usize, word_weight: u8| {
-            let diacritic_normalized = normalize_diacritics(original_word);
-
-            let word = if let Some(stemmer) = &stemmer {
-                stemmer
-                    .stem(diacritic_normalized.as_deref().unwrap_or(original_word))
-                    .into_owned()
-            } else {
-                diacritic_normalized
-                    .clone()
-                    .unwrap_or_else(|| original_word.to_string())
-            };
-
-            let entry = FossickedWord {
-                position: word_index.try_into().unwrap(),
-                weight: word_weight,
-                original_word: diacritic_normalized
-                    .is_some()
-                    .then(|| original_word.to_string()),
-            };
-            if let Some(repeat) = map.get_mut(&word) {
-                repeat.push(entry);
-            } else {
-                map.insert(word, vec![entry]);
-            }
-        };
-
         // TODO: Consider reading newlines and jump the word_index up some amount,
         // so that separate bodies of text don't return exact string
         // matches across the boundaries. Or otherwise use some marker byte for the boundary.
@@ -384,66 +344,38 @@ impl Fossicker {
             if should_segment {
                 content.push('\u{200B}');
             }
-            let mut normalized_word = String::with_capacity(base_word.len());
-            let mut possibly_compound = false;
 
-            for mut c in base_word.chars() {
-                let is_alpha = c.is_alphanumeric();
-                if !is_alpha {
-                    possibly_compound = true;
-                }
-                if is_alpha || options.include_characters.contains(&c) {
-                    c.make_ascii_lowercase();
-                    if c.is_uppercase() {
-                        // Non-ascii uppercase can lower to multiple chars
-                        normalized_word.extend(c.to_lowercase());
-                    } else {
-                        normalized_word.push(c);
-                    }
-                }
-            }
+            let word_weight = *weight_stack.last().unwrap_or(&1);
 
-            let word_weight = weight_stack.last().unwrap_or(&1);
-            if !normalized_word.is_empty() {
-                store_word(&normalized_word, total_word_index, *word_weight);
-            }
+            let indexable_words =
+                get_indexable_words(&base_word, stemmer.as_ref(), &options.include_characters);
 
-            // For words that may be CompoundWords, also index them as their constituent parts
-            if possibly_compound {
-                let (word_parts, extras) = get_discrete_words(word);
+            let compound_count = indexable_words
+                .iter()
+                .filter(|w| w.is_compound_part)
+                .count();
+            let partial_weight = if compound_count > 0 && word_weight > 0 {
+                (word_weight / compound_count.try_into().unwrap_or(std::u8::MAX)).max(1)
+            } else {
+                0
+            };
 
-                // If this word normalized to nothing, we don't want to insert it here.
-                // (Though we do want to process the extras below, for things like emoji).
-                if !normalized_word.is_empty() {
-                    // Only proceed if the word was broken into multiple parts
-                    if word_parts.contains(|c: char| c.is_whitespace())
-                        || (!normalized_word.starts_with(&word_parts))
-                    {
-                        let part_words: Vec<_> = word_parts.split_whitespace().collect();
+            for indexable in indexable_words {
+                let weight = if indexable.is_compound_part {
+                    partial_weight
+                } else {
+                    word_weight
+                };
 
-                        if !part_words.is_empty() {
-                            // Index constituents of a compound word as a proportion of the
-                            // weight of the full word.
-                            let per_weight = if *word_weight == 0 {
-                                0
-                            } else {
-                                (word_weight / part_words.len().try_into().unwrap_or(std::u8::MAX))
-                                    .max(1)
-                            };
-
-                            // Only index two+ character words
-                            for part_word in part_words.into_iter().filter(|w| w.len() > 1) {
-                                store_word(part_word, total_word_index, per_weight);
-                            }
-                        }
-                    }
-                }
-
-                // Additionally store any special extra characters we are given
-                if let Some(extras) = extras {
-                    for extra in extras {
-                        store_word(&extra, total_word_index, *word_weight);
-                    }
+                let entry = FossickedWord {
+                    position: total_word_index.try_into().unwrap(),
+                    weight,
+                    original_word: indexable.original,
+                };
+                if let Some(repeat) = map.get_mut(&indexable.stemmed) {
+                    repeat.push(entry);
+                } else {
+                    map.insert(indexable.stemmed, vec![entry]);
                 }
             }
 
@@ -496,6 +428,37 @@ impl Fossicker {
         }
     }
 
+    /// Parse words from metadata fields and return them with field IDs and positions.
+    fn parse_meta_words(
+        meta: &BTreeMap<String, String>,
+        field_order: &[String],
+        language: &str,
+        options: &SearchOptions,
+    ) -> HashMap<String, Vec<MetaFossickedWord>> {
+        let mut map: HashMap<String, Vec<MetaFossickedWord>> = HashMap::new();
+        let stemmer = get_stemmer(language);
+
+        for (field_id, field_name) in field_order.iter().enumerate() {
+            if let Some(field_value) = meta.get(field_name) {
+                for (word_idx, word) in field_value.split_whitespace().enumerate() {
+                    let indexable_words =
+                        get_indexable_words(word, stemmer.as_ref(), &options.include_characters);
+
+                    for indexable in indexable_words {
+                        let entry = MetaFossickedWord {
+                            field_id: field_id as u16,
+                            position: word_idx as u32,
+                            original_word: indexable.original,
+                        };
+                        map.entry(indexable.stemmed).or_default().push(entry);
+                    }
+                }
+            }
+        }
+
+        map
+    }
+
     async fn fossick_html(&mut self, options: &SearchOptions) {
         if self.synthetic_content.is_some() {
             while self.read_synthetic(options).await.is_err() {
@@ -517,6 +480,11 @@ impl Fossicker {
         self.tidy_meta_and_filters();
 
         let data = self.data.unwrap();
+
+        // Get sorted list of meta field names for consistent field IDs
+        let meta_field_order: Vec<String> = data.meta.keys().cloned().collect();
+        let meta_word_data =
+            Self::parse_meta_words(&data.meta, &meta_field_order, &data.language, options);
         let url = if let Some(url) = &self.page_url {
             url.clone()
         } else if let Some(path) = &self.file_path {
@@ -559,6 +527,7 @@ impl Fossicker {
                 },
             },
             word_data,
+            meta_word_data,
             sort: data.sort,
         })
     }

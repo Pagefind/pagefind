@@ -1,6 +1,6 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use pagefind_microjson::JSONValue;
 use search::{stems_from_term, BM25Params, ScoringMetrics};
@@ -19,6 +19,7 @@ mod util;
 pub struct PageWord {
     page: u32,
     locs: Vec<(u8, u32)>,
+    meta_locs: Vec<(u16, u32)>,
 }
 
 pub struct WordVariant {
@@ -53,6 +54,7 @@ pub struct SearchIndex {
     words: BTreeMap<String, WordData>,
     filters: BTreeMap<String, BTreeMap<String, Vec<u32>>>,
     sorts: BTreeMap<String, Vec<u32>>,
+    meta_fields: Vec<String>,
     ranking_weights: RankingWeights,
 }
 
@@ -88,16 +90,24 @@ pub struct RankingWeights {
     /// At 0.0, no boost is applied and all diacritic variants are treated equally.
     /// Must be >= 0
     pub diacritic_similarity: f32,
+    /// Controls boost weights for metadata field matches.
+    /// Keys are meta field names (e.g., "title", "description").
+    /// Default: {"title": 5.0} meaning title matches get 5x boost.
+    /// Fields not in this map default to 1.0 (no boost).
+    pub meta_weights: HashMap<String, f32>,
 }
 
 impl Default for RankingWeights {
     fn default() -> Self {
+        let mut meta_weights = HashMap::new();
+        meta_weights.insert("title".to_string(), 5.0);
         Self {
             term_similarity: 1.0,
             page_length: 0.75,
             term_saturation: 1.4,
             term_frequency: 1.0,
             diacritic_similarity: 0.8,
+            meta_weights,
         }
     }
 }
@@ -129,6 +139,7 @@ pub fn init_pagefind(metadata_bytes: &[u8]) -> *mut SearchIndex {
         words: BTreeMap::new(),
         filters: BTreeMap::new(),
         sorts: BTreeMap::new(),
+        meta_fields: Vec::new(),
         ranking_weights: RankingWeights::default(),
     };
 
@@ -197,6 +208,19 @@ pub fn set_ranking_weights(ptr: *mut SearchIndex, weights: &str) -> *mut SearchI
         .and_then(|v| v.read_float())
     {
         search_index.ranking_weights.diacritic_similarity = diacritic_similarity.max(0.0);
+    }
+
+    if let Ok(meta_weights_obj) = weights.get_key_value("meta_weights") {
+        if let Ok(obj_iter) = meta_weights_obj.iter_object() {
+            for (key, value) in obj_iter.filter_map(|o| o.ok()) {
+                if let Ok(weight) = value.read_float() {
+                    search_index
+                        .ranking_weights
+                        .meta_weights
+                        .insert(key.to_string(), weight.max(0.0));
+                }
+            }
+        }
     }
 
     Box::into_raw(search_index)
@@ -392,8 +416,10 @@ pub fn search(
         }
 
         let filter_set = search_index.filter(filter);
-        let (unfiltered_results, mut results) = if exact {
-            search_index.exact_term(query, original_query, filter_set, exact_diacritics)
+        let (unfiltered_results, mut results, verbose_query_idfs) = if exact {
+            let (u, r) =
+                search_index.exact_term(query, original_query, filter_set, exact_diacritics);
+            (u, r, None)
         } else {
             search_index.search_term(query, original_query, filter_set, exact_diacritics)
         };
@@ -515,15 +541,52 @@ pub fn search(
                         }
                     }
                 }
+                // Include matched metadata fields if any
+                if !result.matched_meta_fields.is_empty() {
+                    let mut mf_arr = page_obj.array("mf");
+                    for field_name in result.matched_meta_fields {
+                        mf_arr.string(&field_name);
+                    }
+                }
+                // for playground mode
+                if let Some(verbose_meta_scores) = result.verbose_meta_scores {
+                    let mut vms_arr = page_obj.array("vms");
+                    for score in verbose_meta_scores {
+                        let mut score_obj = vms_arr.object();
+                        score_obj
+                            .string("fn", &score.field_name)
+                            .number("fw", score.field_weight as f64)
+                            .number("mi", score.matched_idf as f64)
+                            .number("ti", score.query_total_idf as f64)
+                            .number("cv", score.coverage as f64)
+                            .number("cb", score.coverage_boost as f64);
+                        let mut mt_arr = score_obj.array("mt");
+                        for term in score.matched_terms {
+                            mt_arr.string(&term);
+                        }
+                    }
+                }
             }
         }
 
         output_obj.number("unfiltered_total", unfiltered_total as f64);
 
         if search_index.playground_mode {
-            let mut arr = output_obj.array("search_keywords");
-            for term in stems_from_term(query) {
-                arr.string(&term);
+            {
+                let mut arr = output_obj.array("search_keywords");
+                for term in stems_from_term(query) {
+                    arr.string(&term);
+                }
+            }
+
+            if let Some(query_idfs) = verbose_query_idfs {
+                let mut qi_arr = output_obj.array("query_term_idfs");
+                for query_idf in query_idfs {
+                    let mut qi_obj = qi_arr.object();
+                    qi_obj
+                        .string("t", &query_idf.term)
+                        .number("i", query_idf.idf as f64);
+                }
             }
         }
     }

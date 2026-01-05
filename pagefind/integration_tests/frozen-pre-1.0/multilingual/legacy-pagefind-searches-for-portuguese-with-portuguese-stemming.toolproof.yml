@@ -8,7 +8,7 @@ steps:
       <!DOCTYPE html>
       <html lang="pt-br">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>
@@ -19,9 +19,9 @@ steps:
   - step: stderr should contain "pre-1.0 compatibility mode"
   - step: The file "public/_pagefind/pagefind.js" should not be empty
   - step: I run "ls -lh public/_pagefind/wasm.unknown.pagefind"
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: I run "ls -lh public/_pagefind/wasm.pt-br.pagefind"
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: The file "public/_pagefind/pagefind-entry.json" should contain "pt-br"
   - step: I serve the directory "public"
   - step: In my browser, I load "/"
