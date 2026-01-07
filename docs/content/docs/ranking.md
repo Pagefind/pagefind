@@ -145,3 +145,54 @@ When searching with diacritics normalized (the default behavior), this parameter
 - The minimum value is `0.0`, which treats all diacritic variants equally.
 
 This parameter has no effect when [`exactDiacritics`](/docs/search-config/#exact-diacritics) is set to `true`, as non-matching diacritic variants will not appear in results at all.
+
+## Configuring Metadata Weights
+
+{{< diffcode >}}
+```javascript
+await pagefind.options({
++    ranking: {
++        metaWeights: {
++            title: 5.0 // default value
++        }
++    }
+});
+```
+{{< /diffcode >}}
+
+`metaWeights` controls which metadata field matches impact ranking. When a search term matches in a metadata field, the page's score is boosted by the weight configured for that field.
+
+By default, Pagefind applies a 5x boost when search terms are found in the page title. This means a page with `astronomy` in its title will rank higher than a page with `astronomy` only in its body content.
+
+- Each key in `metaWeights` corresponds to a metadata field name (e.g. `title` or any custom `data-pagefind-meta` field).
+- Fields not specified default to `1.0` (no boost), except `title` which defaults to `5.0`.
+- Setting a field's weight to `0.0` will prevent matches in that field from affecting the ranking.
+
+For example, to boost author matches while keeping the default title boost:
+
+{{< diffcode >}}
+```javascript
+await pagefind.options({
++    ranking: {
++        metaWeights: {
++            author: 3.0,
++            description: 2.0
++        }
++    }
+});
+```
+{{< /diffcode >}}
+
+To remove the default title boost, but still consider it when ranking:
+
+{{< diffcode >}}
+```javascript
+await pagefind.options({
++    ranking: {
++        metaWeights: {
++            title: 1.0
++        }
++    }
+});
+```
+{{< /diffcode >}}

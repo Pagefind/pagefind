@@ -189,6 +189,7 @@ export class PagefindInstance {
       term_saturation: ranking.termSaturation ?? null,
       term_frequency: ranking.termFrequency ?? null,
       diacritic_similarity: ranking.diacriticSimilarity ?? null,
+      meta_weights: ranking.metaWeights ?? null,
     };
     let ptr = await this.getPtr();
     this.raw_ptr = this.backend.set_ranking_weights(
@@ -656,6 +657,7 @@ export class PagefindInstance {
       results,
       unfiltered_total,
       search_keywords,
+      query_term_idfs,
     }: internal.PagefindSearchResponse = JSON.parse(result);
 
     let resultsInterface = results.map((result) => {
@@ -711,6 +713,22 @@ export class PagefindInstance {
         });
       }
 
+      if (result.mf && result.mf.length > 0) {
+        res.matchedMetaFields = result.mf;
+      }
+
+      if (result.vms && result.vms.length > 0) {
+        res.verbose_meta_scores = result.vms.map((s: any) => ({
+          field_name: s.fn,
+          field_weight: s.fw,
+          matched_terms: s.mt,
+          matched_idf: s.mi,
+          query_total_idf: s.ti,
+          coverage: s.cv,
+          coverage_boost: s.cb,
+        }));
+      }
+
       return res;
     });
 
@@ -734,6 +752,13 @@ export class PagefindInstance {
 
     if (search_keywords) {
       response.search_keywords = search_keywords;
+    }
+
+    if (query_term_idfs) {
+      response.query_term_idfs = query_term_idfs.map((q: any) => ({
+        term: q.t,
+        idf: q.i,
+      }));
     }
 
     return response;
@@ -895,6 +920,10 @@ export class Pagefind {
 
     if (search[0].search_keywords) {
       response.search_keywords = search[0].search_keywords;
+    }
+
+    if (search[0].query_term_idfs) {
+      response.query_term_idfs = search[0].query_term_idfs;
     }
 
     return response;

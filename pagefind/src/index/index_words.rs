@@ -36,4 +36,6 @@ pub struct PackedPage {
     pub page_number: usize, // Won't exceed u32 but saves us some into()s
     #[n(1)]
     pub locs: Vec<i32>,
+    #[n(2)]
+    pub meta_locs: Vec<i32>,
 }

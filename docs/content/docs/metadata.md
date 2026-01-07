@@ -5,7 +5,7 @@ nav_section: Metadata
 weight: 6
 ---
 
-Pagefind supports returning custom metadata alongside search results with the `data-pagefind-meta` attribute.
+Pagefind supports returning custom metadata alongside search results with the `data-pagefind-meta` attribute. Metadata is returned alongside the data for each search result, and will also be searched alongside body text.
 
 ## Automatic metadata
 
@@ -70,7 +70,7 @@ Metadata captures may be comma separated and all will apply. The exception is sp
 Usage:
 
 ```html
-<a href="/" 
+<a href="/"
    title="Homepage"
    data-pagefind-meta="link_text, link_title[title], other:Freeform text, captured to the end">
 
@@ -99,6 +99,14 @@ For example, to fall back to a social image if no image is found on the page:
     <meta data-pagefind-default-meta="image[content]" content="/social.png" property="og:image">
 </head>
 ```
+
+## Searching metadata
+
+Metadata fields are searchable by default. This means words in the page title and any custom metadata fields can match search queries.
+
+When search terms are found in metadata fields, the page ranking can be boosted. By default, title matches receive a 5x boost, meaning pages with the search term in their title will rank higher than pages with the term only in their body.
+
+This boost is configurable via the `metaWeights` ranking parameter. See [Configuring Metadata Weights](/docs/ranking/#configuring-metadata-weights) for details on customizing which fields receive boosts and by how much.
 
 ## Notes
 

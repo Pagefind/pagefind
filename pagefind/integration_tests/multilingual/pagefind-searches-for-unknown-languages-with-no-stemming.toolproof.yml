@@ -6,7 +6,7 @@ steps:
       <!DOCTYPE html>
       <html lang="my_cool_language">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>
@@ -17,7 +17,7 @@ steps:
       <!DOCTYPE html>
       <html lang="my_cool_language">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p>I am a documentation</p>
@@ -27,11 +27,11 @@ steps:
   - step: stdout should contain "Running Pagefind"
   - step: The file "public/pagefind/pagefind.js" should not be empty
   - step: I run "ls -lh public/pagefind/wasm.unknown.pagefind"
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: >-
       I run "ls -lh public/pagefind/wasm.my_cool_language.pagefind" and expect
       it to fail
-    notes: 'TODO: Build a file existence check into toolproof'
+    notes: "TODO: Build a file existence check into toolproof"
   - step: >-
       The file "public/pagefind/pagefind-entry.json" should contain
       "my_cool_language"

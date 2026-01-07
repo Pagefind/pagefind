@@ -6,7 +6,7 @@ steps:
       <!DOCTYPE html>
       <html lang="pt-pt">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p>I am a different Portuguese document (trust me — quilométricas — see?)</p>
@@ -17,7 +17,7 @@ steps:
       <!DOCTYPE html>
       <html lang="pt-br">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>

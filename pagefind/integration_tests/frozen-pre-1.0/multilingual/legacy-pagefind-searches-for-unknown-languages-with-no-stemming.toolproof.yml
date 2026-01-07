@@ -6,7 +6,7 @@ steps:
       <!DOCTYPE html>
       <html lang="my_cool_language">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p data-result>Nothing</p>
@@ -17,7 +17,7 @@ steps:
       <!DOCTYPE html>
       <html lang="my_cool_language">
           <head>
-              <title>Document</title>
+              <title>Xylophone</title>
           </head>
           <body>
               <p>I am a documentation</p>

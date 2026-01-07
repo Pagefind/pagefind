@@ -1,0 +1,43 @@
+name: Metadata Search > Title matches boost page ranking
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/body-only/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Generic Page</title>
+      </head>
+      <body>
+          <p>This page contains astronomy content in the body.</p>
+      </body>
+      </html>
+  - step: I have a "public/title-match/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Astronomy Guide</title>
+      </head>
+      <body>
+          <p>This page contains astronomy content in the body. And more astronomy content.</p>
+          <p>Truly, this page has an overwhelming amount of astronomy content.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Title match should rank first due to default 5x boost
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("astronomy");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /title-match/
+      - /body-only/

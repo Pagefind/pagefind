@@ -26,6 +26,7 @@
     let pinnedResults: PinnedPagefindSearchResult[] = $state([]);
     let currentTerm: string = $state("");
     let searchKeywords: string[] = $state([]);
+    let queryTermIdfs: PagefindQueryTermIdf[] = $state([]);
     let debounceSearches: number = $state(50);
 
     let rankingSettings: Record<string, number> = $state(
@@ -61,6 +62,7 @@
             if (searchResp) {
                 results = searchResp.results;
                 searchKeywords = searchResp.search_keywords ?? [];
+                queryTermIdfs = searchResp.query_term_idfs ?? [];
                 updateResultPins(searchResp.results);
             }
         }
@@ -138,7 +140,7 @@
 <details open class="panel" style="grid-area: search;">
     <summary>Search</summary>
 
-    <Search {runSearch} {searchKeywords} />
+    <Search {runSearch} {searchKeywords} {queryTermIdfs} />
 </details>
 
 <details open class="panel" style="grid-area: ranking-settings;">
