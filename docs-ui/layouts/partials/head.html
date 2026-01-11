@@ -1,0 +1,18 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+
+<meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Summary }}{{ end }}">
+
+<link rel="icon" type="image/png" sizes="32x32" href="{{ "/meta/favicon-32x32.png" | relURL }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ "/meta/favicon-16x16.png" | relURL }}">
+<link rel="apple-touch-icon" href="{{ "/meta/apple-touch-icon.png" | relURL }}">
+
+{{ with resources.Get "css/main.css" }}
+<link rel="stylesheet" href="{{ .RelPermalink }}">
+{{ end }}
+
+{{ template "_internal/opengraph.html" . }}
+
+<link href="{{ "/pagefind/pagefind-component-ui.css" | relURL }}" rel="stylesheet">
+<script src="{{ "/pagefind/pagefind-component-ui.js" | relURL }}" type="module"></script>

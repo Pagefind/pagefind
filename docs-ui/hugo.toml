@@ -1,0 +1,11 @@
+baseURL = 'https://ui.pagefind.app/'
+languageCode = 'en-us'
+title = 'Pagefind Component UI'
+summaryLength = 30
+disableKinds = ["taxonomy"]
+
+[markup]
+highlight.noClasses = false
+
+[markup.goldmark.renderer]
+unsafe = true

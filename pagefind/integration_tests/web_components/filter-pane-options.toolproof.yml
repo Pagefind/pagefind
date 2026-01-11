@@ -1,0 +1,95 @@
+name: Web Components Tests > Filter pane options for expansion and sorting
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <div style="display: flex; gap: 24px;">
+        <pagefind-filter-pane id="default" style="width: 200px;"></pagefind-filter-pane>
+        <pagefind-filter-pane id="expanded" expanded style="width: 200px;"></pagefind-filter-pane>
+        <pagefind-filter-pane id="with-open" open="category" style="width: 200px;"></pagefind-filter-pane>
+        <pagefind-filter-pane id="sorted-alpha" sort="alphabetical" style="width: 200px;"></pagefind-filter-pane>
+      </div>
+      <pagefind-input></pagefind-input>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/apple/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Zebra">Apple Page</h1>
+      <span data-pagefind-filter="category:Fruit"></span>
+      <p>Content about apples.</p>
+      </body></html>
+  - step: I have a "public/banana/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Apple">Banana Page</h1>
+      <span data-pagefind-filter="category:Fruit"></span>
+      <p>Content about bananas.</p>
+      </body></html>
+  - step: I have a "public/carrot/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Mango">Carrot Page</h1>
+      <span data-pagefind-filter="category:Vegetable"></span>
+      <p>Content about carrots.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "content"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let filterPane = await toolproof.querySelector("#default .pf-filter-pane");
+      await toolproof.waitFor(() => filterPane.querySelectorAll(".pf-filter-group").length > 0);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultPane = await toolproof.querySelector("#default .pf-filter-pane");
+      let groups = defaultPane.querySelectorAll(".pf-filter-group");
+      let hasCollapsibleHeaders = Array.from(groups).some(g => g.querySelector("button, [role='button'], summary"));
+      toolproof.assert(groups.length >= 1, "Should have filter groups");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let expandedPane = await toolproof.querySelector("#expanded .pf-filter-pane");
+      let groups = expandedPane.querySelectorAll(".pf-filter-group");
+      let checkboxes = expandedPane.querySelectorAll(".pf-filter-checkbox");
+      toolproof.assert(checkboxes.length > 0, "Expanded pane should show checkboxes");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let withOpenPane = await toolproof.querySelector("#with-open .pf-filter-pane");
+      let categoryGroup = Array.from(withOpenPane.querySelectorAll(".pf-filter-group")).find(g =>
+        g.textContent.toLowerCase().includes("category")
+      );
+      if (categoryGroup) {
+        let checkboxes = categoryGroup.querySelectorAll(".pf-filter-checkbox");
+        toolproof.assert(checkboxes.length > 0, "Category group should have visible checkboxes when open");
+      }
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let sortedPane = await toolproof.querySelector("#sorted-alpha .pf-filter-pane");
+      let typeGroup = Array.from(sortedPane.querySelectorAll(".pf-filter-group")).find(g =>
+        g.textContent.toLowerCase().includes("type")
+      );
+      return Array.from(typeGroup.querySelectorAll(".pf-filter-checkbox"))
+        .map(cb => cb.textContent.trim()).join("\n");
+    snapshot_content: |-
+      ╎Apple1
+      ╎Mango1
+      ╎Zebra1
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultPane = await toolproof.querySelector("#default .pf-filter-pane");
+      let firstGroup = defaultPane.querySelector(".pf-filter-group");
+      let header = firstGroup.querySelector(".pf-filter-group-toggle, button, summary");
+      if (header) {
+        header.click();
+        await new Promise(r => setTimeout(r, 100));
+      }

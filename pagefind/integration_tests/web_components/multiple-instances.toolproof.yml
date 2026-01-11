@@ -1,0 +1,73 @@
+name: Web Components Tests > Multiple instances work independently
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <h1>Multiple Instances Test</h1>
+      <!-- First instance -->
+      <div id="docs-search">
+        <h2>Docs Search</h2>
+        <pagefind-config instance="docs" preload></pagefind-config>
+        <pagefind-input instance="docs" placeholder="Search docs..."></pagefind-input>
+        <pagefind-summary instance="docs"></pagefind-summary>
+        <pagefind-results instance="docs"></pagefind-results>
+      </div>
+      <!-- Second instance (default) -->
+      <div id="main-search">
+        <h2>Main Search</h2>
+        <pagefind-config preload></pagefind-config>
+        <pagefind-input placeholder="Search site..."></pagefind-input>
+        <pagefind-summary></pagefind-summary>
+        <pagefind-results></pagefind-results>
+      </div>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/docs/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Documentation</h1><p>This is a doc
+      page.</p></body></html>
+  - step: I have a "public/blog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Blog Post</h1><p>This is a blog
+      page.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "[instance='docs'] input"
+  - step: In my browser, I type "doc"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let docsResults = await toolproof.querySelector('pagefind-results[instance="docs"] ul');
+      await toolproof.waitFor(() => docsResults && docsResults.querySelectorAll("li").length > 0);
+      let docsCount = docsResults.querySelectorAll("li").length;
+      toolproof.assert(docsCount > 0, `Docs instance should have results, got ${docsCount}`);
+
+      let mainResults = await toolproof.querySelector('pagefind-results:not([instance]) ul');
+      let mainCount = mainResults ? mainResults.querySelectorAll("li").length : 0;
+      toolproof.assert(mainCount === 0, `Main instance should be empty, got ${mainCount} results`);
+  - step: In my browser, I click the selector "pagefind-input:not([instance]) input"
+  - step: In my browser, I type "blog"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let mainResults = await toolproof.querySelector('pagefind-results:not([instance]) ul');
+      await toolproof.waitFor(() => mainResults && mainResults.querySelectorAll("li").length > 0);
+      let mainCount = mainResults.querySelectorAll("li").length;
+      toolproof.assert(mainCount > 0, `Main instance should have results, got ${mainCount}`);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let docsSummary = await toolproof.querySelector('pagefind-summary[instance="docs"]');
+      let mainSummary = await toolproof.querySelector('pagefind-summary:not([instance])');
+      return [
+        `docs: ${docsSummary.textContent.trim()}`,
+        `main: ${mainSummary.textContent.trim()}`
+      ].join("\n");
+    snapshot_content: |-
+      ╎docs: 2 results for doc
+      ╎main: 1 result for blog

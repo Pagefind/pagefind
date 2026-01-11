@@ -1,0 +1,50 @@
+name: Web Components Tests > Keyboard hints show contextual shortcuts
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results></pagefind-results>
+      <pagefind-keyboard-hints></pagefind-keyboard-hints>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat Page</h1></body></html>
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Dog Page</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let hints = await toolproof.querySelector("pagefind-keyboard-hints");
+      toolproof.assert(hints.getAttribute("aria-hidden") === "true", "Keyboard hints should be aria-hidden");
+  - step: In my browser, I click the selector "pagefind-input input"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let hints = await toolproof.querySelector("pagefind-keyboard-hints");
+      await toolproof.waitFor(() => hints.textContent.trim().length > 0);
+      return hints.textContent.trim();
+    snapshot_content: |-
+      ╎↓ navigateesc clear
+  - step: In my browser, I type "page"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li a").length === 2);
+  - step: In my browser, I press the "ArrowDown" key
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let hints = await toolproof.querySelector("pagefind-keyboard-hints");
+      return hints.textContent.trim();
+    snapshot_content: |-
+      ╎↑↓ navigate↵ select/ search

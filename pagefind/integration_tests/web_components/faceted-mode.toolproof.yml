@@ -1,0 +1,53 @@
+name: Web Components Tests > Faceted mode shows all results on page load
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config faceted preload></pagefind-config>
+      <pagefind-filter-pane></pagefind-filter-pane>
+      <pagefind-input></pagefind-input>
+      <pagefind-summary></pagefind-summary>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Guide">User Guide</h1>
+      <p>This is a guide about getting started.</p>
+      </body></html>
+  - step: I have a "public/tutorial/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Tutorial">Quick Tutorial</h1>
+      <p>This is a tutorial for beginners.</p>
+      </body></html>
+  - step: I have a "public/reference/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Reference">API Reference</h1>
+      <p>This is the API reference documentation.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 3);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let filterPane = await toolproof.querySelector("pagefind-filter-pane .pf-filter-pane");
+      await toolproof.waitFor(() => filterPane.querySelectorAll(".pf-filter-checkbox").length === 3);
+  - step: In my browser, I click the selector ".pf-filter-checkbox input"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(() => {
+        let results = document.querySelector("pagefind-results ul");
+        return results && results.querySelectorAll("li").length === 1;
+      });

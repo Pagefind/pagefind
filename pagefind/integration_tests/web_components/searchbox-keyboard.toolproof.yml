@@ -1,0 +1,101 @@
+name: Web Components Tests > Searchbox keyboard navigation
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1><p>Apple content here too.</p></body></html>
+  - step: I have a "public/three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Third Result</h1><p>More apple content.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(() => results.querySelectorAll("a.pf-searchbox-result").length === 3, "Should have 3 results");
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = document.querySelectorAll("a.pf-searchbox-result");
+      toolproof.assert(results[0].classList.contains("selected"), "First result should be selected initially");
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-searchbox input");
+      let results = document.querySelectorAll("a.pf-searchbox-result");
+      toolproof.assert(results[1].classList.contains("selected"), "Second result should be selected after ArrowDown");
+      toolproof.assert(!results[0].classList.contains("selected"), "First result should not be selected");
+      toolproof.assert(input.getAttribute("aria-activedescendant") === results[1].id, "aria-activedescendant should update");
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = document.querySelectorAll("a.pf-searchbox-result");
+      toolproof.assert(results[2].classList.contains("selected"), "Third result should be selected");
+  - step: In my browser, I press the "ArrowUp" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = document.querySelectorAll("a.pf-searchbox-result");
+      toolproof.assert(results[1].classList.contains("selected"), "Second result should be selected after ArrowUp");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      toolproof.assert(container.classList.contains("open"), "Dropdown should be open before Escape");
+  - step: In my browser, I press the "Escape" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-searchbox input");
+      let container = await toolproof.querySelector(".pf-searchbox");
+      toolproof.assert(!container.classList.contains("open"), "Dropdown should close after Escape");
+      toolproof.assert(input.getAttribute("aria-expanded") === "false", "aria-expanded should be false");
+  - step: In my browser, I type "s"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      await toolproof.waitFor(() => container.classList.contains("open"), "Dropdown should reopen");
+  - step: In my browser, I press the "Tab" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      toolproof.assert(!container.classList.contains("open"), "Dropdown should close after Tab");
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "s"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      await toolproof.waitFor(() => container.classList.contains("open"), "Dropdown should open");
+  - step: In my browser, I evaluate {js}
+    js: |-
+      document.body.click();
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      toolproof.assert(!container.classList.contains("open"), "Dropdown should close after outside click");
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "s"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      await toolproof.waitFor(() => container.classList.contains("open"), "Dropdown should open");
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-searchbox input");
+      toolproof.assert(document.activeElement === input, "Focus should remain on input during keyboard navigation");

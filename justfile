@@ -17,6 +17,7 @@ install:
     cd pagefind_web_js && npm i
     cd pagefind_ui/default && npm i
     cd pagefind_ui/modular && npm i
+    cd pagefind_ui/component && npm i
     cd pagefind_playground && npm i
     cd wrappers/node && npm i
     cd wrappers/python && (python3 -m uv sync 2>/dev/null || (python3 -m pip install --user uv && python3 -m uv venv && python -m uv sync))
@@ -39,10 +40,11 @@ build-wasm:
 build-web-js:
     cd pagefind_web_js && npm run build-coupled
 
-# Build both UI packages
+# Build all UI packages
 build-ui:
     cd pagefind_ui/default && npm run build
     cd pagefind_ui/modular && npm run build
+    cd pagefind_ui/component && npm run build
 
 # Build the playground
 build-playground:
@@ -89,3 +91,13 @@ test-docs:
     cd docs && npm i
     cd docs && hugo
     ./target/release/pagefind -s docs/public --serve
+
+# Test with the UI documentation site (indexes main docs, serves from docs-ui)
+test-docs-ui:
+    @command -v hugo >/dev/null 2>&1 || { echo "Error: Hugo is required but not installed. Please install Hugo first."; exit 1; }
+    cd docs && npm i
+    cd docs && hugo
+    cd docs-ui && rm -rf ./public
+    cd docs-ui && hugo
+    ./target/release/pagefind -s docs/public --output-path docs-ui/public/pagefind
+    python3 -m http.server -d docs-ui/public

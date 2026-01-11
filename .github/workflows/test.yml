@@ -115,6 +115,14 @@ jobs:
         working-directory: ./pagefind_ui/modular
         run: npm i && npm run build
 
+      - name: Build Component UI
+        working-directory: ./pagefind_ui/component
+        run: npm i && npm run build
+
+      - name: Typecheck Component UI
+        working-directory: ./pagefind_ui/component
+        run: npm run typecheck
+
       - name: Build Playground
         working-directory: ./pagefind_playground
         run: npm i && npm run build

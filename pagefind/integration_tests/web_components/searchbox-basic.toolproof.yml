@@ -1,0 +1,83 @@
+name: Web Components Tests > Searchbox basic search
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/hello/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Hello World</h1><p>This is some content about the world.</p></body></html>
+  - step: I have a "public/goodbye/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Goodbye World</h1><p>Farewell to all.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-searchbox input");
+      return [
+        `role: ${input.getAttribute("role")}`,
+        `aria-autocomplete: ${input.getAttribute("aria-autocomplete")}`,
+        `aria-expanded: ${input.getAttribute("aria-expanded")}`
+      ].join("\n");
+    snapshot_content: |-
+      ╎role: combobox
+      ╎aria-autocomplete: list
+      ╎aria-expanded: false
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "world"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-searchbox");
+      await toolproof.waitFor(() => container.classList.contains("open"));
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(() => results.querySelectorAll("a.pf-searchbox-result").length === 2);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      let items = results.querySelectorAll("a.pf-searchbox-result");
+      return Array.from(items).map(item => {
+        return [
+          `role: ${item.getAttribute("role")}`,
+          `has href: ${item.hasAttribute("href")}`,
+          `selected: ${item.classList.contains("selected")}`,
+          `aria-selected: ${item.getAttribute("aria-selected")}`
+        ].join(", ");
+      }).join("\n");
+    snapshot_content: |-
+      ╎role: option, has href: true, selected: true, aria-selected: true
+      ╎role: option, has href: true, selected: false, aria-selected: false
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let footer = await toolproof.querySelector(".pf-searchbox-footer");
+      return footer.textContent.trim();
+    snapshot_content: |-
+      ╎↑↓ navigate↵ selectesc close
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let announcer = document.querySelector("[data-pagefind-announcer]");
+      let liveRegions = announcer.querySelectorAll("[aria-live]");
+      toolproof.assert(liveRegions.length === 4, "Announcer should have 4 live regions");
+      let politeRegions = announcer.querySelectorAll("[aria-live='polite']");
+      await toolproof.waitFor(() => {
+        return Array.from(politeRegions).some(r => r.textContent.includes("2") && r.textContent.includes("world"));
+      });
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let firstResult = document.querySelector("a.pf-searchbox-result");
+      let labelledBy = firstResult.getAttribute("aria-labelledby");
+      let titleEl = document.getElementById(labelledBy);
+      toolproof.assert(titleEl.classList.contains("pf-searchbox-result-title"), "aria-labelledby should point to title");
+      let describedBy = firstResult.getAttribute("aria-describedby");
+      let excerptEl = document.getElementById(describedBy);
+      toolproof.assert(excerptEl.classList.contains("pf-searchbox-result-excerpt"), "aria-describedby should point to excerpt");

@@ -1,0 +1,50 @@
+name: Web Components Tests > Sub-results render correctly
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Configuration Guide</h1>
+      <p>Learn about configuration options.</p>
+      <h2 id="basic">Basic Configuration</h2>
+      <p>This section covers basic configuration settings.</p>
+      <h2 id="advanced">Advanced Configuration</h2>
+      <p>This section covers advanced configuration options.</p>
+      <h2 id="cli">CLI Configuration</h2>
+      <p>This section covers CLI configuration flags.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "configuration"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".pf-heading-chip").length >= 1);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let chips = Array.from(results.querySelectorAll(".pf-heading-chip"));
+      return chips.map(chip => {
+        let link = chip.querySelector(".pf-heading-link");
+        let url = new URL(link.href);
+        return `${link.textContent} -> ${url.pathname}${url.hash}`;
+      }).join("\n");
+    snapshot_content: |-
+      ╎Basic Configuration -> /guide/#basic
+      ╎Advanced Configuration -> /guide/#advanced
+      ╎CLI Configuration -> /guide/#cli

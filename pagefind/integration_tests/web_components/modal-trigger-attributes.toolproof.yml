@@ -1,0 +1,43 @@
+name: Web Components Tests > Modal trigger shows keyboard shortcut
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-modal-trigger id="default"></pagefind-modal-trigger>
+      <pagefind-modal-trigger id="hidden" hide-shortcut></pagefind-modal-trigger>
+      <pagefind-modal-trigger id="custom" shortcut="/"></pagefind-modal-trigger>
+      <pagefind-modal-trigger id="compact" compact></pagefind-modal-trigger>
+      <pagefind-modal-trigger id="placeholder" placeholder="Find stuff"></pagefind-modal-trigger>
+      <pagefind-modal>
+      <pagefind-input></pagefind-input>
+      </pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      function describeTrigger(id) {
+        let trigger = document.querySelector(id);
+        let text = trigger.querySelector(".pf-trigger-text");
+        let keys = Array.from(trigger.querySelectorAll(".pf-trigger-key")).map(k => k.textContent);
+        let parts = [];
+        if (text) parts.push(`text: ${text.textContent}`);
+        if (keys.length) parts.push(`keys: ${keys.join(" ")}`);
+        return `${id}: ${parts.join(", ") || "(empty)"}`;
+      }
+      return ["#default", "#hidden", "#custom", "#compact", "#placeholder"]
+        .map(describeTrigger).join("\n");
+    snapshot_content: |-
+      ╎#default: text: search, keys: ⌘ K
+      ╎#hidden: text: search
+      ╎#custom: text: search, keys: ⌘ /
+      ╎#compact: keys: ⌘ K
+      ╎#placeholder: text: Find stuff, keys: ⌘ K

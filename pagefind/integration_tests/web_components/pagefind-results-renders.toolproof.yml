@@ -1,0 +1,59 @@
+name: Web Components Tests > Pagefind Results renders correctly
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-summary></pagefind-summary>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Cat Page</h1><p>This page is about
+      cats.</p></body></html>
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Dog Page</h1><p>This page is about
+      dogs.</p></body></html>
+  - step: I have a "public/bird/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Bird Page</h1><p>This page is about
+      birds.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "page"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li a").length === 3);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      return [
+        `aria-label: ${results.getAttribute("aria-label")}`,
+        `results:`,
+        ...Array.from(results.querySelectorAll("li")).map(li => {
+          let title = li.querySelector("a")?.textContent || "";
+          let excerpt = li.querySelector(".pf-result-excerpt")?.textContent?.trim() || "";
+          return `  - ${title}: ${excerpt}`;
+        })
+      ].join("\n");
+    snapshot_content: |-
+      ╎aria-label: Search results
+      ╎results:
+      ╎  - Cat Page: Cat Page. This page is about cats.
+      ╎  - Dog Page: Dog Page. This page is about dogs.
+      ╎  - Bird Page: Bird Page. This page is about birds.

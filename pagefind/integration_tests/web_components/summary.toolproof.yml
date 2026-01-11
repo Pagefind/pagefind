@@ -1,0 +1,69 @@
+name: Web Components Tests > Summary component displays search status
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-summary></pagefind-summary>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Cat Page</h1><p>This page is about
+      cats.</p></body></html>
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Dog Page</h1><p>This page is about
+      dogs.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary .pf-summary");
+      toolproof.assert(summary !== null, "Summary container should exist");
+      toolproof.assert(summary.textContent.trim() === "", "Summary should be empty initially");
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "page"
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("2"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎2 results for page
+  - step: In my browser, I click the selector ".pf-input-clear"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "cat"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("1"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎1 result for cat
+  - step: In my browser, I click the selector ".pf-input-clear"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "xyznonexistent"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.toLowerCase().includes("no"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎No results for xyznonexistent
+  - step: In my browser, I click the selector ".pf-input-clear"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.trim() === "");

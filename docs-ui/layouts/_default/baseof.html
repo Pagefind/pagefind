@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="{{ .Site.LanguageCode }}">
+    <head>
+        <script>
+            (function () {
+                var stored = localStorage.getItem("theme");
+                var prefersDark = window.matchMedia(
+                    "(prefers-color-scheme: dark)",
+                ).matches;
+                var theme = stored || (prefersDark ? "dark" : "light");
+                document.documentElement.setAttribute("data-pf-theme", theme);
+            })();
+        </script>
+        {{- partial "head.html" . -}}
+    </head>
+    <body>
+        <!-- Configure all demo instances to link to the main docs site -->
+        <pagefind-config base-url="https://pagefind.app" instance="home-modal"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="home-searchbox"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="home-inline"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="components-inline"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="searchbox-ref"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="filter-dd-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="trigger-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="summary-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="modal-ref"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="results-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="hints-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="filter-pane-demo"></pagefind-config>
+        <pagefind-config base-url="https://pagefind.app" instance="input-demo"></pagefind-config>
+
+        <div class="site-wrapper">
+            <aside class="sidebar">{{- partial "nav.html" . -}}</aside>
+            <div class="nav-backdrop"></div>
+            <main class="main-content">{{- block "main" . }}{{- end }}</main>
+        </div>
+        <script>
+            function toggleTheme() {
+                var current =
+                    document.documentElement.getAttribute("data-pf-theme");
+                var next = current === "dark" ? "light" : "dark";
+                document.documentElement.setAttribute("data-pf-theme", next);
+                document.body.setAttribute("data-pf-theme", next);
+                localStorage.setItem("theme", next);
+            }
+            document
+                .getElementById("theme-toggle")
+                .addEventListener("click", toggleTheme);
+            var mobileToggle = document.getElementById("theme-toggle-mobile");
+            if (mobileToggle) {
+                mobileToggle.addEventListener("click", toggleTheme);
+            }
+
+            (function () {
+                var menuToggle = document.querySelector(".menu-toggle");
+                var sidebarNav = document.querySelector(".sidebar-nav");
+                var backdrop = document.querySelector(".nav-backdrop");
+
+                function openMenu() {
+                    sidebarNav.classList.add("open");
+                    backdrop.classList.add("open");
+                }
+
+                function closeMenu() {
+                    sidebarNav.classList.remove("open");
+                    backdrop.classList.remove("open");
+                }
+
+                if (menuToggle) {
+                    menuToggle.addEventListener("click", openMenu);
+                }
+                if (backdrop) {
+                    backdrop.addEventListener("click", closeMenu);
+                }
+
+                sidebarNav.querySelectorAll("a").forEach(function (link) {
+                    link.addEventListener("click", closeMenu);
+                });
+            })();
+        </script>
+    </body>
+</html>
