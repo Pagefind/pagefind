@@ -290,6 +290,16 @@ pagefind-modal-trigger {
     color: var(--pf-text-muted);
 }
 
+/* Hide native search clear button - we have our own */
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-input::-webkit-search-decoration,
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-input::-webkit-search-cancel-button,
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-input::-webkit-search-results-button,
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-input::-webkit-search-results-decoration {
+    display: none;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-input-clear {
     position: absolute;
     right: 2px;

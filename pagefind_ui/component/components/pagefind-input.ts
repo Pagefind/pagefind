@@ -57,11 +57,10 @@ export class PagefindInput extends PagefindElement {
       this.removeAttribute("dir");
     }
 
-    const wrapper = document.createElement("form");
+    const wrapper = document.createElement("search");
     wrapper.className = "pf-input-wrapper";
     wrapper.setAttribute("role", "search");
     wrapper.setAttribute("aria-label", searchLabel);
-    wrapper.setAttribute("action", "javascript:void(0);");
 
     const label = document.createElement("label");
     label.setAttribute("for", inputId);
@@ -72,16 +71,31 @@ export class PagefindInput extends PagefindElement {
     this.inputEl = document.createElement("input");
     this.inputEl.id = inputId;
     this.inputEl.className = "pf-input";
+    this.inputEl.setAttribute("type", "search");
+    this.inputEl.setAttribute("autocomplete", "off");
     this.inputEl.setAttribute("autocapitalize", "none");
     this.inputEl.setAttribute("enterkeyhint", "search");
     this.inputEl.setAttribute("placeholder", placeholderText);
     if (this.autofocus) {
       this.inputEl.setAttribute("autofocus", "autofocus");
     }
+
+    const hintId = this.instance!.generateId("pf-input-hint");
+    const hintText =
+      this.instance?.translate("input_hint") ||
+      "Results will appear as you type";
+    const hint = document.createElement("span");
+    hint.id = hintId;
+    hint.setAttribute("data-pf-sr-hidden", "true");
+    hint.textContent = hintText;
+    this.inputEl.setAttribute("aria-describedby", hintId);
+
     wrapper.appendChild(this.inputEl);
+    wrapper.appendChild(hint);
 
     this.clearEl = document.createElement("button");
     this.clearEl.className = "pf-input-clear";
+    this.clearEl.setAttribute("type", "button");
     this.clearEl.setAttribute("data-pf-suppressed", "true");
     this.clearEl.textContent = clearText;
     wrapper.appendChild(this.clearEl);
