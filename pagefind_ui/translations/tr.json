@@ -25,6 +25,7 @@
         "keyboard_search": "ara",
         "error_search": "Arama başarısız",
         "filter_selected_one": "[COUNT] seçili",
-        "filter_selected_many": "[COUNT] seçili"
+        "filter_selected_many": "[COUNT] seçili",
+        "input_hint": "Sonuçlar siz yazarken görünecektir"
     }
 }

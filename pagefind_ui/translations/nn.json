@@ -25,6 +25,7 @@
         "keyboard_search": "søk",
         "error_search": "Søk feila",
         "filter_selected_one": "[COUNT] vald",
-        "filter_selected_many": "[COUNT] valde"
+        "filter_selected_many": "[COUNT] valde",
+        "input_hint": "Resultat visast medan du skriv"
     }
 }

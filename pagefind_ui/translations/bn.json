@@ -25,6 +25,7 @@
         "keyboard_search": "অনুসন্ধান",
         "error_search": "অনুসন্ধান ব্যর্থ",
         "filter_selected_one": "[COUNT]-টি নির্বাচিত",
-        "filter_selected_many": "[COUNT]-টি নির্বাচিত"
+        "filter_selected_many": "[COUNT]-টি নির্বাচিত",
+        "input_hint": "টাইপ করার সাথে সাথে ফলাফল দেখা যাবে"
     }
 }

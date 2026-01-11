@@ -25,6 +25,7 @@
         "keyboard_search": "tìm kiếm",
         "error_search": "Tìm kiếm thất bại",
         "filter_selected_one": "Đã chọn [COUNT]",
-        "filter_selected_many": "Đã chọn [COUNT]"
+        "filter_selected_many": "Đã chọn [COUNT]",
+        "input_hint": "Kết quả sẽ xuất hiện khi bạn nhập"
     }
 }

@@ -25,6 +25,7 @@
         "keyboard_search": "cercar",
         "error_search": "Error en la cerca",
         "filter_selected_one": "[COUNT] seleccionat",
-        "filter_selected_many": "[COUNT] seleccionats"
+        "filter_selected_many": "[COUNT] seleccionats",
+        "input_hint": "Els resultats apareixeran mentre escriviu"
     }
 }

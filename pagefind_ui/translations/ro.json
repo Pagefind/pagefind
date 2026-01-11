@@ -25,6 +25,7 @@
         "keyboard_search": "căutare",
         "error_search": "Căutarea a eșuat",
         "filter_selected_one": "[COUNT] selectat",
-        "filter_selected_many": "[COUNT] selectate"
+        "filter_selected_many": "[COUNT] selectate",
+        "input_hint": "Rezultatele vor apărea pe măsură ce tastați"
     }
 }

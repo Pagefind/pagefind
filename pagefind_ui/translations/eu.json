@@ -25,6 +25,7 @@
         "keyboard_search": "bilatu",
         "error_search": "Bilaketak huts egin du",
         "filter_selected_one": "[COUNT] hautatuta",
-        "filter_selected_many": "[COUNT] hautatuta"
+        "filter_selected_many": "[COUNT] hautatuta",
+        "input_hint": "Emaitzak idatzi ahala agertuko dira"
     }
 }

@@ -25,6 +25,7 @@
         "keyboard_search": "sök",
         "error_search": "Sökningen misslyckades",
         "filter_selected_one": "[COUNT] vald",
-        "filter_selected_many": "[COUNT] valda"
+        "filter_selected_many": "[COUNT] valda",
+        "input_hint": "Resultat visas medan du skriver"
     }
 }

@@ -25,6 +25,7 @@
         "keyboard_search": "ရှာရန်",
         "error_search": "ရှာဖွေမှု မအောင်မြင်ပါ",
         "filter_selected_one": "[COUNT] ခု ရွေးချယ်ထားသည်",
-        "filter_selected_many": "[COUNT] ခု ရွေးချယ်ထားသည်"
+        "filter_selected_many": "[COUNT] ခု ရွေးချယ်ထားသည်",
+        "input_hint": "ရိုက်နေစဉ် ရလဒ်များ ပေါ်လာပါမည်"
     }
 }

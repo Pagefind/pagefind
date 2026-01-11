@@ -25,6 +25,7 @@
         "keyboard_search": "தேடு",
         "error_search": "தேடல் தோல்வி",
         "filter_selected_one": "[COUNT] தேர்ந்தெடுக்கப்பட்டது",
-        "filter_selected_many": "[COUNT] தேர்ந்தெடுக்கப்பட்டன"
+        "filter_selected_many": "[COUNT] தேர்ந்தெடுக்கப்பட்டன",
+        "input_hint": "நீங்கள் தட்டச்சு செய்யும்போது முடிவுகள் தோன்றும்"
     }
 }

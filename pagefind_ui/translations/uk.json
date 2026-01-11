@@ -25,6 +25,7 @@
         "keyboard_search": "пошук",
         "error_search": "Помилка пошуку",
         "filter_selected_one": "[COUNT] вибрано",
-        "filter_selected_many": "[COUNT] вибрано"
+        "filter_selected_many": "[COUNT] вибрано",
+        "input_hint": "Результати з'являтимуться під час введення"
     }
 }

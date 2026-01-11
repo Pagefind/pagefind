@@ -25,6 +25,7 @@
         "keyboard_search": "검색",
         "error_search": "검색 실패",
         "filter_selected_one": "[COUNT]개 선택됨",
-        "filter_selected_many": "[COUNT]개 선택됨"
+        "filter_selected_many": "[COUNT]개 선택됨",
+        "input_hint": "입력하는 동안 결과가 표시됩니다"
     }
 }

@@ -25,6 +25,7 @@
         "keyboard_search": "cari",
         "error_search": "Pencarian gagal",
         "filter_selected_one": "[COUNT] dipilih",
-        "filter_selected_many": "[COUNT] dipilih"
+        "filter_selected_many": "[COUNT] dipilih",
+        "input_hint": "Hasil akan muncul saat Anda mengetik"
     }
 }

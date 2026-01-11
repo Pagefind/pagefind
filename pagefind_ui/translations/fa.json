@@ -25,6 +25,7 @@
         "keyboard_search": "جستجو",
         "error_search": "جستجو ناموفق بود",
         "filter_selected_one": "[COUNT] انتخاب شده",
-        "filter_selected_many": "[COUNT] انتخاب شده"
+        "filter_selected_many": "[COUNT] انتخاب شده",
+        "input_hint": "نتایج هنگام تایپ نمایش داده می‌شوند"
     }
 }

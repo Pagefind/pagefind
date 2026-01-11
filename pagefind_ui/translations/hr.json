@@ -25,6 +25,7 @@
         "keyboard_search": "traži",
         "error_search": "Pretraga nije uspjela",
         "filter_selected_one": "[COUNT] odabran",
-        "filter_selected_many": "[COUNT] odabranih"
+        "filter_selected_many": "[COUNT] odabranih",
+        "input_hint": "Rezultati će se pojaviti dok tipkate"
     }
 }

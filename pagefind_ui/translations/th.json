@@ -25,6 +25,7 @@
         "keyboard_search": "ค้นหา",
         "error_search": "การค้นหาล้มเหลว",
         "filter_selected_one": "เลือกแล้ว [COUNT] รายการ",
-        "filter_selected_many": "เลือกแล้ว [COUNT] รายการ"
+        "filter_selected_many": "เลือกแล้ว [COUNT] รายการ",
+        "input_hint": "ผลลัพธ์จะปรากฏขณะที่คุณพิมพ์"
     }
 }

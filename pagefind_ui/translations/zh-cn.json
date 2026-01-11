@@ -25,6 +25,7 @@
         "keyboard_search": "搜索",
         "error_search": "搜索失败",
         "filter_selected_one": "已选择 [COUNT] 个",
-        "filter_selected_many": "已选择 [COUNT] 个"
+        "filter_selected_many": "已选择 [COUNT] 个",
+        "input_hint": "输入时将显示结果"
     }
 }

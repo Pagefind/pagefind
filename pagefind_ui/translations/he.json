@@ -25,6 +25,7 @@
         "keyboard_search": "חיפוש",
         "error_search": "החיפוש נכשל",
         "filter_selected_one": "[COUNT] נבחר",
-        "filter_selected_many": "[COUNT] נבחרו"
+        "filter_selected_many": "[COUNT] נבחרו",
+        "input_hint": "התוצאות יופיעו תוך כדי הקלדה"
     }
 }

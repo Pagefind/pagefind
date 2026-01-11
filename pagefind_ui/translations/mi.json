@@ -25,6 +25,7 @@
         "keyboard_search": "rapu",
         "error_search": "Kāore i eke te rapu",
         "filter_selected_one": "[COUNT] kua tīpakohia",
-        "filter_selected_many": "[COUNT] kua tīpakohia"
+        "filter_selected_many": "[COUNT] kua tīpakohia",
+        "input_hint": "Ka puta ngā otinga i a koe e patopato ana"
     }
 }

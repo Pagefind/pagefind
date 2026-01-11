@@ -25,6 +25,7 @@
         "keyboard_search": "szukaj",
         "error_search": "Wyszukiwanie nie powiodło się",
         "filter_selected_one": "[COUNT] wybrany",
-        "filter_selected_many": "[COUNT] wybranych"
+        "filter_selected_many": "[COUNT] wybranych",
+        "input_hint": "Wyniki pojawią się podczas pisania"
     }
 }

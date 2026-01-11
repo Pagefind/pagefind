@@ -25,6 +25,7 @@
         "keyboard_search": "検索",
         "error_search": "検索に失敗しました",
         "filter_selected_one": "[COUNT]件選択中",
-        "filter_selected_many": "[COUNT]件選択中"
+        "filter_selected_many": "[COUNT]件選択中",
+        "input_hint": "入力中に検索結果が表示されます"
     }
 }

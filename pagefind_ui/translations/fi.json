@@ -25,6 +25,7 @@
         "keyboard_search": "hae",
         "error_search": "Haku epäonnistui",
         "filter_selected_one": "[COUNT] valittu",
-        "filter_selected_many": "[COUNT] valittu"
+        "filter_selected_many": "[COUNT] valittu",
+        "input_hint": "Tulokset näkyvät kirjoittaessasi"
     }
 }

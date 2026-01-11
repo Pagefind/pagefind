@@ -25,6 +25,7 @@
         "keyboard_search": "खोजें",
         "error_search": "खोज विफल",
         "filter_selected_one": "[COUNT] चयनित",
-        "filter_selected_many": "[COUNT] चयनित"
+        "filter_selected_many": "[COUNT] चयनित",
+        "input_hint": "टाइप करते समय परिणाम दिखाई देंगे"
     }
 }
