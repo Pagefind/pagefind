@@ -40,7 +40,7 @@
         {{ end }}
     {{ end }}
 
-    {{ $sectionOrder := slice "Components" "Styling" }}
+    {{ $sectionOrder := slice "Components" "Customization" }}
 
     {{ range $section := $sectionOrder }}
         {{ $pagesInSection := where $allPages ".Params.nav_section" $section }}

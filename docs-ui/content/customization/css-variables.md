@@ -1,7 +1,7 @@
 ---
 title: "CSS Variables"
 nav_title: "CSS Variables"
-nav_section: Styling
+nav_section: Customization
 weight: 91
 ---
 
