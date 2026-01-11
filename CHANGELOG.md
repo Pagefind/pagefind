@@ -9,6 +9,63 @@
 
 ## Unreleased
 
+Hey! This is a big one, so I thought we'd give a beta release a try. This release addresses a lot of long-standing issues and feature requests, alongside delivering an entirely new search UI.
+
+### Pagefind Component UI
+This is the main reason for a beta release here. Writing a new ground-up UI system for Pagefind has been a big job, and I would love to get some more eyes on it before we send it out into the world on its stable release.
+
+It's so large, in fact, that it has its own documentation site! If you're itching to see what it looks like, check out https://ui.pagefind.app/ for modals and searchboxes and custom web components and more!
+
+The Component UI is available as vendored files in your `/pagefind/` output directory, or it's available as [an npm package](https://www.npmjs.com/package/@pagefind/component-ui) to install and import.
+
+One big request, for anybody reading this who has or wants to contribute translations, is to go look over the files changed in [PR 1005](https://github.com/Pagefind/pagefind/pull/1005/files). As part of this new UI, we have a new set of translation strings. Thankfully these could mostly be inferred from existing ones, but overall they need reviews from fluent speakers. ❤️
+
+### Search Relevance, and Searching Metadata
+Pagefind now searches metadata! Yes, all metadata. By default. Importantly, this means it now searches the _title_ metadata. Matches in titles are now taken into account, and search results are _very_ hard to shake from prime positions if all (or much) of the title matches the search query.
+
+This is also something you can configure! See [📘 Configuring Metadata Weights](https://unreleased.pagefind.app/docs/ranking/#configuring-metadata-weights) for how to change this title boost, or apply it to any and all metadata fields of your choosing.
+
+Alongside that, a _bunch_ of weird and wonderful ranking bugs were resolved. I'll write more in the final release notes, but [PR 1003](https://github.com/Pagefind/pagefind/pull/1003) goes into great detail on the various improvements that make searches better across the board. Plus [PR 996](https://github.com/Pagefind/pagefind/pull/996) covers some of the chunk loading bugs that could also cause corner cases with searches.
+
+### Diacritics Support
+We finally properly support matching across diacritics. You can now find your cafés without remembering how to type é!
+
+This is, yet again, something you can configure. By default, exact diacritic matches are preferred. So if you're searching "cafe", pages with "cafe" will rank higher than pages with "café". Getting this relevance right by default was the final piece of the puzzle for shipping this, which is why it took a while to land. See [📘 Configuring Diacritic Similarity](https://unreleased.pagefind.app/docs/ranking/#configuring-diacritic-similarity) to adjust how this plays out on your site.
+
+### Multilingual Improvements
+Thanks browsers! Pagefind now taps into [Intl.Segmenter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter) to chop search queries in CJK (Chinese, Japanese, Korean) non-whitespace-delimited languages. This was already done during indexing by Pagefind, but users searching still had to delimit their queries. Now searching "这是一段简单的测试文本" searches for the words "这", "是", "一段", "简单", "的", "测试", and "文本", which is also how that sentence was indexed.
+
+### Performance!
+Pagefind's search now runs in a Web Worker automatically. This doesn't make the search faster, per se, but it dramatically improves perceived performance on large websites by keeping the main thread responsive.
+
+If Web Workers are unavailable, it falls back to the main thread automatically.
+
+### More Performance!
+Some low-hanging fruit was picked off, and Pagefind's index chunks are now ~45% smaller. The indexing binary (the one you install through npx or your wrapper of choice) is now both smaller (so, faster to download) and faster to run, at least on my macOS machine.
+
+### Phew
+
+Most of these things are pretty solid, and the new Component UI is the most in flux. I don't expect it to change much, but be aware nonetheless that some things might change before it stabilises in 1.5.0.
+
+I would love your feedback! Please jump into the GitHub discussion for this release and highlight any issues. This will simmer happily, depending on feedback, for a week or three, so there's room for changes.
+
+If you haven't used a beta release before, simply:
+
+```bash
+# if you run via npx, sub out `pagefind` for `pagefind@beta`
+npx pagefind@beta
+# or, if you have it as a dependency:
+npm i pagefind@beta
+# or, if you use the python distribution:
+pip install --pre pagefind
+# or, via cargo:
+cargo install pagefind --version 1.5.0-beta1
+```
+
+Or download the correct binary from this GitHub Release page.
+
+Hope to hear from you!
+
 ## v1.4.0 (September 1, 2025)
 
 ### Core Features & Improvements
