@@ -1252,6 +1252,7 @@ pagefind-modal-trigger {
 :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-keyboard-hints,
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-keyboard-hints {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 16px;
     font-size: 12px;
