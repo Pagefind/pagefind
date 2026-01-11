@@ -42,18 +42,19 @@ steps:
   - snapshot: In my browser, the result of {js}
     js: |-
       let results = await toolproof.querySelector("pagefind-results ul");
+      let items = Array.from(results.querySelectorAll("li")).map(li => {
+        let title = li.querySelector("a")?.textContent || "";
+        let excerpt = li.querySelector(".pf-result-excerpt")?.textContent?.trim() || "";
+        return `  - ${title}: ${excerpt}`;
+      }).sort();
       return [
         `aria-label: ${results.getAttribute("aria-label")}`,
         `results:`,
-        ...Array.from(results.querySelectorAll("li")).map(li => {
-          let title = li.querySelector("a")?.textContent || "";
-          let excerpt = li.querySelector(".pf-result-excerpt")?.textContent?.trim() || "";
-          return `  - ${title}: ${excerpt}`;
-        })
+        ...items
       ].join("\n");
     snapshot_content: |-
       ╎aria-label: Search results
       ╎results:
+      ╎  - Bird Page: Bird Page. This page is about birds.
       ╎  - Cat Page: Cat Page. This page is about cats.
       ╎  - Dog Page: Dog Page. This page is about dogs.
-      ╎  - Bird Page: Bird Page. This page is about birds.
