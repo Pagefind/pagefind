@@ -1,1 +1,8 @@
-npx -y pagefind@alpha --site docs/public --write-playground
+#!/bin/bash
+
+if [ "$CC_SITE" = "docs-ui" ]; then
+    # Index the main docs, output to docs-ui
+    npx -y pagefind@alpha --site docs/public --output-path docs-ui/public/pagefind
+else
+    npx -y pagefind@alpha --site docs/public --write-playground
+fi

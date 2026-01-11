@@ -99,6 +99,32 @@ a:hover {
     overflow-y: auto;
 }
 
+.beta-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, #c2410c 0%, #b91c1c 100%);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.beta-badge {
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.beta-text {
+    opacity: 0.95;
+}
+
 .sidebar-header {
     padding: var(--spacing-lg);
     border-bottom: 1px solid var(--border);
@@ -330,18 +356,18 @@ a:hover {
     background-color: var(--background);
     background-image:
         linear-gradient(var(--background), var(--background)),
-        linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #2dd4bf 100%);
+        linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
     background-origin: border-box;
     background-clip: padding-box, border-box;
     box-shadow:
-        0 0 12px rgba(14, 165, 233, 0.1),
-        0 0 24px rgba(6, 182, 212, 0.06);
+        0 0 12px rgba(4, 120, 87, 0.1),
+        0 0 24px rgba(5, 150, 105, 0.06);
 }
 
 [data-pf-theme="dark"] .demo-box {
     box-shadow:
-        0 0 16px rgba(14, 165, 233, 0.15),
-        0 0 32px rgba(6, 182, 212, 0.08);
+        0 0 16px rgba(4, 120, 87, 0.15),
+        0 0 32px rgba(5, 150, 105, 0.08);
 }
 
 .demo-box pagefind-searchbox {

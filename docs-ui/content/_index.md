@@ -1,10 +1,10 @@
 ---
-title: Pagefind UI
+title: Pagefind Component UI
 nav_title: Home
 weight: 1
 ---
 
-Pagefind Component UI. Use one of the prebuilt search experiences, or assemble your own. Either way, you can customise most things.
+Use one of the prebuilt search experiences, or assemble your own. Either way, you can customise most things.
 
 Clean, easy to restyle, and accessible out of the box. These components follow best practices for WAI-ARIA components, and are designed to be hard to misuse. Additionally, all components translate both visible and assistive text automatically to match the language of the website.
 
