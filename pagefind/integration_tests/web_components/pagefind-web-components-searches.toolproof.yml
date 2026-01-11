@@ -28,6 +28,7 @@ steps:
     js: |-
       let results = await toolproof.querySelector("pagefind-results ul");
       await toolproof.waitFor(() => results.querySelectorAll("li").length === 1);
+      await toolproof.waitFor(() => results.querySelector("li a") !== null);
   - snapshot: In my browser, the result of {js}
     js: |-
       let summary = await toolproof.querySelector("pagefind-summary");

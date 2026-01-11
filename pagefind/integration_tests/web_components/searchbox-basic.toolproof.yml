@@ -42,6 +42,7 @@ steps:
       await toolproof.waitFor(() => container.classList.contains("open"));
       let results = await toolproof.querySelector(".pf-searchbox-results");
       await toolproof.waitFor(() => results.querySelectorAll("a.pf-searchbox-result").length === 2);
+      await toolproof.waitFor(() => results.querySelector("a.pf-searchbox-result[data-pf-selected]") !== null);
   - snapshot: In my browser, the result of {js}
     js: |-
       let results = await toolproof.querySelector(".pf-searchbox-results");
@@ -50,7 +51,7 @@ steps:
         return [
           `role: ${item.getAttribute("role")}`,
           `has href: ${item.hasAttribute("href")}`,
-          `selected: ${item.classList.contains("selected")}`,
+          `selected: ${item.hasAttribute("data-pf-selected")}`,
           `aria-selected: ${item.getAttribute("aria-selected")}`
         ].join(", ");
       }).join("\n");

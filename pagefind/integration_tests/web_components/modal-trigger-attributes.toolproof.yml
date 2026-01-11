@@ -23,6 +23,7 @@ steps:
   - step: I serve the directory "public"
   - step: In my browser, I load "/"
   - snapshot: In my browser, the result of {js}
+    platforms: [mac]
     js: |-
       function describeTrigger(id) {
         let trigger = document.querySelector(id);
@@ -41,3 +42,23 @@ steps:
       ╎#custom: text: search, keys: ⌘ /
       ╎#compact: keys: ⌘ K
       ╎#placeholder: text: Find stuff, keys: ⌘ K
+  - snapshot: In my browser, the result of {js}
+    platforms: [linux, windows]
+    js: |-
+      function describeTrigger(id) {
+        let trigger = document.querySelector(id);
+        let text = trigger.querySelector(".pf-trigger-text");
+        let keys = Array.from(trigger.querySelectorAll(".pf-trigger-key")).map(k => k.textContent);
+        let parts = [];
+        if (text) parts.push(`text: ${text.textContent}`);
+        if (keys.length) parts.push(`keys: ${keys.join(" ")}`);
+        return `${id}: ${parts.join(", ") || "(empty)"}`;
+      }
+      return ["#default", "#hidden", "#custom", "#compact", "#placeholder"]
+        .map(describeTrigger).join("\n");
+    snapshot_content: |-
+      ╎#default: text: search, keys: Ctrl K
+      ╎#hidden: text: search
+      ╎#custom: text: search, keys: Ctrl /
+      ╎#compact: keys: Ctrl K
+      ╎#placeholder: text: Find stuff, keys: Ctrl K

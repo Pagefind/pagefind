@@ -30,29 +30,30 @@ steps:
     js: |-
       let results = await toolproof.querySelector(".pf-searchbox-results");
       await toolproof.waitFor(() => results.querySelectorAll("a.pf-searchbox-result").length === 3, "Should have 3 results");
+      await toolproof.waitFor(() => results.querySelector("a.pf-searchbox-result[data-pf-selected]") !== null, "First result should be selected");
   - step: In my browser, the console should be empty
   - step: In my browser, I evaluate {js}
     js: |-
       let results = document.querySelectorAll("a.pf-searchbox-result");
-      toolproof.assert(results[0].classList.contains("selected"), "First result should be selected initially");
+      toolproof.assert(results[0].hasAttribute("data-pf-selected"), "First result should be selected initially");
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I evaluate {js}
     js: |-
       let input = await toolproof.querySelector("pagefind-searchbox input");
       let results = document.querySelectorAll("a.pf-searchbox-result");
-      toolproof.assert(results[1].classList.contains("selected"), "Second result should be selected after ArrowDown");
-      toolproof.assert(!results[0].classList.contains("selected"), "First result should not be selected");
+      toolproof.assert(results[1].hasAttribute("data-pf-selected"), "Second result should be selected after ArrowDown");
+      toolproof.assert(!results[0].hasAttribute("data-pf-selected"), "First result should not be selected");
       toolproof.assert(input.getAttribute("aria-activedescendant") === results[1].id, "aria-activedescendant should update");
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I evaluate {js}
     js: |-
       let results = document.querySelectorAll("a.pf-searchbox-result");
-      toolproof.assert(results[2].classList.contains("selected"), "Third result should be selected");
+      toolproof.assert(results[2].hasAttribute("data-pf-selected"), "Third result should be selected");
   - step: In my browser, I press the "ArrowUp" key
   - step: In my browser, I evaluate {js}
     js: |-
       let results = document.querySelectorAll("a.pf-searchbox-result");
-      toolproof.assert(results[1].classList.contains("selected"), "Second result should be selected after ArrowUp");
+      toolproof.assert(results[1].hasAttribute("data-pf-selected"), "Second result should be selected after ArrowUp");
   - step: In my browser, I evaluate {js}
     js: |-
       let container = await toolproof.querySelector(".pf-searchbox");
