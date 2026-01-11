@@ -56,6 +56,7 @@ steps:
   - step: In my browser, I evaluate {js}
     js: |-
       let trigger = await toolproof.querySelector(".pf-dropdown-trigger");
+      toolproof.assert(trigger.getAttribute("role") === "combobox", "Trigger should have role=combobox");
       toolproof.assert(trigger.getAttribute("aria-haspopup") === "listbox", "Trigger should have aria-haspopup=listbox");
       toolproof.assert(trigger.getAttribute("aria-expanded") === "false", "Trigger should have aria-expanded=false initially");
       toolproof.assert(trigger.getAttribute("aria-controls") !== null, "Trigger should have aria-controls");
@@ -150,9 +151,9 @@ steps:
     js: |-
       let dropdowns = await toolproof.querySelectorAll("pagefind-filter-dropdown");
       let firstDropdown = dropdowns[0];
-      let optionsContainer = firstDropdown.querySelector(".pf-dropdown-options");
-      await toolproof.waitFor(() => optionsContainer.getAttribute("aria-activedescendant"));
-      let activeId = optionsContainer.getAttribute("aria-activedescendant");
+      let trigger = firstDropdown.querySelector(".pf-dropdown-trigger");
+      await toolproof.waitFor(() => trigger.getAttribute("aria-activedescendant"));
+      let activeId = trigger.getAttribute("aria-activedescendant");
       toolproof.assert(activeId !== null && activeId !== "", "aria-activedescendant should be set after ArrowDown");
       let focusedOption = firstDropdown.querySelector(".pf-dropdown-option-focused");
       toolproof.assert(focusedOption !== null, "An option should have the focused class");

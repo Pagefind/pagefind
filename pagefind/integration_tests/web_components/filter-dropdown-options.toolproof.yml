@@ -107,23 +107,23 @@ steps:
   - step: In my browser, I evaluate {js}
     js: |-
       let dropdown = await toolproof.querySelector("#default");
-      let optionsContainer = dropdown.querySelector(".pf-dropdown-options");
+      let trigger = dropdown.querySelector(".pf-dropdown-trigger");
       let options = dropdown.querySelectorAll(".pf-dropdown-option");
-      toolproof.assert(optionsContainer.getAttribute("aria-activedescendant") === options[options.length - 1].id, "End should focus last option");
+      toolproof.assert(trigger.getAttribute("aria-activedescendant") === options[options.length - 1].id, "End should focus last option");
   - step: In my browser, I press the "Home" key
   - step: In my browser, I evaluate {js}
     js: |-
       let dropdown = await toolproof.querySelector("#default");
-      let optionsContainer = dropdown.querySelector(".pf-dropdown-options");
+      let trigger = dropdown.querySelector(".pf-dropdown-trigger");
       let options = dropdown.querySelectorAll(".pf-dropdown-option");
-      toolproof.assert(optionsContainer.getAttribute("aria-activedescendant") === options[0].id, "Home should focus first option");
+      toolproof.assert(trigger.getAttribute("aria-activedescendant") === options[0].id, "Home should focus first option");
   - step: In my browser, I press the "b" key
   - step: In my browser, I evaluate {js}
     js: |-
       let dropdown = await toolproof.querySelector("#default");
-      let optionsContainer = dropdown.querySelector(".pf-dropdown-options");
+      let trigger = dropdown.querySelector(".pf-dropdown-trigger");
       await toolproof.waitFor(() => {
-        let activeId = optionsContainer.getAttribute("aria-activedescendant");
+        let activeId = trigger.getAttribute("aria-activedescendant");
         let activeOption = document.getElementById(activeId);
         return activeOption && activeOption.textContent.includes("Banana");
       });

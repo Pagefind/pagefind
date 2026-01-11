@@ -11,9 +11,7 @@ steps:
       <pagefind-modal-trigger id="custom" shortcut="/"></pagefind-modal-trigger>
       <pagefind-modal-trigger id="compact" compact></pagefind-modal-trigger>
       <pagefind-modal-trigger id="placeholder" placeholder="Find stuff"></pagefind-modal-trigger>
-      <pagefind-modal>
-      <pagefind-input></pagefind-input>
-      </pagefind-modal>
+      <pagefind-modal></pagefind-modal>
       <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
       </body></html>
   - step: I have a "public/cat/index.html" file with the content {html}

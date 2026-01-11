@@ -113,6 +113,7 @@ export class PagefindFilterDropdown extends PagefindElement {
     this.triggerEl.id = triggerId;
     this.triggerEl.className = "pf-dropdown-trigger";
     if (this.wrapLabels) this.triggerEl.classList.add("wrap");
+    this.triggerEl.setAttribute("role", "combobox");
     this.triggerEl.setAttribute("aria-haspopup", "listbox");
     this.triggerEl.setAttribute("aria-expanded", "false");
     this.triggerEl.setAttribute("aria-controls", menuId);
@@ -151,7 +152,6 @@ export class PagefindFilterDropdown extends PagefindElement {
       this.singleSelect ? "false" : "true",
     );
     this.optionsEl.setAttribute("aria-labelledby", triggerId);
-    this.optionsEl.setAttribute("tabindex", "-1");
     this.menuEl.appendChild(this.optionsEl);
 
     this.wrapperEl.appendChild(this.menuEl);
@@ -180,12 +180,13 @@ export class PagefindFilterDropdown extends PagefindElement {
     this.triggerEl.addEventListener("focus", () =>
       this.instance?.triggerLoad(),
     );
-    this.triggerEl.addEventListener("keydown", (e) =>
-      this.handleTriggerKeydown(e),
-    );
-    this.optionsEl.addEventListener("keydown", (e) =>
-      this.handleMenuKeydown(e),
-    );
+    this.triggerEl.addEventListener("keydown", (e) => {
+      if (this.isOpen) {
+        this.handleMenuKeydown(e);
+      } else {
+        this.handleTriggerKeydown(e);
+      }
+    });
 
     this.isRendered = true;
   }
@@ -214,10 +215,11 @@ export class PagefindFilterDropdown extends PagefindElement {
     this.triggerEl.setAttribute("aria-expanded", "true");
     this.triggerEl.classList.add("open");
 
-    if (this.activeIndex < 0 && this.optionElements.length > 0) {
-      this.setActiveIndex(0);
+    // Always apply visual focus when opening if there are options
+    if (this.optionElements.length > 0) {
+      const targetIndex = this.activeIndex >= 0 ? this.activeIndex : 0;
+      this.setActiveIndex(targetIndex);
     }
-    this.optionsEl.focus();
 
     const navigateText =
       this.instance?.translate("keyboard_navigate") || "navigate";
@@ -250,7 +252,7 @@ export class PagefindFilterDropdown extends PagefindElement {
     this.triggerEl.setAttribute("aria-expanded", "false");
     this.triggerEl.classList.remove("open");
 
-    this.optionsEl.removeAttribute("aria-activedescendant");
+    this.triggerEl?.removeAttribute("aria-activedescendant");
 
     for (const { el } of this.optionElements) {
       el.classList.remove("pf-dropdown-option-focused");
@@ -348,7 +350,7 @@ export class PagefindFilterDropdown extends PagefindElement {
     const option = this.optionElements[index];
 
     option.el.classList.add("pf-dropdown-option-focused");
-    this.optionsEl.setAttribute("aria-activedescendant", option.el.id);
+    this.triggerEl?.setAttribute("aria-activedescendant", option.el.id);
 
     this.scrollToCenter(option.el);
   }
@@ -524,6 +526,8 @@ export class PagefindFilterDropdown extends PagefindElement {
   }
 
   toggleOption(value: string): void {
+    const wasSelected = this.selectedValues.has(value);
+
     if (this.singleSelect) {
       if (this.selectedValues.has(value)) {
         this.selectedValues.clear();
@@ -538,6 +542,13 @@ export class PagefindFilterDropdown extends PagefindElement {
       } else {
         this.selectedValues.add(value);
       }
+    }
+
+    // Announce selection change for screen readers
+    const isNowSelected = this.selectedValues.has(value);
+    if (isNowSelected !== wasSelected) {
+      const action = isNowSelected ? "selected" : "deselected";
+      this.instance?.announceRaw(`${value} ${action}`);
     }
 
     this.updateOptionStates();
