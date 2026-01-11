@@ -11,8 +11,21 @@
         "zero_results": "[SEARCH_TERM] için sonuç yok",
         "many_results": "[SEARCH_TERM] için [COUNT] sonuç bulundu",
         "one_result": "[SEARCH_TERM] için [COUNT] sonuç bulundu",
+        "total_zero_results": "No results",
+        "total_one_result": "[COUNT] result",
+        "total_many_results": "[COUNT] results",
         "alt_search": "[SEARCH_TERM] için sonuç yok. Bunun yerine [DIFFERENT_TERM] için sonuçlar gösteriliyor",
         "search_suggestion": "[SEARCH_TERM] için sonuç yok. Alternatif olarak aşağıdaki kelimelerden birini deneyebilirsiniz:",
-        "searching": "[SEARCH_TERM] araştırılıyor..."
+        "searching": "[SEARCH_TERM] araştırılıyor...",
+        "results_label": "Search results",
+        "keyboard_navigate": "navigate",
+        "keyboard_select": "select",
+        "keyboard_clear": "clear",
+        "keyboard_close": "close",
+        "keyboard_search": "search",
+        "error_search": "Search failed",
+        "filter_selected_one": "[COUNT] selected",
+        "filter_selected_many": "[COUNT] selected",
+        "input_hint": "Results will appear as you type"
     }
 }

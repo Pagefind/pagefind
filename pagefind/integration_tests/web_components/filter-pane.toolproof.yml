@@ -1,0 +1,90 @@
+name: Web Components Tests > Filter pane renders and filters results
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <div style="display: flex; gap: 24px;">
+        <pagefind-filter-pane style="width: 200px;"></pagefind-filter-pane>
+        <div style="flex: 1;">
+          <pagefind-config preload></pagefind-config>
+          <pagefind-input></pagefind-input>
+          <pagefind-summary></pagefind-summary>
+          <pagefind-results></pagefind-results>
+        </div>
+      </div>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide-one/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Guide">First Guide</h1>
+      <p>This is the first guide about configuration.</p>
+      </body></html>
+  - step: I have a "public/guide-two/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Guide">Second Guide</h1>
+      <p>This is the second guide about setup.</p>
+      </body></html>
+  - step: I have a "public/tutorial/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Tutorial">Getting Started Tutorial</h1>
+      <p>This is a tutorial about configuration.</p>
+      </body></html>
+  - step: I have a "public/reference/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1 data-pagefind-filter="type:Reference">API Reference</h1>
+      <p>This is the API reference documentation.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "this"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let filterPane = await toolproof.querySelector("pagefind-filter-pane .pf-filter-pane");
+      await toolproof.waitFor(() => filterPane.querySelectorAll(".pf-filter-group").length > 0);
+      let groups = filterPane.querySelectorAll(".pf-filter-group");
+      toolproof.assert(groups.length === 1, `Expected 1 filter group (type), got ${groups.length}`);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let options = await toolproof.querySelectorAll("pagefind-filter-pane .pf-filter-checkbox");
+      return Array.from(options).map(cb => cb.textContent.trim()).join("\n");
+    snapshot_content: |-
+      ╎Guide2
+      ╎Reference1
+      ╎Tutorial1
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 4);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let guideCheckbox = Array.from(document.querySelectorAll(".pf-filter-checkbox input")).find(input => {
+        return input.parentElement.textContent.includes("Guide");
+      });
+      toolproof.assert(guideCheckbox !== undefined, "Guide checkbox should be found");
+      guideCheckbox.click();
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 2);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let guideCheckbox = Array.from(document.querySelectorAll(".pf-filter-checkbox input")).find(input => {
+        return input.parentElement.textContent.includes("Guide");
+      });
+      guideCheckbox.click();
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 4);

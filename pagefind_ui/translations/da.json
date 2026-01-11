@@ -11,8 +11,21 @@
         "zero_results": "Ingen resultater for [SEARCH_TERM]",
         "many_results": "[COUNT] resultater for [SEARCH_TERM]",
         "one_result": "[COUNT] resultat for [SEARCH_TERM]",
+        "total_zero_results": "No results",
+        "total_one_result": "[COUNT] result",
+        "total_many_results": "[COUNT] results",
         "alt_search": "Ingen resultater for [SEARCH_TERM]. Viser resultater for [DIFFERENT_TERM] i stedet",
         "search_suggestion": "Ingen resultater for [SEARCH_TERM]. Prøv et af disse søgeord i stedet:",
-        "searching": "Søger efter [SEARCH_TERM]..."
+        "searching": "Søger efter [SEARCH_TERM]...",
+        "results_label": "Search results",
+        "keyboard_navigate": "navigate",
+        "keyboard_select": "select",
+        "keyboard_clear": "clear",
+        "keyboard_close": "close",
+        "keyboard_search": "search",
+        "error_search": "Search failed",
+        "filter_selected_one": "[COUNT] selected",
+        "filter_selected_many": "[COUNT] selected",
+        "input_hint": "Results will appear as you type"
     }
 }

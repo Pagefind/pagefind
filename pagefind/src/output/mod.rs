@@ -54,6 +54,18 @@ const WEB_MODULAR_UI_CSS: &[u8] = include_bytes!(concat!(
     env!("CARGO_PKG_VERSION"),
     ".css"
 ));
+const COMPONENT_UI_JS: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/vendor/pagefind_component_ui.",
+    env!("CARGO_PKG_VERSION"),
+    ".js"
+));
+const COMPONENT_UI_CSS: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/vendor/pagefind_component_ui.",
+    env!("CARGO_PKG_VERSION"),
+    ".css"
+));
 const SEARCH_JS: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/vendor/pagefind_public_search_api.",
@@ -183,6 +195,18 @@ async fn write_common(
         write(
             outdir.join("pagefind-modular-ui.css"),
             vec![WEB_MODULAR_UI_CSS],
+            Compress::None,
+            write_behavior,
+        ),
+        write(
+            outdir.join("pagefind-component-ui.js"),
+            vec![COMPONENT_UI_JS],
+            Compress::None,
+            write_behavior,
+        ),
+        write(
+            outdir.join("pagefind-component-ui.css"),
+            vec![COMPONENT_UI_CSS],
             Compress::None,
             write_behavior,
         ),

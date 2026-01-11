@@ -1,0 +1,54 @@
+name: Web Components Tests > Modal search works
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal></pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let modal = await toolproof.querySelector("pagefind-modal");
+      let elements = ["pagefind-modal-header", "pagefind-modal-body", "pagefind-modal-footer",
+                      "pagefind-input", "pagefind-summary", "pagefind-results"];
+      return elements.filter(el => modal.querySelector(el) !== null).join("\n");
+    snapshot_content: |-
+      ╎pagefind-modal-header
+      ╎pagefind-modal-body
+      ╎pagefind-modal-footer
+      ╎pagefind-input
+      ╎pagefind-summary
+      ╎pagefind-results
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let trigger = await toolproof.querySelector("pagefind-modal-trigger button");
+      trigger.click();
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+  - step: In my browser, I click the selector "pagefind-modal input"
+  - step: In my browser, I type "world"
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-modal pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("1"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎1 result for world
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-modal pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 1);

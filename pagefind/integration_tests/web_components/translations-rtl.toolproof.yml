@@ -1,0 +1,51 @@
+name: Web Components Tests > RTL language support with Arabic
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ar">
+          <head>
+              <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+          </head>
+          <body>
+              <pagefind-config preload></pagefind-config>
+              <pagefind-input></pagefind-input>
+              <pagefind-summary></pagefind-summary>
+              <pagefind-results></pagefind-results>
+              <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+          </body>
+      </html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="ar"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "garbage"
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("لا توجد نتائج"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎لا توجد نتائج ل garbage
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let input = document.querySelector("pagefind-input");
+      let summary = document.querySelector("pagefind-summary");
+      let results = document.querySelector("pagefind-results");
+      return [
+        `input dir: ${input.getAttribute("dir")}`,
+        `summary dir: ${summary.getAttribute("dir")}`,
+        `results dir: ${results.getAttribute("dir")}`
+      ].join("\n");
+    snapshot_content: |-
+      ╎input dir: rtl
+      ╎summary dir: rtl
+      ╎results dir: rtl

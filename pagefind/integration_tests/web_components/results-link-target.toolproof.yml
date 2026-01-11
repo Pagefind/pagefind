@@ -1,0 +1,42 @@
+name: Web Components Tests > Results link-target opens in new tab
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results id="default-target"></pagefind-results>
+      <pagefind-results id="blank-target" link-target="_blank"></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Cat Page</h1><p>This page is about
+      cats.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "cat"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultTarget = await toolproof.querySelector("#default-target ul");
+      await toolproof.waitFor(() => defaultTarget.querySelectorAll("li a").length > 0);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let defaultLink = document.querySelector("#default-target ul a");
+      let blankLink = document.querySelector("#blank-target ul a");
+      return [
+        `default target: ${defaultLink.getAttribute("target") || "(none)"}`,
+        `blank target: ${blankLink.getAttribute("target")}`
+      ].join("\n");
+    snapshot_content: |-
+      ╎default target: (none)
+      ╎blank target: _blank

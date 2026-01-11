@@ -11,8 +11,21 @@
         "zero_results": "No es van trobar resultats per [SEARCH_TERM]",
         "many_results": "[COUNT] resultats trobats per [SEARCH_TERM]",
         "one_result": "[COUNT] resultat trobat per [SEARCH_TERM]",
+        "total_zero_results": "No results",
+        "total_one_result": "[COUNT] result",
+        "total_many_results": "[COUNT] results",
         "alt_search": "No es van trobar resultats per [SEARCH_TERM]. Mostrant al seu lloc resultats per [DIFFERENT_TERM]",
         "search_suggestion": "No es van trobar resultats per [SEARCH_TERM]. Proveu una de les cerques següents:",
-        "searching": "Cercant [SEARCH_TERM]..."
+        "searching": "Cercant [SEARCH_TERM]...",
+        "results_label": "Search results",
+        "keyboard_navigate": "navigate",
+        "keyboard_select": "select",
+        "keyboard_clear": "clear",
+        "keyboard_close": "close",
+        "keyboard_search": "search",
+        "error_search": "Search failed",
+        "filter_selected_one": "[COUNT] selected",
+        "filter_selected_many": "[COUNT] selected",
+        "input_hint": "Results will appear as you type"
     }
 }

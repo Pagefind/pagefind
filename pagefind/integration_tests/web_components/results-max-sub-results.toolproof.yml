@@ -1,0 +1,51 @@
+name: Web Components Tests > Results max-sub-results limits sub-results
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results id="default-max"></pagefind-results>
+      <pagefind-results id="limited" max-sub-results="1"></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Complete Guide</h1>
+      <h2 id="first">First Topic</h2>
+      <p>Content about the first topic.</p>
+      <h2 id="second">Second Topic</h2>
+      <p>Content about the second topic.</p>
+      <h2 id="third">Third Topic</h2>
+      <p>Content about the third topic.</p>
+      <h2 id="fourth">Fourth Topic</h2>
+      <p>Content about the fourth topic.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "topic"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultMax = await toolproof.querySelector("#default-max ul");
+      await toolproof.waitFor(() => defaultMax.querySelectorAll("li").length > 0);
+  # Default max (3) - class is pf-heading-chip
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let defaultMax = await toolproof.querySelector("#default-max ul");
+      let subResults = defaultMax.querySelectorAll(".pf-heading-chip");
+      toolproof.assert(subResults.length <= 3, `Default should show at most 3 sub-results, got ${subResults.length}`);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let limited = await toolproof.querySelector("#limited ul");
+      await toolproof.waitFor(() => limited.querySelectorAll("li").length > 0);
+      let subResults = limited.querySelectorAll(".pf-heading-chip");
+      toolproof.assert(subResults.length <= 1, `Limited should show at most 1 sub-result, got ${subResults.length}`);

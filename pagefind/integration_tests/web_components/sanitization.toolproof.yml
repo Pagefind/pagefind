@@ -1,0 +1,64 @@
+name: Web Components Tests > Template HTML and URL sanitization
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results>
+        <script type="text/pagefind-template">
+          <li class="sani">
+            <h2 class="escaped-title">{{ meta.title }}</h2>
+            <a class="result-link" href="{{ meta.url | default(url) | safeUrl }}">Link</a>
+            <div class="raw-excerpt">{{+ excerpt +}}</div>
+          </li>
+        </script>
+      </pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/page/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en">
+      <head></head>
+      <body><h1>&lt;script&gt;alert('xss')&lt;/script&gt;</h1><p>This page has escaped HTML in title.</p></body></html>
+  - step: I have a "public/malicious/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en">
+      <head></head>
+      <body>
+      <h1 data-pagefind-meta="url:javascript:alert('xss')">Malicious Page</h1>
+      <p>This page has a javascript URL in meta.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "page"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".sani").length === 2);
+  - step: In my browser, the console should be empty
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let item = Array.from(results.querySelectorAll(".sani")).find(li =>
+        li.querySelector(".escaped-title").textContent.includes("script")
+      );
+      return item.querySelector(".escaped-title").textContent;
+    # script tags in title are displayed as text, not executed as HTML
+    expected: "<script>alert('xss')</script>"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let item = Array.from(results.querySelectorAll(".sani")).find(li =>
+        li.querySelector(".escaped-title").textContent.includes("Malicious")
+      );
+      return item.querySelector(".result-link").getAttribute("href");
+    # javascript: protocol URLs are stripped to prevent XSS
+    expected: ""

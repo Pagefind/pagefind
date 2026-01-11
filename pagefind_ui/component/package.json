@@ -1,0 +1,48 @@
+{
+  "name": "@pagefind/component-ui",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": [
+    "*.css",
+    "./component-ui.ts",
+    "./components/*.ts",
+    "./npm_dist/**/*.mjs",
+    "./npm_dist/**/*.cjs"
+  ],
+  "main": "npm_dist/cjs/component-ui.cjs",
+  "module": "npm_dist/mjs/component-ui.mjs",
+  "types": "types-entry.ts",
+  "scripts": {
+    "start": "PAGEFIND_DEV=true node ./build.js",
+    "build": "node ./build.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "Pagefind",
+  "license": "MIT",
+  "dependencies": {
+    "adequate-little-templates": "^1.0.2",
+    "bcp-47": "^2.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "esbuild-plugin-import-glob": "^0.1.1",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "npm_dist/**",
+    "css/pagefind-component-ui.css",
+    "types.ts",
+    "types-entry.ts",
+    "core/**/*.ts",
+    "components/**/*.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types-entry.ts",
+      "import": "./npm_dist/mjs/component-ui.mjs",
+      "require": "./npm_dist/cjs/component-ui.cjs"
+    },
+    "./css": "./css/pagefind-component-ui.css",
+    "./css/pagefind-component-ui.css": "./css/pagefind-component-ui.css"
+  }
+}

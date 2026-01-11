@@ -1,0 +1,76 @@
+name: Web Components Tests > Custom sub-result templates work correctly
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results>
+        <script type="text/pagefind-template">
+          <li class="custom-result">
+            <h2 class="custom-title">{{ meta.title }}</h2>
+            <div class="custom-excerpt">{{+ excerpt +}}</div>
+            {{#if sub_results}}
+            <ul class="custom-sub-results">
+              {{#each sub_results as sub}}
+              <li class="custom-sub-result">
+                <span class="custom-sub-title">{{ sub.title }}</span>
+                <a class="custom-sub-link" href="{{ sub.url | safeUrl }}">Go to section</a>
+              </li>
+              {{/each}}
+            </ul>
+            {{/if}}
+          </li>
+        </script>
+      </pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Configuration Guide</h1>
+      <p>Learn about configuration options.</p>
+      <h2 id="basic">Basic Configuration</h2>
+      <p>This section covers basic configuration settings.</p>
+      <h2 id="advanced">Advanced Configuration</h2>
+      <p>This section covers advanced configuration options.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "configuration"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll(".custom-sub-results").length >= 1);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let html = results.innerHTML;
+      let formatted = html
+        .replace(/></g, ">\n<")
+        .replace(/^\s+/gm, m => "  ".repeat(Math.floor(m.length / 2)));
+      return formatted.trim();
+    snapshot_content: |-
+      ╎<li class="custom-result">
+      ╎      <h2 class="custom-title">Configuration Guide</h2>
+      ╎      <div class="custom-excerpt">
+      ╎<mark>Configuration</mark> Guide. Learn about <mark>configuration</mark> options. Basic <mark>Configuration.</mark> This section covers basic <mark>configuration</mark> settings. Advanced <mark>Configuration.</mark> This section covers advanced <mark>configuration</mark> options.</div>
+      ╎            <ul class="custom-sub-results">
+      ╎                <li class="custom-sub-result">
+      ╎          <span class="custom-sub-title">Basic Configuration</span>
+      ╎          <a class="custom-sub-link" href="/guide/#basic">Go to section</a>
+      ╎        </li>
+      ╎                <li class="custom-sub-result">
+      ╎          <span class="custom-sub-title">Advanced Configuration</span>
+      ╎          <a class="custom-sub-link" href="/guide/#advanced">Go to section</a>
+      ╎        </li>
+      ╎              </ul>
+      ╎          </li>

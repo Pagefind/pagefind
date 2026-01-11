@@ -39,3 +39,7 @@ fs.writeFileSync(pagefindUiCfg.path, pagefindUiCfg.contents);
 let pagefindModularUiCfg = file("../pagefind_ui/modular/package.json");
 pagefindModularUiCfg.contents = pagefindModularUiCfg.contents.replace(version_re, `"version": "${version}"`);
 fs.writeFileSync(pagefindModularUiCfg.path, pagefindModularUiCfg.contents);
+
+let pagefindComponentUiCfg = file("../pagefind_ui/component/package.json");
+pagefindComponentUiCfg.contents = pagefindComponentUiCfg.contents.replace(version_re, `"version": "${version}"`);
+fs.writeFileSync(pagefindComponentUiCfg.path, pagefindComponentUiCfg.contents);
