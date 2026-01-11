@@ -68,7 +68,7 @@ const DEFAULT_RESULT_TEMPLATE = `<li class="pf-result">
   {{/if}}
 </li>`;
 
-const DEFAULT_PLACEHOLDER_TEMPLATE = `<li class="pf-result">
+const DEFAULT_PLACEHOLDER_TEMPLATE = `<li class="pf-result" aria-hidden="true">
   <div class="pf-result-card">
     <div class="pf-skeleton pf-skeleton-image"></div>
     <div class="pf-result-content">
@@ -393,6 +393,15 @@ export class PagefindResults extends PagefindElement {
                 : "many_results";
           const priority = count === 0 ? "assertive" : "polite";
           instance.announce(key, { SEARCH_TERM: term, COUNT: count }, priority);
+        } else if (instance.faceted) {
+          const key =
+            count === 0
+              ? "total_zero_results"
+              : count === 1
+                ? "total_one_result"
+                : "total_many_results";
+          const priority = count === 0 ? "assertive" : "polite";
+          instance.announce(key, { COUNT: count }, priority);
         }
 
         const resultRenderer = this.getResultRenderer();
