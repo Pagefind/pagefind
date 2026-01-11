@@ -357,7 +357,11 @@ jobs:
           echo CHANGELOG=\"$(base64 -w 0 -i CHANGELOG.md)\" >> $GITHUB_ENV
           echo SHA=\"$( git rev-parse main:CHANGELOG.md )\" >> $GITHUB_ENV
       - name: Build CHANGELOG
-        if: env.GIT_TAG != 'latest'
+        if: env.GIT_TAG == 'beta' || env.GIT_TAG == 'rc'
+        run: |
+          node ./.backstage/changelog.cjs write
+      - name: Build CHANGELOG
+        if: env.GIT_TAG != 'latest' && env.GIT_TAG != 'beta' && env.GIT_TAG != 'rc'
         run: |
           echo "## Prerelease" > RELEASE.md
           node ./.backstage/changelog.cjs write || true
@@ -402,9 +406,23 @@ jobs:
             build-artifacts/*
         env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-      - name: Release
+
+      - name: Prerelease
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG != 'latest'
+        if: startsWith(github.ref, 'refs/tags/') && (env.GIT_TAG == 'beta' || env.GIT_TAG == 'rc')
+        with:
+          repository: pagefind/pagefind
+          prerelease: true
+          body_path: RELEASE.md
+          discussion_category_name: Announcements
+          files: |
+            build-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+
+      - name: Test Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG != 'latest' && env.GIT_TAG != 'beta' && env.GIT_TAG != 'rc'
         with:
           repository: pagefind/pagefind-beta
           prerelease: true
@@ -489,7 +507,7 @@ jobs:
         run: echo GIT_TAG="$(node ./.backstage/get_tag.cjs)" >> $GITHUB_ENV
 
       - name: Verify Changelog
-        if: env.GIT_TAG == 'latest'
+        if: env.GIT_TAG == 'latest' || env.GIT_TAG == 'beta' || env.GIT_TAG == 'rc'
         run: |
           node ./.backstage/changelog.cjs
 
