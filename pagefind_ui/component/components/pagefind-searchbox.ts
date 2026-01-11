@@ -174,7 +174,8 @@ export class PagefindSearchbox extends PagefindElement {
   containerEl: HTMLElement | null = null;
   inputEl: HTMLInputElement | null = null;
   dropdownEl: HTMLElement | null = null;
-  resultsEl: HTMLUListElement | null = null;
+  resultsEl: HTMLElement | null = null;
+  statusEl: HTMLElement | null = null;
   footerEl: HTMLElement | null = null;
 
   isOpen: boolean = false;
@@ -303,12 +304,17 @@ export class PagefindSearchbox extends PagefindElement {
       this.removeAttribute("dir");
     }
 
-    this.resultsEl = document.createElement("ul");
+    this.resultsEl = document.createElement("div");
     this.resultsEl.id = resultsId;
     this.resultsEl.className = "pf-searchbox-results";
     this.resultsEl.setAttribute("role", "listbox");
     this.resultsEl.setAttribute("aria-label", resultsLabel);
     this.dropdownEl.appendChild(this.resultsEl);
+
+    this.statusEl = document.createElement("div");
+    this.statusEl.className = "pf-searchbox-status";
+    this.statusEl.hidden = true;
+    this.dropdownEl.appendChild(this.statusEl);
 
     if (this.showKeyboardHints) {
       this.footerEl = document.createElement("div");
@@ -491,33 +497,33 @@ export class PagefindSearchbox extends PagefindElement {
   }
 
   private showLoadingState(): void {
-    if (!this.resultsEl) return;
+    if (!this.resultsEl || !this.statusEl) return;
     this.isLoading = true;
     this.resultsEl.innerHTML = "";
+    this.resultsEl.setAttribute("aria-busy", "true");
 
     const searchingText =
       this.instance?.translate("searching", { SEARCH_TERM: this.searchTerm }) ||
       "Searching...";
 
-    const loadingEl = document.createElement("div");
-    loadingEl.className = "pf-searchbox-loading";
-    loadingEl.textContent = searchingText;
-    this.resultsEl.appendChild(loadingEl);
+    this.statusEl.textContent = searchingText;
+    this.statusEl.className = "pf-searchbox-status pf-searchbox-loading";
+    this.statusEl.hidden = false;
   }
 
   private showEmptyState(): void {
-    if (!this.resultsEl) return;
+    if (!this.resultsEl || !this.statusEl) return;
     this.resultsEl.innerHTML = "";
+    this.resultsEl.removeAttribute("aria-busy");
 
     const noResultsText =
       this.instance?.translate("zero_results", {
         SEARCH_TERM: this.searchTerm,
       }) || `No results for "${this.searchTerm}"`;
 
-    const emptyEl = document.createElement("div");
-    emptyEl.className = "pf-searchbox-empty";
-    emptyEl.textContent = noResultsText;
-    this.resultsEl.appendChild(emptyEl);
+    this.statusEl.textContent = noResultsText;
+    this.statusEl.className = "pf-searchbox-status pf-searchbox-empty";
+    this.statusEl.hidden = false;
 
     this.instance?.announce(
       "zero_results",
@@ -612,6 +618,13 @@ export class PagefindSearchbox extends PagefindElement {
 
   private handleResults(searchResult: PagefindSearchResult): void {
     this.isLoading = false;
+
+    if (this.resultsEl) {
+      this.resultsEl.removeAttribute("aria-busy");
+    }
+    if (this.statusEl) {
+      this.statusEl.hidden = true;
+    }
 
     for (const result of this.results) {
       result.cleanup();

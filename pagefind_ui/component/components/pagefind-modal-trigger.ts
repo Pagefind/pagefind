@@ -84,6 +84,12 @@ export class PagefindModalTrigger extends PagefindElement {
     this.buttonEl.setAttribute("aria-haspopup", "dialog");
     this.buttonEl.setAttribute("aria-expanded", "false");
     this.buttonEl.setAttribute("aria-label", this.placeholder || "Search");
+    this.buttonEl.setAttribute(
+      "aria-keyshortcuts",
+      this.isMac
+        ? `Meta+${this.shortcut.toUpperCase()}`
+        : `Control+${this.shortcut.toUpperCase()}`,
+    );
 
     const icon = document.createElement("span");
     icon.className = "pf-trigger-icon";

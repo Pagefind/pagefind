@@ -494,14 +494,14 @@ export class PagefindResults extends PagefindElement {
         if (index < anchors.length - 1) {
           const next = anchors[index + 1];
           next.focus();
-          this.scrollToCenter(next);
+          this.scrollToCenter(next, e.repeat);
         }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         if (index > 0) {
           const prev = anchors[index - 1];
           prev.focus();
-          this.scrollToCenter(prev);
+          this.scrollToCenter(prev, e.repeat);
         } else {
           // At first anchor, go back to input
           this.instance?.focusPreviousInput(document.activeElement as Element);
@@ -558,7 +558,7 @@ export class PagefindResults extends PagefindElement {
     });
   }
 
-  private scrollToCenter(el: HTMLElement): void {
+  private scrollToCenter(el: HTMLElement, instant: boolean = false): void {
     const container = this.intersectionEl || nearestScrollParent(el);
     if (!container || !(container instanceof HTMLElement)) return;
     if (container === document.body || container === document.documentElement)
@@ -569,7 +569,10 @@ export class PagefindResults extends PagefindElement {
     const elRelativeTop = elRect.top - containerRect.top + container.scrollTop;
     const targetScroll =
       elRelativeTop - container.clientHeight / 2 + el.offsetHeight / 2;
-    container.scrollTo({ top: targetScroll, behavior: "smooth" });
+    container.scrollTo({
+      top: targetScroll,
+      behavior: instant ? "instant" : "smooth",
+    });
   }
 
   clearSelection(): void {

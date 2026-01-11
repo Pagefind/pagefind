@@ -46,7 +46,6 @@ export class PagefindModal extends PagefindElement {
     this.dialogEl = document.createElement("dialog");
     this.dialogEl.className = "pf-modal";
     this.dialogEl.id = dialogId;
-    this.dialogEl.setAttribute("aria-modal", "true");
     this.dialogEl.setAttribute("aria-label", searchLabel);
 
     if (hasChildren && children) {
