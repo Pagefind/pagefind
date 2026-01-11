@@ -7,6 +7,8 @@ weight: 92
 
 You can create your own components that integrate with the Pagefind Component UI system. Custom components can listen to search events, trigger searches, and coordinate with the built-in components.
 
+Before deciding to build a custom component, though, do check out how much you can customise the official components. For example, the [modal component](/components/modal/) can have its internal structure replaced, and both the [results component](/components/results/) and the [searchbox component](/components/searchbox/) can be supplied custom templates for each result.
+
 ## Basic Structure
 
 Custom components connect to Pagefind through an Instance. The instance coordinates all components that share the same `instance` attribute, handling search state, filters, and events.
