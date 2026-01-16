@@ -1,12 +1,14 @@
 use std::{cmp::Ordering, path::PathBuf};
 
 use anyhow::{bail, Result};
+use either::Either;
 use fossick::{FossickedData, Fossicker};
 use futures::future::join_all;
 use hashbrown::HashMap;
 use index::PagefindIndexes;
 use options::{PagefindInboundConfig, SearchOptions};
 use output::SyntheticFile;
+use rayon::prelude::*;
 pub use service::api;
 use wax::{Glob, WalkEntry};
 
@@ -42,7 +44,7 @@ impl SearchState {
         }
     }
 
-    pub async fn walk_for_files(&mut self, dir: PathBuf, glob: String) -> Result<Vec<Fossicker>> {
+    pub fn walk_for_files(&self, dir: PathBuf, glob: String) -> Result<Vec<Fossicker>> {
         let log = &self.options.logger;
 
         log.status("[Walking source directory]");
@@ -65,8 +67,9 @@ impl SearchState {
         }
     }
 
-    pub async fn fossick_many(&mut self, dir: PathBuf, glob: String) -> Result<usize> {
-        let files = self.walk_for_files(dir.clone(), glob).await?;
+    /// Fossick files in parallel using rayon
+    pub fn fossick_many(&mut self, dir: PathBuf, glob: String) -> Result<usize> {
+        let files = self.walk_for_files(dir.clone(), glob)?;
         let log = &self.options.logger;
 
         log.info(format!(
@@ -77,14 +80,33 @@ impl SearchState {
         ));
         log.status("[Parsing files]");
 
-        let results: Vec<_> = files
-            .into_iter()
-            .map(|f| f.fossick(&self.options))
-            .collect();
+        // Use rayon for parallel HTML parsing - this is the main performance win
+        // Partition results into successes and failures to report errors
+        let (results, errors): (Vec<_>, Vec<_>) = files
+            .into_par_iter()
+            .map(|f| f.fossick_sync(&self.options))
+            .partition_map(|r| match r {
+                Ok(data) => Either::Left(data),
+                Err(e) => Either::Right(e),
+            });
+
+        // Report any errors that occurred during parallel processing
+        if !errors.is_empty() {
+            log.warn(format!(
+                "{} file{} failed to index",
+                errors.len(),
+                plural!(errors.len())
+            ));
+            for err in errors.iter().take(5) {
+                log.v_warn(format!("  - {}", err));
+            }
+            if errors.len() > 5 {
+                log.v_warn(format!("  ... and {} more", errors.len() - 5));
+            }
+        }
 
         let existing_page_count = self.fossicked_pages.len();
-        self.fossicked_pages
-            .extend(join_all(results).await.into_iter().flatten());
+        self.fossicked_pages.extend(results);
 
         Ok(self.fossicked_pages.len() - existing_page_count)
     }

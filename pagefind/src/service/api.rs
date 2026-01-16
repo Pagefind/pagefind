@@ -169,10 +169,8 @@ impl PagefindIndex {
             serde_json::from_str("{}").expect("All fields have serde defaults");
         let glob = glob.unwrap_or(defaults.glob);
 
-        let page_count = self
-            .search_index
-            .fossick_many(PathBuf::from(path), glob)
-            .await?;
+        // fossick_many is now sync with rayon parallelization for better CPU utilization
+        let page_count = self.search_index.fossick_many(PathBuf::from(path), glob)?;
 
         Ok(page_count)
     }
