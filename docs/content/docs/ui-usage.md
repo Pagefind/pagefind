@@ -80,6 +80,16 @@ The Pagefind UI will look for a value under the metadata key `url`, and use that
 ```
 {{< /diffcode >}}
 
+It is also possible to override the URL of a result just like any other metadata either inline or by using an attribute. The following example shows how to do this inline:
+
+{{< diffcode >}}
+```html
+<h1
++    data-pagefind-meta="url:https://example.com/other-url">
+```
+{{< /diffcode >}}
+
+
 ## Overriding the title or image of a result
 
 The Pagefind UI will look for values under the metadata keys `title`, `image`, and `image_alt`. This allows you to override these details by tagging metadata on that page, for example:
