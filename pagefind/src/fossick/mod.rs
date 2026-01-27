@@ -3,13 +3,16 @@ use async_compression::tokio::bufread::GzipDecoder;
 #[cfg(feature = "extended")]
 use charabia::Segment;
 use either::Either;
+use flate2::read::GzDecoder;
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use pagefind_stem::{Algorithm, Stemmer};
 use path_slash::PathExt as _;
 use regex::Regex;
 use std::collections::BTreeMap;
+use std::io::BufRead;
 use std::io::Error;
+use std::io::Read;
 use std::ops::Mul;
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
@@ -202,6 +205,239 @@ impl Fossicker {
         self.data = Some(data);
 
         Ok(())
+    }
+
+    /// Synchronous version of read_file for rayon parallelization
+    fn read_file_sync(&mut self, options: &SearchOptions) -> Result<(), Error> {
+        let Some(file_path) = &self.file_path else {
+            return Ok(());
+        };
+        let file = std::fs::File::open(file_path)?;
+
+        let mut rewriter = DomParser::new(options);
+
+        let mut br = std::io::BufReader::new(file);
+        let mut buf = [0; 20000];
+
+        // Check for gzip magic bytes
+        let is_gzip = {
+            let peek = br.fill_buf()?;
+            peek.len() >= 3 && peek[0] == 0x1F && peek[1] == 0x8B && peek[2] == 0x08
+        };
+
+        if is_gzip {
+            let mut decoder = GzDecoder::new(br);
+            loop {
+                match decoder.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(read) => {
+                        if let Err(error) = rewriter.write(&buf[..read]) {
+                            options.logger.error(format!(
+                                "Failed to parse file {} — skipping this file. Error:\n{error}",
+                                file_path.to_str().unwrap_or("[unknown file]"),
+                            ));
+                            return Ok(());
+                        }
+                    }
+                    Err(e) => {
+                        options.logger.error(format!(
+                            "IO error reading gzip file {}: {e}",
+                            file_path.to_str().unwrap_or("[unknown file]")
+                        ));
+                        return Err(e);
+                    }
+                }
+            }
+        } else {
+            loop {
+                match br.read(&mut buf) {
+                    Ok(0) => break,
+                    Ok(read) => {
+                        if let Err(error) = rewriter.write(&buf[..read]) {
+                            options.logger.error(format!(
+                                "Failed to parse file {} — skipping this file. Error:\n{error}",
+                                file_path.to_str().unwrap_or("[unknown file]")
+                            ));
+                            return Ok(());
+                        }
+                    }
+                    Err(e) => {
+                        options.logger.error(format!(
+                            "IO error reading file {}: {e}",
+                            file_path.to_str().unwrap_or("[unknown file]")
+                        ));
+                        return Err(e);
+                    }
+                }
+            }
+        }
+
+        let mut data = rewriter.wrap();
+        if let Some(forced_language) = &options.force_language {
+            data.language = forced_language.clone();
+        }
+
+        self.data = Some(data);
+
+        Ok(())
+    }
+
+    /// Synchronous version of read_synthetic for rayon parallelization
+    fn read_synthetic_sync(&mut self, options: &SearchOptions) -> Result<(), Error> {
+        let Some(contents) = self.synthetic_content.as_ref() else {
+            return Ok(());
+        };
+
+        let mut rewriter = DomParser::new(options);
+
+        let mut br = std::io::Cursor::new(contents.as_bytes());
+        let mut buf = [0; 20000];
+
+        loop {
+            match Read::read(&mut br, &mut buf) {
+                Ok(0) => break,
+                Ok(read) => {
+                    if let Err(error) = rewriter.write(&buf[..read]) {
+                        let path_desc = self
+                            .file_path
+                            .as_ref()
+                            .and_then(|p| p.to_str())
+                            .or(self.page_url.as_deref())
+                            .unwrap_or("[unknown file]");
+                        options.logger.error(format!(
+                            "Failed to parse file {path_desc} — skipping this file. Error:\n{error}"
+                        ));
+                        return Ok(());
+                    }
+                }
+                Err(e) => {
+                    let path_desc = self
+                        .file_path
+                        .as_ref()
+                        .and_then(|p| p.to_str())
+                        .or(self.page_url.as_deref())
+                        .unwrap_or("[unknown file]");
+                    options.logger.error(format!(
+                        "IO error reading synthetic content for {path_desc}: {e}"
+                    ));
+                    return Err(e);
+                }
+            }
+        }
+
+        let mut data = rewriter.wrap();
+        if let Some(forced_language) = &options.force_language {
+            data.language = forced_language.clone();
+        }
+
+        self.data = Some(data);
+
+        Ok(())
+    }
+
+    /// Synchronous version of fossick_html for rayon parallelization.
+    /// Retries up to MAX_RETRIES times with exponential backoff on transient IO errors.
+    fn fossick_html_sync(&mut self, options: &SearchOptions) -> Result<(), std::io::Error> {
+        const MAX_RETRIES: u32 = 3;
+
+        let mut last_error = None;
+        for attempt in 0..MAX_RETRIES {
+            let result = if self.synthetic_content.is_some() {
+                self.read_synthetic_sync(options)
+            } else {
+                self.read_file_sync(options)
+            };
+
+            match result {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    last_error = Some(e);
+                    if attempt < MAX_RETRIES - 1 {
+                        // Exponential backoff: 1ms, 2ms, 4ms
+                        std::thread::sleep(std::time::Duration::from_millis(1 << attempt));
+                    }
+                }
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::Other, "Max retries exceeded")
+        }))
+    }
+
+    /// Synchronous fossick for rayon parallel iteration
+    pub fn fossick_sync(mut self, options: &SearchOptions) -> Result<FossickedData> {
+        if (self.file_path.is_some() || self.synthetic_content.is_some()) && self.data.is_none() {
+            if let Err(e) = self.fossick_html_sync(options) {
+                let path_desc = self
+                    .file_path
+                    .as_ref()
+                    .and_then(|p| p.to_str())
+                    .or(self.page_url.as_deref())
+                    .unwrap_or("[unknown file]");
+                options
+                    .logger
+                    .error(format!("Failed to read {path_desc} after retries: {e}"));
+                bail!("Failed to read {path_desc}: {e}");
+            }
+        }
+
+        let (content, word_data, anchors, word_count) = self.parse_digest(options);
+        self.tidy_meta_and_filters();
+
+        let data = self.data.unwrap();
+
+        // Get sorted list of meta field names for consistent field IDs
+        let meta_field_order: Vec<String> = data.meta.keys().cloned().collect();
+        let meta_word_data =
+            Self::parse_meta_words(&data.meta, &meta_field_order, &data.language, options);
+
+        // Build URL using Option combinators for cleaner logic
+        let url = self
+            .page_url
+            .clone()
+            .or_else(|| {
+                self.file_path
+                    .as_ref()
+                    .map(|path| build_url(path, self.root_path.as_deref(), options))
+            })
+            .ok_or_else(|| {
+                options
+                    .logger
+                    .error("Tried to index file with no specified URL or file path, ignoring.");
+                anyhow::anyhow!("Tried to index file with no specified URL or file path, ignoring.")
+            })?;
+
+        Ok(FossickedData {
+            url: url.clone(), // Clone needed since url is used in both struct and fragment.data
+            has_custom_body: data.has_custom_body,
+            force_inclusion: data.force_inclusion,
+            has_html_element: data.has_html_element,
+            has_old_bundle_reference: data.has_old_bundle_reference,
+            language: data.language,
+            fragment: PageFragment {
+                page_number: 0, // This page number is updated later once determined
+                data: PageFragmentData {
+                    url,
+                    content,
+                    filters: data.filters,
+                    meta: data.meta,
+                    word_count,
+                    anchors: anchors
+                        .into_iter()
+                        .map(|(element, id, text, location)| PageAnchorData {
+                            element,
+                            id,
+                            location,
+                            text,
+                        })
+                        .collect(),
+                },
+            },
+            word_data,
+            meta_word_data,
+            sort: data.sort,
+        })
     }
 
     fn parse_digest(

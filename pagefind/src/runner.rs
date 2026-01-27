@@ -75,9 +75,7 @@ pub async fn run_indexer() -> Result<()> {
 
                 runner.log_start();
                 // TODO: Error handling
-                _ = runner
-                    .fossick_many(options.site_source.clone(), options.glob)
-                    .await;
+                _ = runner.fossick_many(options.site_source.clone(), options.glob);
 
                 let use_old_bundle = options.config_warnings.unconfigured_bundle_output
                     && runner
