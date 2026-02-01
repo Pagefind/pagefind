@@ -196,6 +196,35 @@ new PagefindUI({
 
 Enabling autofocus automatically directs attention to the search input field for enhanced user convenience, particularly beneficial when the UI is loaded within a modal dialog. However, exercise caution, as using autofocus indiscriminately may pose potential accessibility challenges.
 
+### Focus on slash
+
+{{< diffcode >}}
+```javascript
+new PagefindUI({
+    element: "#search",
++    focusOnSlash: true
+});
+```
+{{< /diffcode >}}
+
+When enabled, pressing the `/` key anywhere on the page will focus the search input. This is a common pattern used by many websites (e.g., GitHub, YouTube) to provide quick keyboard access to search. Defaults to `false`.
+
+The feature will not trigger if the user is already typing in another input field, textarea, or contenteditable element.
+
+Consider combining this with a custom placeholder to hint users about the shortcut:
+
+{{< diffcode >}}
+```javascript
+new PagefindUI({
+    element: "#search",
++    focusOnSlash: true,
++    translations: {
++        placeholder: "Press / to search"
++    }
+});
+```
+{{< /diffcode >}}
+
 ### Sort
 
 {{< diffcode >}}

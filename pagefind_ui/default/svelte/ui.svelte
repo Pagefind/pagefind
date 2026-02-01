@@ -36,6 +36,7 @@
   export let trigger_search_term = "";
   export let translations = {};
   export let autofocus = false;
+  export let focus_on_slash = false;
   export let sort = null;
   export let selected_filters = {};
 
@@ -65,6 +66,24 @@
     return overrides[key] ?? auto[key] ?? "";
   };
 
+  const handleSlashKeydown = (e) => {
+    // Only handle if focusOnSlash is enabled
+    if (!focus_on_slash) return;
+
+    // Don't focus if user is typing in an input, textarea, or contenteditable
+    const activeEl = document.activeElement;
+    const isTyping =
+      activeEl &&
+      (activeEl.tagName === "INPUT" ||
+        activeEl.tagName === "TEXTAREA" ||
+        activeEl.isContentEditable);
+
+    if (e.key === "/" && !isTyping) {
+      e.preventDefault();
+      input_el?.focus();
+    }
+  };
+
   onMount(() => {
     let lang =
       document?.querySelector?.("html")?.getAttribute?.("lang") || "en";
@@ -77,11 +96,21 @@
       availableTranslations[`${parsedLang.language}-${parsedLang.region}`] ||
       availableTranslations[`${parsedLang.language}`] ||
       availableTranslations["en"];
+
+    // Set up slash key listener if enabled
+    if (focus_on_slash) {
+      document.addEventListener("keydown", handleSlashKeydown);
+    }
   });
 
   onDestroy(() => {
     pagefind?.destroy?.();
     pagefind = null;
+
+    // Clean up slash key listener
+    if (focus_on_slash) {
+      document.removeEventListener("keydown", handleSlashKeydown);
+    }
   });
 
   $: debouncedSearch(val, selected_filters);

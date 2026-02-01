@@ -31,6 +31,7 @@ export class PagefindUI {
     let mergeIndex = opts.mergeIndex ?? [];
     let translations = opts.translations ?? [];
     let autofocus = opts.autofocus ?? false;
+    let focusOnSlash = opts.focusOnSlash ?? false;
     let sort = opts.sort ?? null;
 
     // Remove the UI-specific config before passing it along to the Pagefind backend
@@ -49,6 +50,7 @@ export class PagefindUI {
     delete opts["mergeIndex"];
     delete opts["translations"];
     delete opts["autofocus"];
+    delete opts["focusOnSlash"];
     delete opts["sort"];
 
     const dom =
@@ -73,6 +75,7 @@ export class PagefindUI {
           merge_index: mergeIndex,
           translations,
           autofocus,
+          focus_on_slash: focusOnSlash,
           sort,
           pagefind_options: opts,
         },
