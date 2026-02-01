@@ -1,14 +1,29 @@
 {
+  "include": [
+    "./**/*.ts"
+  ],
+  "exclude": [
+    "./node_modules",
+    "./npm_dist",
+    "./_dev_files"
+  ],
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
+    // File Layout
+    "rootDir": ".",
+    "baseUrl": ".",
+    "outDir": "./npm_dist",
+    // Environment Settings
     "moduleResolution": "bundler",
+    "module": "es2020",
+    "target": "es2020",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    // Other
     "strict": true,
-    "noEmit": true,
     "skipLibCheck": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "esModuleInterop": true
-  },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "npm_dist", "_dev_files"]
+  }
 }

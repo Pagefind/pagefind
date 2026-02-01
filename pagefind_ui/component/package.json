@@ -9,12 +9,14 @@
     "./npm_dist/**/*.mjs",
     "./npm_dist/**/*.cjs"
   ],
-  "main": "npm_dist/cjs/component-ui.cjs",
-  "module": "npm_dist/mjs/component-ui.mjs",
-  "types": "types-entry.ts",
+  "main": "./npm_dist/cjs/component-ui.cjs",
+  "module": "./npm_dist/mjs/component-ui.mjs",
+  "types": "./npm_dist/types/types-entry.d.ts",
   "scripts": {
     "start": "PAGEFIND_DEV=true node ./build.js",
-    "build": "node ./build.js",
+    "build": "npm run build:js && npm run build:dts",
+    "build:js": "node ./build.js",
+    "build:dts": "tsc -p tsconfig.d.json",
     "typecheck": "tsc --noEmit"
   },
   "author": "Pagefind",
@@ -29,16 +31,12 @@
     "typescript": "^5.0.0"
   },
   "files": [
-    "npm_dist/**",
-    "css/pagefind-component-ui.css",
-    "types.ts",
-    "types-entry.ts",
-    "core/**/*.ts",
-    "components/**/*.ts"
+    "./npm_dist",
+    "./css/pagefind-component-ui.css"
   ],
   "exports": {
     ".": {
-      "types": "./types-entry.ts",
+      "types": "./npm_dist/types/types-entry.d.ts",
       "import": "./npm_dist/mjs/component-ui.mjs",
       "require": "./npm_dist/cjs/component-ui.cjs"
     },

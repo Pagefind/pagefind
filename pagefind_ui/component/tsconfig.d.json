@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"declarationDir": "./npm_dist/types",
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"stripInternal": true
+	}
+}
