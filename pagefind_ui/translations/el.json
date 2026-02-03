@@ -1,0 +1,31 @@
+{
+  "thanks_to": "George Papadopoulos",
+  "comments": "",
+  "direction": "ltr",
+  "strings": {
+    "placeholder": "Αναζήτηση",
+    "clear_search": "Καθαρισμός",
+    "load_more": "Φόρτωση περισσότερων αποτελεσμάτων",
+    "search_label": "Αναζήτηση σε αυτόν τον ιστότοπο",
+    "filters_label": "Φίλτρα",
+    "zero_results": "Δεν βρέθηκαν αποτελέσματα για [SEARCH_TERM]",
+    "many_results": "[COUNT] αποτελέσματα για [SEARCH_TERM]",
+    "one_result": "[COUNT] αποτέλεσμα για [SEARCH_TERM]",
+    "total_zero_results": "Δεν βρέθηκαν αποτελέσματα",
+    "total_one_result": "[COUNT] αποτέλεσμα",
+    "total_many_results": "[COUNT] αποτελέσματα",
+    "alt_search": "Δεν βρέθηκαν αποτελέσματα για [SEARCH_TERM]. Εμφανίζονται αποτελέσματα για [DIFFERENT_TERM]",
+    "search_suggestion": "Δεν βρέθηκαν αποτελέσματα για [SEARCH_TERM]. Δοκιμάστε μία από τις παρακάτω αναζητήσεις:",
+    "searching": "Αναζήτηση για [SEARCH_TERM]...",
+    "results_label": "Αποτελέσματα αναζήτησης",
+    "keyboard_navigate": "πλοήγηση",
+    "keyboard_select": "επιλογή",
+    "keyboard_clear": "καθαρισμός",
+    "keyboard_close": "κλείσιμο",
+    "keyboard_search": "αναζήτηση",
+    "error_search": "Η αναζήτηση απέτυχε",
+    "filter_selected_one": "[COUNT] επιλεγμένο",
+    "filter_selected_many": "[COUNT] επιλεγμένα",
+    "input_hint": "Τα αποτελέσματα θα εμφανίζονται καθώς πληκτρολογείτε"
+  }
+}
