@@ -1,5 +1,4 @@
 use anyhow::{bail, Result};
-use async_compression::tokio::bufread::GzipDecoder;
 #[cfg(feature = "extended")]
 use charabia::Segment;
 use either::Either;
@@ -15,10 +14,6 @@ use std::io::Error;
 use std::io::Read;
 use std::ops::Mul;
 use std::path::{Path, PathBuf};
-use tokio::fs::File;
-use tokio::io::AsyncBufReadExt;
-use tokio::io::{AsyncReadExt, BufReader};
-use tokio::time::{sleep, Duration};
 
 use crate::fossick::splitting::get_indexable_words;
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
@@ -112,102 +107,6 @@ impl Fossicker {
         }
     }
 
-    async fn read_file(&mut self, options: &SearchOptions) -> Result<(), Error> {
-        let Some(file_path) = &self.file_path else {
-            return Ok(());
-        }; // TODO: Change to thiserror
-        let file = File::open(file_path).await?;
-
-        let mut rewriter = DomParser::new(options);
-
-        let mut br = BufReader::new(file);
-        let mut buf = [0; 20000];
-
-        let is_gzip = if let Ok(read) = br.fill_buf().await {
-            read.len() >= 3 && read[0] == 0x1F && read[1] == 0x8B && read[2] == 0x08
-        } else {
-            false
-        };
-
-        if is_gzip {
-            let mut br = GzipDecoder::new(br);
-            while let Ok(read) = br.read(&mut buf).await {
-                if read == 0 {
-                    break;
-                }
-                if let Err(error) = rewriter.write(&buf[..read]) {
-                    options.logger.error(format!(
-                        "Failed to parse file {} — skipping this file. Error:\n{error}",
-                        file_path.to_str().unwrap_or("[unknown file]"),
-                    ));
-                    return Ok(());
-                }
-            }
-        } else {
-            while let Ok(read) = br.read(&mut buf).await {
-                if read == 0 {
-                    break;
-                }
-                if let Err(error) = rewriter.write(&buf[..read]) {
-                    options.logger.error(format!(
-                        "Failed to parse file {} — skipping this file. Error:\n{error}",
-                        file_path.to_str().unwrap_or("[unknown file]")
-                    ));
-                    return Ok(());
-                }
-            }
-        }
-
-        let mut data = rewriter.wrap();
-        if let Some(forced_language) = &options.force_language {
-            data.language = forced_language.clone();
-        }
-
-        self.data = Some(data);
-
-        Ok(())
-    }
-
-    async fn read_synthetic(&mut self, options: &SearchOptions) -> Result<(), Error> {
-        let Some(contents) = self.synthetic_content.as_ref() else {
-            return Ok(());
-        };
-
-        let mut rewriter = DomParser::new(options);
-
-        let mut br = BufReader::new(contents.as_bytes());
-        let mut buf = [0; 20000];
-
-        while let Ok(read) = br.read(&mut buf).await {
-            if read == 0 {
-                break;
-            }
-            if let Err(error) = rewriter.write(&buf[..read]) {
-                options.logger.error(format!(
-                    "Failed to parse file {} — skipping this file. Error:\n{error}",
-                    &self
-                        .file_path
-                        .as_ref()
-                        .map(|p| p.to_str())
-                        .flatten()
-                        .or(self.page_url.as_ref().map(|u| u.as_str()))
-                        .unwrap_or("[unknown file]")
-                ));
-                return Ok(());
-            }
-        }
-
-        let mut data = rewriter.wrap();
-        if let Some(forced_language) = &options.force_language {
-            data.language = forced_language.clone();
-        }
-
-        self.data = Some(data);
-
-        Ok(())
-    }
-
-    /// Synchronous version of read_file for rayon parallelization
     fn read_file_sync(&mut self, options: &SearchOptions) -> Result<(), Error> {
         let Some(file_path) = &self.file_path else {
             return Ok(());
@@ -282,7 +181,6 @@ impl Fossicker {
         Ok(())
     }
 
-    /// Synchronous version of read_synthetic for rayon parallelization
     fn read_synthetic_sync(&mut self, options: &SearchOptions) -> Result<(), Error> {
         let Some(contents) = self.synthetic_content.as_ref() else {
             return Ok(());
@@ -335,7 +233,6 @@ impl Fossicker {
         Ok(())
     }
 
-    /// Synchronous version of fossick_html for rayon parallelization.
     /// Retries up to MAX_RETRIES times with exponential backoff on transient IO errors.
     fn fossick_html_sync(&mut self, options: &SearchOptions) -> Result<(), std::io::Error> {
         const MAX_RETRIES: u32 = 3;
@@ -365,7 +262,6 @@ impl Fossicker {
         }))
     }
 
-    /// Synchronous fossick for rayon parallel iteration
     pub fn fossick_sync(mut self, options: &SearchOptions) -> Result<FossickedData> {
         if (self.file_path.is_some() || self.synthetic_content.is_some()) && self.data.is_none() {
             if let Err(e) = self.fossick_html_sync(options) {
@@ -695,78 +591,6 @@ impl Fossicker {
         map
     }
 
-    async fn fossick_html(&mut self, options: &SearchOptions) {
-        if self.synthetic_content.is_some() {
-            while self.read_synthetic(options).await.is_err() {
-                sleep(Duration::from_millis(1)).await;
-            }
-        } else {
-            while self.read_file(options).await.is_err() {
-                sleep(Duration::from_millis(1)).await;
-            }
-        }
-    }
-
-    pub async fn fossick(mut self, options: &SearchOptions) -> Result<FossickedData> {
-        if (self.file_path.is_some() || self.synthetic_content.is_some()) && self.data.is_none() {
-            self.fossick_html(options).await;
-        };
-
-        let (content, word_data, anchors, word_count) = self.parse_digest(options);
-        self.tidy_meta_and_filters();
-
-        let data = self.data.unwrap();
-
-        // Get sorted list of meta field names for consistent field IDs
-        let meta_field_order: Vec<String> = data.meta.keys().cloned().collect();
-        let meta_word_data =
-            Self::parse_meta_words(&data.meta, &meta_field_order, &data.language, options);
-        let url = if let Some(url) = &self.page_url {
-            url.clone()
-        } else if let Some(path) = &self.file_path {
-            if let Some(root) = &self.root_path {
-                build_url(path, Some(root), options)
-            } else {
-                build_url(path, None, options)
-            }
-        } else {
-            options
-                .logger
-                .error("Tried to index file with no specified URL or file path, ignoring.");
-            bail!("Tried to index file with no specified URL or file path, ignoring.");
-        };
-
-        Ok(FossickedData {
-            url: url.clone(),
-            has_custom_body: data.has_custom_body,
-            force_inclusion: data.force_inclusion,
-            has_html_element: data.has_html_element,
-            has_old_bundle_reference: data.has_old_bundle_reference,
-            language: data.language,
-            fragment: PageFragment {
-                page_number: 0, // This page number is updated later once determined
-                data: PageFragmentData {
-                    url,
-                    content,
-                    filters: data.filters,
-                    meta: data.meta,
-                    word_count,
-                    anchors: anchors
-                        .into_iter()
-                        .map(|(element, id, text, location)| PageAnchorData {
-                            element,
-                            id,
-                            location,
-                            text,
-                        })
-                        .collect(),
-                },
-            },
-            word_data,
-            meta_word_data,
-            sort: data.sort,
-        })
-    }
 }
 
 fn strip_index_html(url: &str) -> &str {
@@ -872,7 +696,7 @@ mod tests {
         SearchOptions::load(config).unwrap()
     }
 
-    async fn test_fossick(s: String) -> Fossicker {
+    fn test_fossick(s: String) -> Fossicker {
         let mut f = Fossicker {
             file_path: Some("test/index.html".into()),
             root_path: None,
@@ -881,7 +705,7 @@ mod tests {
             data: None,
         };
 
-        _ = f.read_synthetic(&test_opts()).await;
+        _ = f.read_synthetic_sync(&test_opts());
 
         f
     }
@@ -889,7 +713,7 @@ mod tests {
     #[tokio::test]
     async fn parse_file() {
         let mut f =
-            test_fossick(["<html><body>", "<p>Hello World!</p>", "</body></html>"].concat()).await;
+            test_fossick(["<html><body>", "<p>Hello World!</p>", "</body></html>"].concat());
 
         let (digest, words, _, _) = f.parse_digest(&test_opts());
 
@@ -926,8 +750,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let mut opts = test_opts();
         opts.include_characters.extend(['<', '>', '*']);
@@ -1053,8 +876,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (digest, words, _, _) = f.parse_digest(&test_opts());
 
@@ -1138,8 +960,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (_, words, _, _) = f.parse_digest(&test_opts());
 
@@ -1204,8 +1025,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (_, words, _, _) = f.parse_digest(&test_opts());
 
@@ -1228,8 +1048,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (_, words, _, _) = f.parse_digest(&test_opts());
 
@@ -1281,8 +1100,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (_, words, _, _) = f.parse_digest(&test_opts());
 
@@ -1301,8 +1119,7 @@ mod tests {
                 "</body></html>",
             ]
             .concat(),
-        )
-        .await;
+        );
 
         let (content, words, _, _) = f.parse_digest(&test_opts());
 

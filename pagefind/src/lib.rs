@@ -111,8 +111,8 @@ impl SearchState {
         Ok(self.fossicked_pages.len() - existing_page_count)
     }
 
-    pub async fn fossick_one(&mut self, file: Fossicker) -> Result<FossickedData> {
-        let result = file.fossick(&self.options).await;
+    pub fn fossick_one(&mut self, file: Fossicker) -> Result<FossickedData> {
+        let result = file.fossick_sync(&self.options);
         if let Some(result) = result.as_ref().ok() {
             let existing = self
                 .fossicked_pages

@@ -99,7 +99,7 @@ impl PagefindIndex {
         }
 
         let file = Fossicker::new_synthetic(source_path.map(PathBuf::from), url, content);
-        let data = self.search_index.fossick_one(file).await?;
+        let data = self.search_index.fossick_one(file)?;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
@@ -147,7 +147,7 @@ impl PagefindIndex {
                 .unwrap_or(language),
         };
         let file = Fossicker::new_with_data(url, data);
-        let data = self.search_index.fossick_one(file).await?;
+        let data = self.search_index.fossick_one(file)?;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
