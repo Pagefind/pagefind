@@ -425,15 +425,7 @@ pagefind-modal-trigger {
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-result-excerpt mark {
     background: transparent;
     font-weight: 500;
-}
-
-:is(*, #\#):is(*, #\#):is(*, #\#) .pf-result-excerpt mark,
-:is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-result-excerpt mark {
     color: var(--pf-mark);
-}
-
-:is(*, #\#):is(*, #\#):is(*, #\#) .pf-heading-excerpt mark {
-    color: var(--pf-text-secondary);
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-skeleton {
