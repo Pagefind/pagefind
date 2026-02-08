@@ -99,7 +99,8 @@ impl PagefindIndex {
         }
 
         let file = Fossicker::new_synthetic(source_path.map(PathBuf::from), url, content);
-        let data = self.search_index.fossick_one(file)?;
+        let data =
+            tokio::task::block_in_place(|| self.search_index.fossick_one(file))?;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
@@ -147,7 +148,8 @@ impl PagefindIndex {
                 .unwrap_or(language),
         };
         let file = Fossicker::new_with_data(url, data);
-        let data = self.search_index.fossick_one(file)?;
+        let data =
+            tokio::task::block_in_place(|| self.search_index.fossick_one(file))?;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
@@ -169,8 +171,9 @@ impl PagefindIndex {
             serde_json::from_str("{}").expect("All fields have serde defaults");
         let glob = glob.unwrap_or(defaults.glob);
 
-        // fossick_many is now sync with rayon parallelization for better CPU utilization
-        let page_count = self.search_index.fossick_many(PathBuf::from(path), glob)?;
+        let page_count = tokio::task::block_in_place(|| {
+            self.search_index.fossick_many(PathBuf::from(path), glob)
+        })?;
 
         Ok(page_count)
     }
@@ -212,7 +215,7 @@ impl PagefindIndex {
 mod tests {
     use super::*;
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_add_file() {
         let options = PagefindServiceConfig::builder()
             .keep_index_url(true)
