@@ -235,7 +235,7 @@ impl Fossicker {
 
     /// Retries up to MAX_RETRIES times with exponential backoff on transient IO errors.
     fn fossick_html_sync(&mut self, options: &SearchOptions) -> Result<(), std::io::Error> {
-        const MAX_RETRIES: u32 = 3;
+        const MAX_RETRIES: u32 = 10;
 
         let mut last_error = None;
         for attempt in 0..MAX_RETRIES {
@@ -250,7 +250,7 @@ impl Fossicker {
                 Err(e) => {
                     last_error = Some(e);
                     if attempt < MAX_RETRIES - 1 {
-                        // Exponential backoff: 1ms, 2ms, 4ms
+                        // Exponential backoff: 1ms, 2ms, ... 512ms
                         std::thread::sleep(std::time::Duration::from_millis(1 << attempt));
                     }
                 }
