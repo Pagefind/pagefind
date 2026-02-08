@@ -36,7 +36,7 @@
 pub use crate::output::SyntheticFile;
 use anyhow::{bail, Result};
 use rust_patch::Patch;
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
 use crate::{
     fossick::{parser::DomParserResult, Fossicker},
@@ -52,7 +52,7 @@ pub struct IndexedFileResponse {
 }
 
 pub struct PagefindIndex {
-    search_index: SearchState,
+    search_index: Arc<tokio::sync::Mutex<SearchState>>,
 }
 
 impl PagefindIndex {
@@ -74,7 +74,7 @@ impl PagefindIndex {
 
         let options = SearchOptions::load(service_options)?;
         Ok(Self {
-            search_index: SearchState::new(options),
+            search_index: Arc::new(tokio::sync::Mutex::new(SearchState::new(options))),
         })
     }
 
@@ -99,8 +99,12 @@ impl PagefindIndex {
         }
 
         let file = Fossicker::new_synthetic(source_path.map(PathBuf::from), url, content);
-        let data =
-            tokio::task::block_in_place(|| self.search_index.fossick_one(file))?;
+        let state = Arc::clone(&self.search_index);
+        let data = tokio::task::spawn_blocking(move || {
+            state.blocking_lock().fossick_one(file)
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Task join error: {e}"))??;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
@@ -130,6 +134,13 @@ impl PagefindIndex {
         filters: Option<BTreeMap<String, Vec<String>>>,
         sort: Option<BTreeMap<String, String>>,
     ) -> Result<IndexedFileResponse> {
+        let force_language = self
+            .search_index
+            .lock()
+            .await
+            .options
+            .force_language
+            .clone();
         let data = DomParserResult {
             digest: content,
             filters: filters.unwrap_or_default(),
@@ -140,16 +151,15 @@ impl PagefindIndex {
             force_inclusion: true,
             has_html_element: true,
             has_old_bundle_reference: false,
-            language: self
-                .search_index
-                .options
-                .force_language
-                .clone()
-                .unwrap_or(language),
+            language: force_language.unwrap_or(language),
         };
         let file = Fossicker::new_with_data(url, data);
-        let data =
-            tokio::task::block_in_place(|| self.search_index.fossick_one(file))?;
+        let state = Arc::clone(&self.search_index);
+        let data = tokio::task::spawn_blocking(move || {
+            state.blocking_lock().fossick_one(file)
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Task join error: {e}"))??;
 
         Ok(IndexedFileResponse {
             page_word_count: data.fragment.data.word_count as u32,
@@ -171,16 +181,19 @@ impl PagefindIndex {
             serde_json::from_str("{}").expect("All fields have serde defaults");
         let glob = glob.unwrap_or(defaults.glob);
 
-        let page_count = tokio::task::block_in_place(|| {
-            self.search_index.fossick_many(PathBuf::from(path), glob)
-        })?;
+        let state = Arc::clone(&self.search_index);
+        let page_count = tokio::task::spawn_blocking(move || {
+            state.blocking_lock().fossick_many(PathBuf::from(path), glob)
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Task join error: {e}"))??;
 
         Ok(page_count)
     }
 
     /// Build the search index for this instance and hold it in memory.
     pub async fn build_indexes(&mut self) -> Result<()> {
-        self.search_index.build_indexes().await
+        self.search_index.lock().await.build_indexes().await
     }
 
     /// Build the search index for this instance and write the files to disk.
@@ -191,11 +204,9 @@ impl PagefindIndex {
     /// # Returns
     /// The path files were written to if successful, otherwise an Error.
     pub async fn write_files(&mut self, output_path: Option<String>) -> Result<String> {
-        self.search_index.build_indexes().await?;
-        let resolved_output_path = self
-            .search_index
-            .write_files(output_path.map(Into::into))
-            .await;
+        let mut state = self.search_index.lock().await;
+        state.build_indexes().await?;
+        let resolved_output_path = state.write_files(output_path.map(Into::into)).await;
 
         Ok(resolved_output_path.to_string_lossy().into())
     }
@@ -206,8 +217,9 @@ impl PagefindIndex {
     /// # Returns
     /// A list of SyntheticFiles containing the path and content of each file.
     pub async fn get_files(&mut self) -> Result<Vec<SyntheticFile>> {
-        self.search_index.build_indexes().await?;
-        Ok(self.search_index.get_files().await)
+        let mut state = self.search_index.lock().await;
+        state.build_indexes().await?;
+        Ok(state.get_files().await)
     }
 }
 
@@ -215,7 +227,7 @@ impl PagefindIndex {
 mod tests {
     use super::*;
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn test_add_file() {
         let options = PagefindServiceConfig::builder()
             .keep_index_url(true)

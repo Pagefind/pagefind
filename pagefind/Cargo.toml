@@ -17,6 +17,7 @@ tokio = { version = "1", features = [
     "fs",
     "time",
     "macros",
+    "sync",
 ] }
 pagefind_stem = { version = "0.2.0", features = [
     "arabic",
