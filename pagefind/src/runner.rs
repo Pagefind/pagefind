@@ -1,12 +1,12 @@
 //! The full Pagefind indexer as run by the CLI.
 
 use crate::options::SearchOptions;
+#[cfg(feature = "serve")]
 use crate::serve;
 
 use super::service::run_service;
 use super::{PagefindInboundConfig, SearchState};
 use anyhow::{bail, Result};
-use std::path::PathBuf;
 use std::time::Instant;
 use twelf::reexports::clap::CommandFactory;
 use twelf::Layer;
@@ -126,8 +126,9 @@ pub async fn run_indexer() -> Result<()> {
                         ));
                 }
 
+                #[cfg(feature = "serve")]
                 if config.serve {
-                    serve::serve_dir(PathBuf::from(options.site_source)).await;
+                    serve::serve_dir(std::path::PathBuf::from(options.site_source)).await;
                 }
                 Ok(())
             }

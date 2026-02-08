@@ -81,9 +81,9 @@ twelf = { version = "0.11", default-features = false, features = [
     "yaml",
     "toml",
 ] }
-portpicker = "0.1"
-actix-web = "4"
-actix-files = "0.6"
+portpicker = { version = "0.1", optional = true }
+actix-web = { version = "4", optional = true }
+actix-files = { version = "0.6", optional = true }
 lexical-core = "1.0.0"
 path-slash = "0.2"
 rayon = "1.10"
@@ -91,5 +91,6 @@ rust-patch = "0.1.3"
 typed-builder = "0.21.2"
 
 [features]
-
+default = ["serve"]
 extended = ["dep:charabia"]
+serve = ["dep:actix-web", "dep:actix-files", "dep:portpicker"]

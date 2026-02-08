@@ -23,6 +23,7 @@ pub mod options;
 mod output;
 mod playground;
 pub mod runner;
+#[cfg(feature = "serve")]
 mod serve;
 mod service;
 mod utils;
