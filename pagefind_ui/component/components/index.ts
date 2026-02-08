@@ -13,6 +13,7 @@ import "./pagefind-modal-body";
 import "./pagefind-modal-footer";
 import "./pagefind-keyboard-hints";
 import "./pagefind-searchbox";
+import "./pagefind-searchbox-trigger";
 
 export { PagefindConfig } from "./pagefind-config";
 export { PagefindInput } from "./pagefind-input";
@@ -27,5 +28,6 @@ export { PagefindModalBody } from "./pagefind-modal-body";
 export { PagefindModalFooter } from "./pagefind-modal-footer";
 export { PagefindKeyboardHints } from "./pagefind-keyboard-hints";
 export { PagefindSearchbox } from "./pagefind-searchbox";
+export { PagefindSearchboxTrigger } from "./pagefind-searchbox-trigger";
 
 export { PagefindElement } from "./base-element";

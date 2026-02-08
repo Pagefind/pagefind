@@ -1263,8 +1263,23 @@ pagefind-modal-trigger {
     position: relative;
 }
 
+/* Override trigger-shortcut positioning when inside searchbox */
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input-wrapper .pf-trigger-shortcut {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    margin-left: 0;
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input {
     padding: 0 12px 0 32px;
+}
+
+/* Add padding when shortcut is present */
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input-wrapper:has(.pf-trigger-shortcut) .pf-searchbox-input {
+    padding-right: 72px;
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox.open .pf-searchbox-input {

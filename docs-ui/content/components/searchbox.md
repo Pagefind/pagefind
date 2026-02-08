@@ -27,6 +27,15 @@ An all-in-one search component combining input, results dropdown, and keyboard n
 | `autofocus` | boolean | `false` | Focus input on page load |
 | `instance` | string | `"default"` | Connect to a specific Pagefind instance |
 
+## Keyboard Shortcut
+
+To add a keyboard shortcut that focuses the search input, use the [`<pagefind-searchbox-trigger>`](/components/searchbox-trigger/) component:
+
+```html
+<pagefind-searchbox-trigger></pagefind-searchbox-trigger>
+<pagefind-searchbox></pagefind-searchbox>
+```
+
 ## Keyboard Navigation
 
 Full keyboard support is built in:

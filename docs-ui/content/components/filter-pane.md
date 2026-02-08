@@ -2,7 +2,7 @@
 title: "<pagefind-filter-pane>"
 nav_title: "<pagefind-filter-pane>"
 nav_section: Components
-weight: 57
+weight: 58
 ---
 
 A full filter panel displaying all available filters. Filters automatically populate based on your indexed content.
