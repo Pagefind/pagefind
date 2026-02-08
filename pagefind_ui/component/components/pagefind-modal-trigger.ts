@@ -1,13 +1,16 @@
 import { PagefindElement } from "./base-element";
 import { Instance, PagefindComponent } from "../core/instance";
+import {
+  type KeyBinding,
+  detectMac,
+  parseKeyBinding,
+  keyBindingMatches,
+  getShortcutDisplay,
+} from "../core/keyboard-shortcuts";
 
 interface ModalComponent extends PagefindComponent {
   dialogEl?: HTMLDialogElement;
   open?: () => void;
-}
-
-interface NavigatorUAData {
-  platform?: string;
 }
 
 export class PagefindModalTrigger extends PagefindElement {
@@ -17,11 +20,12 @@ export class PagefindModalTrigger extends PagefindElement {
 
   buttonEl: HTMLButtonElement | null = null;
   private _userPlaceholder: string | null = null;
-  shortcut: string = "k";
+  shortcut: string = "ctrl+k";
   hideShortcut: boolean = false;
   compact: boolean = false;
   isMac: boolean = false;
   private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private _keyBinding: KeyBinding | null = null;
 
   constructor() {
     super();
@@ -36,22 +40,10 @@ export class PagefindModalTrigger extends PagefindElement {
   }
 
   init(): void {
-    this.isMac = this.detectMac();
+    this.isMac = detectMac();
     this.readAttributes();
     this.render();
     this.setupKeyboardShortcut();
-  }
-
-  private detectMac(): boolean {
-    try {
-      const uaData = (
-        navigator as Navigator & { userAgentData?: NavigatorUAData }
-      ).userAgentData;
-      if (uaData?.platform) {
-        return uaData.platform.toLowerCase().includes("mac");
-      }
-    } catch (e) {}
-    return /mac/i.test(navigator.userAgent);
   }
 
   private readAttributes(): void {
@@ -59,7 +51,7 @@ export class PagefindModalTrigger extends PagefindElement {
       this._userPlaceholder = this.getAttribute("placeholder");
     }
     if (this.hasAttribute("shortcut")) {
-      this.shortcut = (this.getAttribute("shortcut") || "k").toLowerCase();
+      this.shortcut = this.getAttribute("shortcut") || "ctrl+k";
     }
     if (this.hasAttribute("hide-shortcut")) {
       this.hideShortcut = this.getAttribute("hide-shortcut") !== "false";
@@ -67,6 +59,8 @@ export class PagefindModalTrigger extends PagefindElement {
     if (this.hasAttribute("compact")) {
       this.compact = this.getAttribute("compact") !== "false";
     }
+    // Parse the key binding
+    this._keyBinding = parseKeyBinding(this.shortcut);
   }
 
   render(): void {
@@ -84,12 +78,12 @@ export class PagefindModalTrigger extends PagefindElement {
     this.buttonEl.setAttribute("aria-haspopup", "dialog");
     this.buttonEl.setAttribute("aria-expanded", "false");
     this.buttonEl.setAttribute("aria-label", this.placeholder || "Search");
-    this.buttonEl.setAttribute(
-      "aria-keyshortcuts",
-      this.isMac
-        ? `Meta+${this.shortcut.toUpperCase()}`
-        : `Control+${this.shortcut.toUpperCase()}`,
-    );
+
+    // Set aria-keyshortcuts with the display string
+    if (this._keyBinding) {
+      const display = getShortcutDisplay(this._keyBinding, this.isMac);
+      this.buttonEl.setAttribute("aria-keyshortcuts", display.aria);
+    }
 
     const icon = document.createElement("span");
     icon.className = "pf-trigger-icon";
@@ -103,20 +97,18 @@ export class PagefindModalTrigger extends PagefindElement {
       this.buttonEl.appendChild(text);
     }
 
-    if (!this.hideShortcut) {
+    if (!this.hideShortcut && this._keyBinding) {
       const shortcutContainer = document.createElement("span");
       shortcutContainer.className = "pf-trigger-shortcut";
       shortcutContainer.setAttribute("aria-hidden", "true");
 
-      const modKey = document.createElement("span");
-      modKey.className = "pf-trigger-key";
-      modKey.textContent = this.isMac ? "\u2318" : "Ctrl";
-      shortcutContainer.appendChild(modKey);
-
-      const shortcutKey = document.createElement("span");
-      shortcutKey.className = "pf-trigger-key";
-      shortcutKey.textContent = this.shortcut.toUpperCase();
-      shortcutContainer.appendChild(shortcutKey);
+      const display = getShortcutDisplay(this._keyBinding, this.isMac);
+      for (const keyText of display.keys) {
+        const keyEl = document.createElement("span");
+        keyEl.className = "pf-trigger-key";
+        keyEl.textContent = keyText;
+        shortcutContainer.appendChild(keyEl);
+      }
 
       this.buttonEl.appendChild(shortcutContainer);
     }
@@ -130,10 +122,7 @@ export class PagefindModalTrigger extends PagefindElement {
 
   private setupKeyboardShortcut(): void {
     this._keydownHandler = (e: KeyboardEvent) => {
-      const modifierPressed = this.isMac ? e.metaKey : e.ctrlKey;
-      const keyPressed = e.key.toLowerCase() === this.shortcut;
-
-      if (modifierPressed && keyPressed) {
+      if (this._keyBinding && keyBindingMatches(this._keyBinding, e)) {
         e.preventDefault();
         this.openModal();
       }
