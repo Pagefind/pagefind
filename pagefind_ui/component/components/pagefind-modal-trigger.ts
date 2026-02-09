@@ -123,8 +123,18 @@ export class PagefindModalTrigger extends PagefindElement {
   private setupKeyboardShortcut(): void {
     this._keydownHandler = (e: KeyboardEvent) => {
       if (this._keyBinding && keyBindingMatches(this._keyBinding, e)) {
-        e.preventDefault();
-        this.openModal();
+        // Don't trigger if focus is on a link within search results
+        // (results component handles its own keyboard navigation)
+        const activeEl = document.activeElement;
+        const isInResults =
+          activeEl?.tagName === "A" &&
+          activeEl?.closest &&
+          activeEl.closest(".pf-result, pagefind-results");
+
+        if (!isInResults) {
+          e.preventDefault();
+          this.openModal();
+        }
       }
     };
 

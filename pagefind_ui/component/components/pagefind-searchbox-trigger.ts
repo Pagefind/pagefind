@@ -56,7 +56,14 @@ export class PagefindSearchboxTrigger extends PagefindElement {
           activeEl?.tagName === "TEXTAREA" ||
           (activeEl as HTMLElement)?.isContentEditable;
 
-        if (!isTyping) {
+        // Don't trigger if focus is on a link within search results
+        // (results component handles its own keyboard navigation)
+        const isInResults =
+          activeEl?.tagName === "A" &&
+          activeEl?.closest &&
+          activeEl.closest(".pf-result, pagefind-results");
+
+        if (!isTyping && !isInResults) {
           e.preventDefault();
           this.focusSearchbox();
         }
