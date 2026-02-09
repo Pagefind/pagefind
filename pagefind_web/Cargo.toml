@@ -2,6 +2,10 @@
 name = "pagefind_web"
 version = "0.0.0"
 edition = "2021"
+description = "WebAssembly search implementation for Pagefind"
+repository = "https://github.com/Pagefind/pagefind"
+license = "MIT"
+readme = "README.md"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Oz']
