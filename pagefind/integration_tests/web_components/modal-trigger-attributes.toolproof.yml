@@ -37,7 +37,7 @@ steps:
     snapshot_content: |-
       ╎#default: text: search, keys: ⌘ K
       ╎#hidden: text: search
-      ╎#custom: text: search, keys: ⌘ /
+      ╎#custom: text: search, keys: /
       ╎#compact: keys: ⌘ K
       ╎#placeholder: text: Find stuff, keys: ⌘ K
   - snapshot: In my browser, the result of {js}
@@ -57,6 +57,6 @@ steps:
     snapshot_content: |-
       ╎#default: text: search, keys: Ctrl K
       ╎#hidden: text: search
-      ╎#custom: text: search, keys: Ctrl /
+      ╎#custom: text: search, keys: /
       ╎#compact: keys: Ctrl K
       ╎#placeholder: text: Find stuff, keys: Ctrl K
