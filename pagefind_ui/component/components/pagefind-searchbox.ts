@@ -1,6 +1,12 @@
 import { PagefindElement } from "./base-element";
 import { Instance } from "../core/instance";
 import { compile, type Template } from "adequate-little-templates";
+import {
+  type KeyBinding,
+  parseKeyBinding,
+  keyBindingMatches,
+  getShortcutDisplay,
+} from "../core/keyboard-shortcuts";
 import type {
   PagefindSearchResult,
   PagefindRawResult,
@@ -168,6 +174,8 @@ export class PagefindSearchbox extends PagefindElement {
       "show-sub-results",
       "max-results",
       "show-keyboard-hints",
+      "shortcut",
+      "hide-shortcut",
     ];
   }
 
@@ -191,6 +199,8 @@ export class PagefindSearchbox extends PagefindElement {
   showSubResults: boolean = false;
   maxResults: number = 0; // 0 means no limit
   showKeyboardHints: boolean = true;
+  shortcut: string = "mod+k";
+  hideShortcut: boolean = false;
 
   resultTemplate: ((result: PagefindResultData) => TemplateResult) | null =
     null;
@@ -198,6 +208,9 @@ export class PagefindSearchbox extends PagefindElement {
   private compiledResultTemplate: Template<SearchboxResultTemplateData> | null =
     null;
   private _documentClickHandler: ((e: MouseEvent) => void) | null = null;
+  private _shortcutKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+  private _keyBinding: KeyBinding | null = null;
+  private _shortcutEl: HTMLElement | null = null;
 
   constructor() {
     super();
@@ -232,6 +245,13 @@ export class PagefindSearchbox extends PagefindElement {
       this.showKeyboardHints =
         this.getAttribute("show-keyboard-hints") !== "false";
     }
+    if (this.hasAttribute("shortcut")) {
+      this.shortcut = this.getAttribute("shortcut") || "mod+k";
+    }
+    if (this.hasAttribute("hide-shortcut")) {
+      this.hideShortcut = this.getAttribute("hide-shortcut") !== "false";
+    }
+    this._keyBinding = parseKeyBinding(this.shortcut);
   }
 
   init(): void {
@@ -239,6 +259,7 @@ export class PagefindSearchbox extends PagefindElement {
     this.checkForTemplates();
     this.render();
     this.setupOutsideClickHandler();
+    this.setupShortcutHandler();
   }
 
   private checkForTemplates(): void {
@@ -290,6 +311,23 @@ export class PagefindSearchbox extends PagefindElement {
       this.inputEl.setAttribute("autofocus", "autofocus");
     }
     inputWrapper.appendChild(this.inputEl);
+
+    if (!this.hideShortcut && this._keyBinding) {
+      this._shortcutEl = document.createElement("span");
+      this._shortcutEl.className = "pf-trigger-shortcut";
+      this._shortcutEl.setAttribute("aria-hidden", "true");
+
+      const display = getShortcutDisplay(this._keyBinding);
+      for (const keyText of display.keys) {
+        const keyEl = document.createElement("span");
+        keyEl.className = "pf-trigger-key";
+        keyEl.textContent = keyText;
+        this._shortcutEl.appendChild(keyEl);
+      }
+
+      inputWrapper.appendChild(this._shortcutEl);
+      this.inputEl.setAttribute("aria-keyshortcuts", display.aria);
+    }
 
     this.dropdownEl = document.createElement("div");
     this.dropdownEl.className = "pf-searchbox-dropdown";
@@ -478,6 +516,28 @@ export class PagefindSearchbox extends PagefindElement {
       }
     };
     document.addEventListener("click", this._documentClickHandler);
+  }
+
+  private setupShortcutHandler(): void {
+    if (!this._keyBinding) return;
+
+    this._shortcutKeyHandler = (e: KeyboardEvent) => {
+      if (!this._keyBinding || !keyBindingMatches(this._keyBinding, e)) return;
+
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isTyping =
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.isContentEditable);
+
+      if (!isTyping) {
+        e.preventDefault();
+        this.inputEl?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", this._shortcutKeyHandler);
   }
 
   private openDropdown(): void {
@@ -877,6 +937,10 @@ export class PagefindSearchbox extends PagefindElement {
       document.removeEventListener("click", this._documentClickHandler);
       this._documentClickHandler = null;
     }
+    if (this._shortcutKeyHandler) {
+      document.removeEventListener("keydown", this._shortcutKeyHandler);
+      this._shortcutKeyHandler = null;
+    }
   }
 
   update(): void {
@@ -885,8 +949,13 @@ export class PagefindSearchbox extends PagefindElement {
       document.removeEventListener("click", this._documentClickHandler);
       this._documentClickHandler = null;
     }
+    if (this._shortcutKeyHandler) {
+      document.removeEventListener("keydown", this._shortcutKeyHandler);
+      this._shortcutKeyHandler = null;
+    }
     this.render();
     this.setupOutsideClickHandler();
+    this.setupShortcutHandler();
   }
 
   focus(): void {
