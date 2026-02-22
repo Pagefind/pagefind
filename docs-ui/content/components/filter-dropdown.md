@@ -2,7 +2,7 @@
 title: "<pagefind-filter-dropdown>"
 nav_title: "<pagefind-filter-dropdown>"
 nav_section: Components
-weight: 59
+weight: 58
 ---
 
 A dropdown selector for a single filter.

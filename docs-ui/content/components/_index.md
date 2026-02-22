@@ -51,7 +51,6 @@ These components provide complete, ready-to-use search interfaces:
 - **[Modal](/components/modal/)** — A dialog search with keyboard navigation. Supports custom inner structure.
 - **[Modal Trigger](/components/modal-trigger/)** — A button that opens the modal
 - **[Searchbox](/components/searchbox/)** — A compact dropdown search. Supports [custom result templates](/components/searchbox/#custom-templates).
-- **[Searchbox Trigger](/components/searchbox-trigger/)** — A button that focuses the searchbox
 
 ### Building Blocks
 

@@ -21,7 +21,6 @@ export type { PagefindModalBody } from "./components/pagefind-modal-body";
 export type { PagefindModalFooter } from "./components/pagefind-modal-footer";
 export type { PagefindKeyboardHints } from "./components/pagefind-keyboard-hints";
 export type { PagefindSearchbox } from "./components/pagefind-searchbox";
-export type { PagefindSearchboxTrigger } from "./components/pagefind-searchbox-trigger";
 
 export type { Instance } from "./core/instance";
 
