@@ -94,7 +94,9 @@ export class PagefindModal extends PagefindElement {
       "keydown",
       (e) => {
         if (e.key === "Escape") {
+          e.preventDefault();
           e.stopPropagation();
+          this.close();
         }
       },
       true,

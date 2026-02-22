@@ -1,0 +1,58 @@
+name: Web Components Tests > Modal closes on single Escape press
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal>
+        <pagefind-modal-header>
+          <pagefind-input></pagefind-input>
+        </pagefind-modal-header>
+        <pagefind-modal-body>
+          <pagefind-summary></pagefind-summary>
+          <pagefind-results></pagefind-results>
+        </pagefind-modal-body>
+        <pagefind-modal-footer></pagefind-modal-footer>
+      </pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Open modal and type a query
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+  - step: In my browser, I type "world"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-modal input");
+      await toolproof.waitFor(() => input.value === "world", "Input should have query text");
+  # Single Escape press should close the modal even with text in the input
+  - step: In my browser, I press the "Escape" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === false, "Modal should close on single Escape press with text in input");
+  # Reopen modal and close with Escape when input is empty
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+  - step: In my browser, I press the "Escape" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === false, "Modal should close on single Escape press with empty input");
