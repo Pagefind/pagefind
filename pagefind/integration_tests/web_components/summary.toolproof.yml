@@ -58,7 +58,7 @@ steps:
   - snapshot: In my browser, the result of {js}
     js: |-
       let summary = await toolproof.querySelector("pagefind-summary");
-      await toolproof.waitFor(() => summary.textContent.toLowerCase().includes("no"));
+      await toolproof.waitFor(() => summary.textContent.toLowerCase().startsWith("no"));
       return summary.textContent.trim();
     snapshot_content: |-
       ╎No results for xyznonexistent
