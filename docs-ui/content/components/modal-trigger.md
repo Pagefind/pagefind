@@ -22,7 +22,7 @@ A button that opens the associated modal.
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `placeholder` | string | `"Search"` | Text shown on the trigger button |
-| `shortcut` | string | `"ctrl+k"` | Keyboard shortcut to open modal |
+| `shortcut` | string | `"mod+k"` | Keyboard shortcut to open modal |
 | `hide-shortcut` | boolean | `false` | Hide the keyboard shortcut display |
 | `compact` | boolean | `false` | Show only the search icon, no text |
 | `instance` | string | `"default"` | Connect to a specific Pagefind instance |
@@ -37,25 +37,26 @@ You can customize the keyboard shortcut using the `shortcut` attribute:
 
 ```html
 <!-- Single key (no modifier) -->
-<pagefind-modal-trigger shortcut="slash"></pagefind-modal-trigger>
+<pagefind-modal-trigger shortcut="/"></pagefind-modal-trigger>
 <pagefind-modal></pagefind-modal>
 
-<!-- With Ctrl/Cmd modifier -->
-<pagefind-modal-trigger shortcut="cmd+p"></pagefind-modal-trigger>
+<!-- With modifier -->
+<pagefind-modal-trigger shortcut="mod+p"></pagefind-modal-trigger>
 <pagefind-modal></pagefind-modal>
 ```
 
 Example with `/` key:
 
 <div class="demo-box">
-<pagefind-modal-trigger shortcut="slash" instance="trigger-demo-slash"></pagefind-modal-trigger>
+<pagefind-modal-trigger shortcut="/" instance="trigger-demo-slash"></pagefind-modal-trigger>
 <pagefind-modal instance="trigger-demo-slash"></pagefind-modal>
 </div>
 
 Supported syntax:
 
-- **Single key:** `slash` (becomes `/`), or any single character key
-- **With modifier:** `ctrl+k` or `cmd+k` (automatically uses Cmd on Mac, Ctrl on Windows/Linux)
+- **Platform modifier:** `mod` (Ctrl on Windows/Linux, Cmd on Mac)
+- **Explicit modifiers:** `ctrl`, `shift`, `alt`, `cmd`/`meta`
+- **Keys:** Any single character (e.g. `k`, `/`) or key name
 - **Case-insensitive:** Keys are normalized to lowercase
 
 The shortcut display auto-detects the platform to show the correct modifier key (⌘ on Mac, Ctrl on other platforms).

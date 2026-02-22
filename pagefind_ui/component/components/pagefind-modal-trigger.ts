@@ -2,7 +2,6 @@ import { PagefindElement } from "./base-element";
 import { Instance, PagefindComponent } from "../core/instance";
 import {
   type KeyBinding,
-  detectMac,
   parseKeyBinding,
   keyBindingMatches,
   getShortcutDisplay,
@@ -20,10 +19,9 @@ export class PagefindModalTrigger extends PagefindElement {
 
   buttonEl: HTMLButtonElement | null = null;
   private _userPlaceholder: string | null = null;
-  shortcut: string = "ctrl+k";
+  shortcut: string = "mod+k";
   hideShortcut: boolean = false;
   compact: boolean = false;
-  isMac: boolean = false;
   private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private _keyBinding: KeyBinding | null = null;
 
@@ -40,7 +38,6 @@ export class PagefindModalTrigger extends PagefindElement {
   }
 
   init(): void {
-    this.isMac = detectMac();
     this.readAttributes();
     this.render();
     this.setupKeyboardShortcut();
@@ -51,7 +48,7 @@ export class PagefindModalTrigger extends PagefindElement {
       this._userPlaceholder = this.getAttribute("placeholder");
     }
     if (this.hasAttribute("shortcut")) {
-      this.shortcut = this.getAttribute("shortcut") || "ctrl+k";
+      this.shortcut = this.getAttribute("shortcut") || "mod+k";
     }
     if (this.hasAttribute("hide-shortcut")) {
       this.hideShortcut = this.getAttribute("hide-shortcut") !== "false";
@@ -81,7 +78,7 @@ export class PagefindModalTrigger extends PagefindElement {
 
     // Set aria-keyshortcuts with the display string
     if (this._keyBinding) {
-      const display = getShortcutDisplay(this._keyBinding, this.isMac);
+      const display = getShortcutDisplay(this._keyBinding);
       this.buttonEl.setAttribute("aria-keyshortcuts", display.aria);
     }
 
@@ -102,7 +99,7 @@ export class PagefindModalTrigger extends PagefindElement {
       shortcutContainer.className = "pf-trigger-shortcut";
       shortcutContainer.setAttribute("aria-hidden", "true");
 
-      const display = getShortcutDisplay(this._keyBinding, this.isMac);
+      const display = getShortcutDisplay(this._keyBinding);
       for (const keyText of display.keys) {
         const keyEl = document.createElement("span");
         keyEl.className = "pf-trigger-key";
@@ -123,18 +120,8 @@ export class PagefindModalTrigger extends PagefindElement {
   private setupKeyboardShortcut(): void {
     this._keydownHandler = (e: KeyboardEvent) => {
       if (this._keyBinding && keyBindingMatches(this._keyBinding, e)) {
-        // Don't trigger if focus is on a link within search results
-        // (results component handles its own keyboard navigation)
-        const activeEl = document.activeElement;
-        const isInResults =
-          activeEl?.tagName === "A" &&
-          activeEl?.closest &&
-          activeEl.closest(".pf-result, pagefind-results");
-
-        if (!isInResults) {
-          e.preventDefault();
-          this.openModal();
-        }
+        e.preventDefault();
+        this.openModal();
       }
     };
 

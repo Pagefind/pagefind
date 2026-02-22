@@ -3,7 +3,11 @@ interface NavigatorUAData {
 }
 
 export interface KeyBinding {
-  usesCtrl: boolean; // Platform-aware: Ctrl on Windows/Linux, Cmd on Mac
+  mod: boolean;
+  ctrl: boolean;
+  shift: boolean;
+  alt: boolean;
+  meta: boolean;
   key: string;
 }
 
@@ -23,17 +27,40 @@ export function detectMac(): boolean {
 
 export function parseKeyBinding(bindingStr: string): KeyBinding {
   const parts = bindingStr.toLowerCase().split("+");
-  const usesCtrl = parts.includes("ctrl") || parts.includes("cmd");
+  const binding: KeyBinding = {
+    mod: false,
+    ctrl: false,
+    shift: false,
+    alt: false,
+    meta: false,
+    key: "",
+  };
 
-  // Get the key (anything that's not a modifier)
-  let key = parts.find((p) => p !== "ctrl" && p !== "cmd") || "";
-
-  // Handle special key names
-  if (key === "slash") {
-    key = "/";
+  for (const part of parts) {
+    switch (part) {
+      case "mod":
+        binding.mod = true;
+        break;
+      case "ctrl":
+        binding.ctrl = true;
+        break;
+      case "shift":
+        binding.shift = true;
+        break;
+      case "alt":
+        binding.alt = true;
+        break;
+      case "meta":
+      case "cmd":
+      case "command":
+        binding.meta = true;
+        break;
+      default:
+        binding.key = part;
+    }
   }
 
-  return { usesCtrl, key };
+  return binding;
 }
 
 export function keyBindingMatches(
@@ -42,35 +69,51 @@ export function keyBindingMatches(
 ): boolean {
   const isMac = detectMac();
   const keyMatches = event.key.toLowerCase() === binding.key;
-  const modifierMatches = binding.usesCtrl
-    ? isMac
-      ? event.metaKey
-      : event.ctrlKey
-    : !(event.ctrlKey || event.metaKey);
 
-  return keyMatches && modifierMatches && !event.shiftKey && !event.altKey;
+  // mod is platform-aware: ctrl on Windows/Linux, cmd on Mac
+  const modCtrl = binding.mod ? !isMac : binding.ctrl;
+  const modMeta = binding.mod ? isMac : binding.meta;
+
+  const ctrlMatch = modCtrl ? event.ctrlKey : !event.ctrlKey;
+  const metaMatch = modMeta ? event.metaKey : !event.metaKey;
+  const shiftMatch = binding.shift ? event.shiftKey : !event.shiftKey;
+  const altMatch = binding.alt ? event.altKey : !event.altKey;
+
+  return keyMatches && ctrlMatch && metaMatch && shiftMatch && altMatch;
 }
 
-export function getShortcutDisplay(
-  binding: KeyBinding,
-  isMac: boolean,
-): {
+export function getShortcutDisplay(binding: KeyBinding): {
   keys: string[];
   aria: string;
 } {
+  const isMac = detectMac();
   const keys: string[] = [];
+  const ariaParts: string[] = [];
 
-  if (binding.usesCtrl) {
+  if (binding.mod) {
     keys.push(isMac ? "⌘" : "Ctrl");
+    ariaParts.push(isMac ? "Meta" : "Control");
+  }
+  if (binding.meta) {
+    keys.push(isMac ? "⌘" : "⊞");
+    ariaParts.push("Meta");
+  }
+  if (binding.ctrl) {
+    keys.push("Ctrl");
+    ariaParts.push("Control");
+  }
+  if (binding.shift) {
+    keys.push("Shift");
+    ariaParts.push("Shift");
+  }
+  if (binding.alt) {
+    keys.push("Alt");
+    ariaParts.push("Alt");
   }
 
-  // Format the key
-  const keyDisplay = binding.key === "/" ? "/" : binding.key.toUpperCase();
+  const keyDisplay = binding.key.toUpperCase();
   keys.push(keyDisplay);
+  ariaParts.push(keyDisplay);
 
-  // ARIA format
-  const ariaModifier = binding.usesCtrl ? (isMac ? "Meta" : "Control") : "";
-  const aria = ariaModifier ? `${ariaModifier}+${keyDisplay}` : keyDisplay;
-
-  return { keys, aria };
+  return { keys, aria: ariaParts.join("+") };
 }
