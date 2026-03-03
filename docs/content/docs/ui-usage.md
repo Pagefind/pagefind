@@ -109,7 +109,7 @@ The Pagefind UI will look for values under the metadata keys `title`, `image`, a
 
 ## Re-initializing the Pagefind UI
 
-In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this langauge change.
+In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this language change.
 
 Pagefind UI can be destroyed by running `.destroy()` on the returned object. Doing so will also tear down the initialized Pagefind instance:
 

@@ -112,7 +112,7 @@ Releases also now trigger a GitHub Discussion to be created, so please drop any 
 
 ### Core Features & Improvements
 * Added `--quiet` and `--silent` flags when running the Pagefind CLI, which reduce the logging output to only warnings or only errors respectively.
-* Stablized the [Pagefind Rust library](https://docs.rs/pagefind/latest/pagefind/).
+* Stabilized the [Pagefind Rust library](https://docs.rs/pagefind/latest/pagefind/).
   * Thanks to @cdxker for leading this in #751 ❤️
   * This library interface has feature parity with the Node and Python indexing APIs, and is a great solution for integrating Pagefind indexing into any Rust-based tooling.
 
@@ -180,7 +180,7 @@ Please open any issues if improvements can be made to the Pagefind UI libraries 
 * Fixed a bug where zero-width spaces in the source content could cause errors in search excerpts.
 
 ### UI Translations
-* Added Ukranian translations (PR #523 — thanks @vladdnepr !).
+* Added Ukrainian translations (PR #523 — thanks @vladdnepr !).
 * Added Romanian translations (PR #541 — thanks @mateesville93 !).
 * Added Czech translations (PR #543 — thanks @dallyh !).
 * Added Korean translations (PR #583 — thanks @seokho-son !).

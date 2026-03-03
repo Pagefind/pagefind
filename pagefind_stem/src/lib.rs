@@ -88,7 +88,7 @@ mod errors {
     impl std::error::Error for NoAlgorithm {}
 }
 
-/// Wrapps a usable interface around the actual stemmer implementation
+/// Wraps a usable interface around the actual stemmer implementation
 pub struct Stemmer {
     stemmer: fn(&mut SnowballEnv) -> bool,
 }
