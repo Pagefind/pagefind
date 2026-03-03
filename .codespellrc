@@ -1,6 +1,8 @@
 [codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
-skip = .git,.gitignore,.gitattributes,*.svg,go.sum,package-lock.json,*.lock,*.css,.codespellrc
+skip = .git,.gitignore,.gitattributes,*.svg,go.sum,package-lock.json,*.lock,*.css,.codespellrc,.npm,.cache,snowball,translations,integration_tests,gz.js
 check-hidden = true
-# ignore-regex = 
-# ignore-words-list =
+# caf - stemmed form of "café" (pagefind search indexing)
+# unparseable - widely used variant of "unparsable"
+# varius - Latin lorem ipsum text in test data
+ignore-words-list = caf,unparseable,varius
