@@ -10,21 +10,31 @@ Pagefind scores each page using a BM25-based algorithm. Headings are weighted hi
 
 ## Element weights
 
-These defaults are applied automatically during indexing.
+`@pagefind/md-indexer` converts Markdown to HTML before passing it to Pagefind, so both pipelines share the same underlying weight system. The table below shows how each Markdown construct maps to its HTML counterpart and the weight Pagefind assigns.
 
-| Element | Default weight |
-|---------|---------------|
-| `h1`    | 7             |
-| `h2`    | 6             |
-| `h3`    | 5             |
-| `h4`    | 4             |
-| `h5`    | 3             |
-| `h6`    | 2             |
-| All other elements (`p`, `li`, `td`, …) | 1 |
+| Markdown syntax | HTML element | Default weight | Notes |
+|-----------------|-------------|---------------|-------|
+| `# Heading`     | `<h1>`      | 7             | Highest auto-weight |
+| `## Heading`    | `<h2>`      | 6             | |
+| `### Heading`   | `<h3>`      | 5             | |
+| `#### Heading`  | `<h4>`      | 4             | |
+| `##### Heading` | `<h5>`      | 3             | |
+| `###### Heading`| `<h6>`      | 2             | |
+| Paragraph text  | `<p>`       | 1             | Default for all non-heading blocks |
+| `> blockquote`  | `<blockquote>` | 1          | |
+| `- item` / `1. item` | `<li>` | 1            | |
+| `` `code` ``    | `<code>`    | 1             | Inline; inherits surrounding weight |
+| `**text**`      | `<strong>`  | 1             | Inline; no weight bonus |
+| `_text_`        | `<em>`      | 1             | Inline; no weight bonus |
+| `` ```lang … ``` `` | `<pre><code>` | 1        | Code blocks are indexed but not boosted |
+| `\| cell \|`    | `<td>` / `<th>` | 1         | |
+| *(no equivalent)* | any element with `data-pagefind-weight="N"` | N | HTML-only; overrides auto-weight; clamped 0 - 10 |
+
+Heading auto-weights are skipped when the element is inside a block that already has an explicit `data-pagefind-weight` - the explicit weight takes precedence.
 
 Weight 0 means the content is indexed (and can be searched) but contributes nothing to ranking.
 
-### Overriding element weight
+### Overriding element weight (HTML only)
 
 Add `data-pagefind-weight` to any HTML element to replace the default:
 
