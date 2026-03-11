@@ -131,5 +131,5 @@ function escHtml(s: string): string {
 }
 
 function escAttr(s: string): string {
-    return s.replace(/"/g, "&quot;").replace(/&/g, "&amp;");
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }

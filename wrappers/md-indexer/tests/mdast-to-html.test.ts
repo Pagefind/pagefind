@@ -91,6 +91,19 @@ test("no headings produces only meta spans", (t) => {
     t.true(html.includes('data-pagefind-meta="title:T"'));
 });
 
+test("title with double-quote is correctly escaped in meta span", (t) => {
+    const tree = parse("Hello");
+    const html = mdastToHtml(tree, { title: 'My "Guide"', description: "" });
+    t.true(html.includes('data-pagefind-meta="title:My &quot;Guide&quot;"'));
+    t.false(html.includes("&amp;quot;"));
+});
+
+test("title with ampersand is correctly escaped in meta span", (t) => {
+    const tree = parse("Hello");
+    const html = mdastToHtml(tree, { title: "Cats & Dogs", description: "" });
+    t.true(html.includes('data-pagefind-meta="title:Cats &amp; Dogs"'));
+});
+
 test("html wraps content in data-pagefind-body div", (t) => {
     const tree = parse("Hello");
     const html = mdastToHtml(tree, NO_META);
