@@ -1,6 +1,6 @@
 {
   "name": "@pagefind/md-indexer",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Index markdown files directly via the Pagefind Node API",
   "type": "module",
   "main": "./dist/cjs/index.cjs",

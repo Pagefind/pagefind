@@ -28,7 +28,7 @@ export async function indexMarkdown(
 
     // Resolve files and create index in parallel
     const [files, { errors: initErrors, index }] = await Promise.all([
-        globFiles({ glob, vault, mdFiles }),
+        globFiles({ glob, vault, mdFiles, mdx }),
         createIndex({ ...pagefindConfig, forceLanguage: pagefindConfig.forceLanguage ?? language }),
     ]);
 

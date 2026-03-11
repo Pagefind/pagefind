@@ -20,6 +20,7 @@ install:
     cd pagefind_ui/component && npm i
     cd pagefind_playground && npm i
     cd wrappers/node && npm i
+    cd wrappers/md-indexer && bun install
     cd wrappers/python && (python3 -m uv sync 2>/dev/null || (python3 -m pip install --user uv && python3 -m uv venv && python -m uv sync))
     rustup target add wasm32-unknown-unknown
     rustup toolchain install nightly
@@ -60,6 +61,7 @@ test:
     cd pagefind && cargo test --release --lib --features extended
     cd pagefind_web && cargo test
     cd pagefind_web_js && npm test
+    cd wrappers/md-indexer && bun test
     npx -y toolproof@latest
 
 # Format code
