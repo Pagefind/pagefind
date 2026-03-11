@@ -1,6 +1,7 @@
 ---
 title: Installation Guide
 description: Step-by-step installation instructions
+date: 2026-03-11
 ---
 
 # Installation

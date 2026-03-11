@@ -12,7 +12,7 @@
   "scripts": {
     "build": "node build.js && tsc -p tsconfig.d.json",
     "typecheck": "tsc --noEmit",
-    "test": "ava"
+    "test": "bun test"
   },
   "files": [
     "./dist"
@@ -44,18 +44,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
-    "ava": "^6.4.1",
+    "@types/bun": "latest",
     "esbuild": "^0.25.0",
-    "tsx": "^4.20.5",
     "typescript": "^5.0.0"
-  },
-  "ava": {
-    "extensions": {
-      "ts": "module"
-    },
-    "nodeArguments": [
-      "--import=tsx/esm"
-    ]
   },
   "author": "Pagefind",
   "license": "MIT"

@@ -1,6 +1,7 @@
 ---
 title: Configuration
 description: How to configure the md-indexer
+date: 2026-03-11
 slug: guide/config
 ---
 
@@ -23,3 +24,7 @@ A directory path. Shorthand for `glob: "vault/**/*.md"`.
 ### urlBase
 
 A prefix added to all computed URLs.
+
+## See also
+
+For details on how search results are scored, see [[Ranking and Weights]].
