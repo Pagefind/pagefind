@@ -45,7 +45,8 @@ steps:
   - snapshot: In my browser, the result of {js}
     js: |-
       let results = await toolproof.querySelector("pagefind-results ul");
-      let firstResult = results.querySelector(".test-result");
+      let items = [...results.querySelectorAll(".test-result")];
+      let firstResult = items.find(el => el.querySelector(".result-title").textContent === "First Result");
       return firstResult.innerHTML.trim();
     snapshot_content: |-
       ╎<h2 class="result-title">First Result</h2>
