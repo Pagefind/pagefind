@@ -116,9 +116,8 @@ export function getShortcutDisplay(binding: KeyBinding): {
     ariaParts.push("Alt");
   }
 
-  const keyDisplay = binding.key.toUpperCase();
-  keys.push(keyDisplay);
-  ariaParts.push(keyDisplay);
+  keys.push(binding.key.toUpperCase());
+  ariaParts.push(binding.key);
 
   return { keys, aria: ariaParts.join("+") };
 }
