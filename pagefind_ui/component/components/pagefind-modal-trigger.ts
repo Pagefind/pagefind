@@ -119,7 +119,16 @@ export class PagefindModalTrigger extends PagefindElement {
 
   private setupKeyboardShortcut(): void {
     this._keydownHandler = (e: KeyboardEvent) => {
-      if (this._keyBinding && keyBindingMatches(this._keyBinding, e)) {
+      if (!this._keyBinding || !keyBindingMatches(this._keyBinding, e)) return;
+
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isTyping =
+        activeEl &&
+        (activeEl.tagName === "INPUT" ||
+          activeEl.tagName === "TEXTAREA" ||
+          activeEl.isContentEditable);
+
+      if (!isTyping) {
         e.preventDefault();
         this.openModal();
       }
