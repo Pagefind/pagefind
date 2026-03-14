@@ -11,18 +11,23 @@ export interface KeyBinding {
   key: string;
 }
 
+let _isMac: boolean | null = null;
+
 export function detectMac(): boolean {
+  if (_isMac !== null) return _isMac;
   try {
     const uaData = (
       navigator as Navigator & { userAgentData?: NavigatorUAData }
     ).userAgentData;
     if (uaData?.platform) {
-      return uaData.platform.toLowerCase().includes("mac");
+      _isMac = uaData.platform.toLowerCase().includes("mac");
+      return _isMac;
     }
   } catch {
     // Fall back to userAgent check
   }
-  return /mac/i.test(navigator.userAgent);
+  _isMac = /mac/i.test(navigator.userAgent);
+  return _isMac;
 }
 
 export function parseKeyBinding(bindingStr: string): KeyBinding {
