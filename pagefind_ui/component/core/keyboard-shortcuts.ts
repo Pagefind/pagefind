@@ -100,7 +100,7 @@ export function getShortcutDisplay(binding: KeyBinding): {
     ariaParts.push(isMac ? "Meta" : "Control");
   }
   if (binding.meta) {
-    keys.push(isMac ? "⌘" : "⊞");
+    keys.push(isMac ? "⌘" : "Win");
     ariaParts.push("Meta");
   }
   if (binding.ctrl) {
