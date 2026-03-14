@@ -1282,6 +1282,15 @@ pagefind-modal-trigger {
     padding-right: 72px;
 }
 
+/* Hide shortcut badge when input is focused */
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input:focus ~ .pf-trigger-shortcut {
+    display: none;
+}
+
+:is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input:focus {
+    padding-right: 12px;
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox.open .pf-searchbox-input {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
