@@ -120,7 +120,7 @@ await pagefind.options({
 `termSaturation` controls how quickly a term "saturates" on a page. Once a term has appeared on a page many times, further appearances have a reduced impact on the page rank.
 
 - The maximum value is `2.0`, where pages will take a long time to saturate, giving pages with very high term frequencies a boost in ranking.
-- As this value trends to 0, it does not take many terms to saturate and allow other paramaters to influence the ranking.
+- As this value trends to 0, it does not take many terms to saturate and allow other parameters to influence the ranking.
 - The minimum value is `0.0`, where terms will saturate immediately and results will not distinguish between one term and many.
 
 Decreasing the `termSaturation` parameter is a good way to suppress pages that are ranking well due to an extremely high number of search terms existing in their content.

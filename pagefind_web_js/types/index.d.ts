@@ -69,7 +69,7 @@ declare global {
     /**
       Controls how quickly a term saturates on the page and reduces impact on the ranking.
       Maximum value is 2.0, where pages will take a long time to saturate, and pages with very high term frequencies will take over.
-      As this number trends to 0, it does not take many terms to saturate and allow other paramaters to influence the ranking.
+      As this number trends to 0, it does not take many terms to saturate and allow other parameters to influence the ranking.
       Minimum value is 0.0, where terms will saturate immediately and results will not distinguish between one term and many.
     */
     termSaturation?: Number;

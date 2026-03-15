@@ -243,7 +243,7 @@ See [Sorting using the Pagefind JavaScript API](/docs/js-api-sorting/) for more 
 
 ## Re-initializing the search API
 
-In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this langauge change.
+In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this language change.
 
 The currently loaded Pagefind can be destroyed by running `pagefind.destroy()`:
 
