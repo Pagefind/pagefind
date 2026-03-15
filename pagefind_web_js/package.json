@@ -26,7 +26,7 @@
       "ts": "module"
     },
     "nodeArguments": [
-      "--loader=tsx"
+      "--import=tsx"
     ]
   },
   "dependencies": {

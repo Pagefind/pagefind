@@ -90,6 +90,7 @@ pub struct LanguageMeta {
     pub language: String,
     pub hash: String,
     pub wasm: Option<String>,
+    pub max_fragments: Option<u32>,
 }
 
 pub async fn write_common_to_disk(
@@ -142,6 +143,7 @@ async fn write_common(
                     hash: i.hash,
                     wasm: i.wasm,
                     page_count: i.page_count,
+                    max_fragments: i.max_fragments,
                 },
             )
         })),
@@ -288,10 +290,11 @@ impl PagefindIndexes {
         }
 
         LanguageMeta {
-            page_count: self.fragments.len(),
+            page_count: self.page_count,
             language: self.language.clone(),
             hash: self.meta_index.0.clone(),
             wasm: wasm_file,
+            max_fragments: options.max_fragments,
         }
     }
 

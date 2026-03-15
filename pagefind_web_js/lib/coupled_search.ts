@@ -45,6 +45,7 @@ export class PagefindInstance {
   loaded_chunks: Record<string, Promise<void>>;
   loaded_filters: Record<string, Promise<void>>;
   loaded_fragments: Record<string, Promise<PagefindSearchFragment>>;
+  loaded_fragment_groups: Record<string, Promise<any>>;
 
   raw_ptr: number | null;
   searchMeta: any;
@@ -96,6 +97,7 @@ export class PagefindInstance {
     this.loaded_chunks = {};
     this.loaded_filters = {};
     this.loaded_fragments = {};
+    this.loaded_fragment_groups = {};
 
     this.raw_ptr = null;
     this.searchMeta = null;
@@ -345,25 +347,44 @@ export class PagefindInstance {
     return await this.loaded_filters[hash];
   }
 
-  async _loadFragment(hash: string) {
-    let compressed_resp = await fetch(
-      `${this.basePath}fragment/${hash}.pf_fragment`,
-    );
-    let compressed_fragment = await compressed_resp.arrayBuffer();
-    let fragment = this.decompress(
-      new Uint8Array(compressed_fragment),
-      `Fragment ${hash}`,
-    );
-    return JSON.parse(new TextDecoder().decode(fragment));
+  async _loadFragment(hash: string, groupHash: string = "") {
+    if (groupHash) {
+      if (!this.loaded_fragment_groups[groupHash]) {
+        this.loaded_fragment_groups[groupHash] = (async () => {
+          let compressed_resp = await fetch(
+            `${this.basePath}fragment/${groupHash}.pf_fragment`,
+          );
+          let compressed_fragment = await compressed_resp.arrayBuffer();
+          let fragment = this.decompress(
+            new Uint8Array(compressed_fragment),
+            `Fragment group ${groupHash}`,
+          );
+          return JSON.parse(new TextDecoder().decode(fragment));
+        })();
+      }
+      let group = await this.loaded_fragment_groups[groupHash];
+      return group[hash];
+    } else {
+      let compressed_resp = await fetch(
+        `${this.basePath}fragment/${hash}.pf_fragment`,
+      );
+      let compressed_fragment = await compressed_resp.arrayBuffer();
+      let fragment = this.decompress(
+        new Uint8Array(compressed_fragment),
+        `Fragment ${hash}`,
+      );
+      return JSON.parse(new TextDecoder().decode(fragment));
+    }
   }
 
   async loadFragment(
     hash: string,
+    groupHash: string = "",
     weighted_locations: PagefindWordLocation[] = [],
     search_term: string,
   ) {
     if (!this.loaded_fragments[hash]) {
-      this.loaded_fragments[hash] = this._loadFragment(hash);
+      this.loaded_fragments[hash] = this._loadFragment(hash, groupHash);
     }
     let fragment = (await this.loaded_fragments[
       hash
@@ -684,7 +705,7 @@ export class PagefindInstance {
         score: result.s * this.indexWeight,
         words: locations,
         data: async () =>
-          await this.loadFragment(result.p, weighted_locations, term),
+          await this.loadFragment(result.p, result.g, weighted_locations, term),
       };
 
       if (result.params) {
