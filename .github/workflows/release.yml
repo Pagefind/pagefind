@@ -245,6 +245,19 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Prepare md-indexer package
+        working-directory: ./wrappers/md-indexer
+        run: npm version $GIT_VERSION
+      - name: Publish md-indexer package
+        working-directory: ./wrappers/md-indexer
+        run: |
+          npm install
+          node build.js
+          tsc -p tsconfig.d.json
+          npm publish --tag $GIT_TAG --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   publish-binary-npm-packages:
     name: Publish NPM binaries
     runs-on: ubuntu-24.04

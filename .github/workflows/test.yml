@@ -216,3 +216,17 @@ jobs:
         if: matrix.build != 'freebsd'
         timeout-minutes: 1
         run: ./wrappers/python/scripts/ci/github/integration_tests.sh
+
+      - name: Set up bun
+        if: runner.os == 'Linux' && matrix.build != 'freebsd'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install md-indexer dependencies
+        if: runner.os == 'Linux' && matrix.build != 'freebsd'
+        working-directory: ./wrappers/md-indexer
+        run: bun install
+
+      - name: Test md-indexer
+        if: runner.os == 'Linux' && matrix.build != 'freebsd'
+        working-directory: ./wrappers/md-indexer
+        run: bun test

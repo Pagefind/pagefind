@@ -43,3 +43,7 @@ fs.writeFileSync(pagefindModularUiCfg.path, pagefindModularUiCfg.contents);
 let pagefindComponentUiCfg = file("../pagefind_ui/component/package.json");
 pagefindComponentUiCfg.contents = pagefindComponentUiCfg.contents.replace(version_re, `"version": "${version}"`);
 fs.writeFileSync(pagefindComponentUiCfg.path, pagefindComponentUiCfg.contents);
+
+let mdIndexerCfg = file("../wrappers/md-indexer/package.json");
+mdIndexerCfg.contents = mdIndexerCfg.contents.replace(version_re, `"version": "${version}"`);
+fs.writeFileSync(mdIndexerCfg.path, mdIndexerCfg.contents);
