@@ -39,6 +39,7 @@ pagefind_stem = { version = "0.2.0", features = [
     "lithuanian",
     "nepali",
     "norwegian",
+    "polish",
     "portuguese",
     "romanian",
     "russian",

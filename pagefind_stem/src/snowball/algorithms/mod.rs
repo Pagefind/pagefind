@@ -42,6 +42,8 @@ pub mod lovins;
 pub mod nepali;
 #[cfg(feature = "norwegian")]
 pub mod norwegian;
+#[cfg(feature = "polish")]
+pub mod polish;
 #[cfg(feature = "porter")]
 pub mod porter;
 #[cfg(feature = "portuguese")]
@@ -118,6 +120,8 @@ pub enum Algorithm {
     Russian,
     #[cfg(feature = "serbian")]
     Serbian,
+    #[cfg(feature = "polish")]
+    Polish,
     #[cfg(feature = "spanish")]
     Spanish,
     #[cfg(feature = "swedish")]
@@ -181,6 +185,8 @@ pub fn get_algorithm() -> Option<fn(&mut super::SnowballEnv) -> bool> {
     return Some(nepali::stem);
     #[cfg(feature = "norwegian")]
     return Some(norwegian::stem);
+    #[cfg(feature = "polish")]
+    return Some(polish::stem);
     #[cfg(feature = "porter")]
     return Some(porter::stem);
     #[cfg(feature = "portuguese")]
@@ -261,6 +267,8 @@ impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
             Algorithm::Russian => russian::stem,
             #[cfg(feature = "serbian")]
             Algorithm::Serbian => serbian::stem,
+            #[cfg(feature = "polish")]
+            Algorithm::Polish => polish::stem,
             #[cfg(feature = "spanish")]
             Algorithm::Spanish => spanish::stem,
             #[cfg(feature = "swedish")]
