@@ -323,10 +323,12 @@ export class Instance {
     if (!resultsComponent) return false;
 
     const resultEls =
-      (resultsComponent as PagefindComponent).getResultElements?.() ||
-      resultsComponent.querySelectorAll(".pf-result") ||
-      [];
-    const firstLink = resultEls[0]?.querySelector("a");
+      (resultsComponent as PagefindComponent).getResultElements?.() || [];
+    const firstResultEl = resultEls[0];
+    const firstLink =
+      firstResultEl instanceof HTMLAnchorElement
+        ? firstResultEl
+        : firstResultEl?.querySelector("a");
     if (firstLink) {
       (firstLink as HTMLElement).focus();
       return true;

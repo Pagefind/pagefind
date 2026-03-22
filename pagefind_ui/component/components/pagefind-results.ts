@@ -119,6 +119,7 @@ interface ResultOptions {
 class Result {
   rawResult: PagefindRawResult;
   placeholderNodes: Node[];
+  renderedNodes: Node[] = [];
   resultFn: (
     result: PagefindResultData,
     options: ResultRenderOptions,
@@ -192,6 +193,7 @@ class Result {
       if (firstNode instanceof Element) {
         firstNode.replaceWith(...resultNodes);
       }
+      this.renderedNodes = resultNodes;
     } catch {
       this.loading = false;
     }
@@ -199,11 +201,18 @@ class Result {
     this.onLoad?.();
   }
 
+  getNodes(): Node[] {
+    return this.renderedNodes.length > 0
+      ? this.renderedNodes
+      : this.placeholderNodes;
+  }
+
   cleanup(): void {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
+    this.renderedNodes = [];
   }
 }
 
@@ -488,13 +497,38 @@ export class PagefindResults extends PagefindElement {
   }
 
   getResultElements(): HTMLElement[] {
-    if (!this.containerEl) return [];
-    return Array.from(this.containerEl.querySelectorAll(".pf-result"));
+    const elements: HTMLElement[] = [];
+    for (const result of this.results) {
+      for (const node of result.getNodes()) {
+        if (node instanceof HTMLElement) {
+          elements.push(node);
+          break; // one root element per result
+        }
+      }
+    }
+    return elements;
   }
 
-  getNavigableAnchors(): HTMLAnchorElement[] {
-    if (!this.containerEl) return [];
-    return Array.from(this.containerEl.querySelectorAll(".pf-result a"));
+  getNavigableAnchors(): {
+    anchors: HTMLAnchorElement[];
+    resultIndexOf: (a: Element) => number;
+  } {
+    const anchors: HTMLAnchorElement[] = [];
+    const map = new Map<Element, number>();
+    for (let i = 0; i < this.results.length; i++) {
+      for (const node of this.results[i].getNodes()) {
+        if (node instanceof HTMLAnchorElement) {
+          anchors.push(node);
+          map.set(node, i);
+        } else if (node instanceof Element) {
+          for (const a of node.querySelectorAll("a")) {
+            anchors.push(a as HTMLAnchorElement);
+            map.set(a, i);
+          }
+        }
+      }
+    }
+    return { anchors, resultIndexOf: (a) => map.get(a) ?? -1 };
   }
 
   private setupKeyboardHandlers(): void {
@@ -504,7 +538,7 @@ export class PagefindResults extends PagefindElement {
       const anchor = (e.target as Element).closest("a");
       if (!anchor) return;
 
-      const anchors = this.getNavigableAnchors();
+      const { anchors, resultIndexOf } = this.getNavigableAnchors();
       const index = anchors.indexOf(anchor as HTMLAnchorElement);
       if (index === -1) return;
 
@@ -514,7 +548,7 @@ export class PagefindResults extends PagefindElement {
           const next = anchors[index + 1];
           next.focus();
           this.scrollToCenter(next, e.repeat);
-          const resultIdx = this.getResultIndexForAnchor(next);
+          const resultIdx = resultIndexOf(next);
           if (resultIdx !== -1) this.preloadAhead(resultIdx, 1);
         } else if (index === anchors.length - 1) {
           // At the last loaded anchor — check if there are unloaded results.
@@ -522,7 +556,7 @@ export class PagefindResults extends PagefindElement {
           // queue/collapse navigation), this component uses real DOM
           // .focus() — so the user must press ArrowDown again once the
           // result renders and becomes focusable.
-          const currentResultIdx = this.getResultIndexForAnchor(anchor);
+          const currentResultIdx = resultIndexOf(anchor);
           const nextResultIdx = currentResultIdx + 1;
           if (nextResultIdx > 0 && nextResultIdx < this.results.length) {
             const nextResult = this.results[nextResultIdx];
@@ -539,7 +573,7 @@ export class PagefindResults extends PagefindElement {
           const prev = anchors[index - 1];
           prev.focus();
           this.scrollToCenter(prev, e.repeat);
-          const resultIdx = this.getResultIndexForAnchor(prev);
+          const resultIdx = resultIndexOf(prev);
           if (resultIdx !== -1) this.preloadAhead(resultIdx, -1);
         } else {
           // At first anchor, go back to input
@@ -612,13 +646,6 @@ export class PagefindResults extends PagefindElement {
       top: targetScroll,
       behavior: instant ? "instant" : "smooth",
     });
-  }
-
-  private getResultIndexForAnchor(anchor: Element): number {
-    const resultEl = anchor.closest(".pf-result");
-    if (!resultEl) return -1;
-    const allResultEls = this.getResultElements();
-    return allResultEls.indexOf(resultEl as HTMLElement);
   }
 
   private preloadAhead(fromIndex: number, direction: number): void {

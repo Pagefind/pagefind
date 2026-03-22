@@ -511,14 +511,14 @@ export class PagefindSearchbox extends PagefindElement {
     });
 
     this.resultsEl.addEventListener("click", (e) => {
-      const resultLink = (e.target as Element).closest("a.pf-searchbox-result");
+      const resultLink = (e.target as Element).closest("a");
       if (resultLink) {
         this.closeDropdown();
       }
     });
 
     this.resultsEl.addEventListener("mousemove", (e) => {
-      const resultLink = (e.target as Element).closest("a.pf-searchbox-result");
+      const resultLink = (e.target as Element).closest("a");
       if (resultLink) {
         const pos = this.getResultAndOffsetFromElement(resultLink);
         if (
