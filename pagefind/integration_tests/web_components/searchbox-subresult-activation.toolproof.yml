@@ -1,0 +1,65 @@
+name: Web Components Tests > Searchbox Enter activates the correct sub-result URL
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox show-sub-results></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Apple Guide</h1>
+      <p>Learn about apple varieties.</p>
+      <h2 id="basics">Basic Apple Info</h2>
+      <p>This section covers basic apple types.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll('[role="option"]').length >= 2,
+        "Should have at least 2 options (main result + sub-result)"
+      );
+  - step: In my browser, the console should be empty
+  # ArrowDown to the first sub-result
+  - step: In my browser, I press the "ArrowDown" key
+  # Verify the selected element is the sub-result with the correct href
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let selected = document.querySelector('.pf-searchbox-results [data-pf-selected]');
+      toolproof.assert(
+        selected.classList.contains("pf-searchbox-subresult"),
+        "Selected element should be a sub-result"
+      );
+      toolproof.assert(
+        selected.getAttribute("href").includes("#"),
+        `Sub-result href should contain anchor fragment, got ${selected.getAttribute("href")}`
+      );
+      // The main result should not be selected
+      let mainResult = document.querySelector('.pf-searchbox-results [role="option"]:not(.pf-searchbox-subresult)');
+      toolproof.assert(
+        mainResult.getAttribute("aria-selected") === "false",
+        "Main result should not be selected when sub-result is active"
+      );
+      // aria-activedescendant should point to the sub-result, not the main result
+      let input = document.querySelector("pagefind-searchbox input");
+      toolproof.assert(
+        input.getAttribute("aria-activedescendant") === selected.id,
+        `aria-activedescendant should point to sub-result ${selected.id}, got ${input.getAttribute("aria-activedescendant")}`
+      );
+      toolproof.assert(
+        selected.id !== mainResult.id,
+        "Sub-result and main result should have different IDs"
+      );

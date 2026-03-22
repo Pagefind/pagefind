@@ -26,6 +26,7 @@
         "error_search": "Søk feilet",
         "filter_selected_one": "[COUNT] valgt",
         "filter_selected_many": "[COUNT] valgte",
-        "input_hint": "Resultater vises mens du skriver"
+        "input_hint": "Resultater vises mens du skriver",
+        "loading": "Laster"
     }
 }

@@ -26,6 +26,7 @@
         "error_search": "Suche fehlgeschlagen",
         "filter_selected_one": "[COUNT] ausgewählt",
         "filter_selected_many": "[COUNT] ausgewählt",
-        "input_hint": "Ergebnisse werden während der Eingabe angezeigt"
+        "input_hint": "Ergebnisse werden während der Eingabe angezeigt",
+        "loading": "Wird geladen"
     }
 }

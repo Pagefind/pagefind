@@ -26,6 +26,7 @@
         "error_search": "A keresés sikertelen",
         "filter_selected_one": "[COUNT] kiválasztva",
         "filter_selected_many": "[COUNT] kiválasztva",
-        "input_hint": "A találatok gépelés közben jelennek meg"
+        "input_hint": "A találatok gépelés közben jelennek meg",
+        "loading": "Betöltés"
     }
 }

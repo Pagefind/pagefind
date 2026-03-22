@@ -1,0 +1,34 @@
+macro: I set up test gates on {component} blocking results {indices}
+steps:
+  - step: In my browser, I evaluate {js}
+    js: |-
+      window.__testGates = {};
+      let component = document.querySelector("%component%");
+      await toolproof.waitFor(
+        () => component.instance?.__pagefind__,
+        "Pagefind should be preloaded"
+      );
+      let realPf = component.instance.__pagefind__;
+      let gateIndices = [%indices%];
+      component.instance.__pagefind__ = new Proxy(realPf, {
+        get(target, prop) {
+          if (prop === 'search') {
+            return async (term, opts) => {
+              let results = await target.search(term, opts);
+              for (let i of gateIndices) {
+                if (i >= results.results.length) continue;
+                let origData = results.results[i].data.bind(results.results[i]);
+                let gate = {};
+                gate.promise = new Promise(r => { gate.resolve = r; });
+                window.__testGates[i] = gate;
+                results.results[i].data = async () => {
+                  await gate.promise;
+                  return origData();
+                };
+              }
+              return results;
+            };
+          }
+          return target[prop];
+        }
+      });

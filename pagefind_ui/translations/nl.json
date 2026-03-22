@@ -26,6 +26,7 @@
         "error_search": "Zoeken mislukt",
         "filter_selected_one": "[COUNT] geselecteerd",
         "filter_selected_many": "[COUNT] geselecteerd",
-        "input_hint": "Resultaten verschijnen terwijl u typt"
+        "input_hint": "Resultaten verschijnen terwijl u typt",
+        "loading": "Laden"
     }
 }

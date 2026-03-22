@@ -26,6 +26,7 @@
         "error_search": "Search failed",
         "filter_selected_one": "[COUNT] selected",
         "filter_selected_many": "[COUNT] selected",
-        "input_hint": "Results will appear as you type"
+        "input_hint": "Results will appear as you type",
+        "loading": "Loading"
     }
 }

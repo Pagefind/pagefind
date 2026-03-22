@@ -1,0 +1,68 @@
+name: Web Components Tests > Searchbox placeholders use aria-hidden and loaded results have proper roles
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1><p>Apple content here too.</p></body></html>
+  - step: I have a "public/three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Third Result</h1><p>More apple content.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - macro: I set up test gates on "pagefind-searchbox" blocking results "2"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll("a.pf-searchbox-result").length === 2,
+        "2 results should load (result 2 is gated)"
+      );
+  - step: In my browser, the console should be empty
+  # Placeholder should have aria-hidden and no role
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      let placeholders = results.querySelectorAll(".pf-searchbox-placeholder");
+      toolproof.assert(placeholders.length === 1, `Expected 1 placeholder, got ${placeholders.length}`);
+      let ph = placeholders[0];
+      toolproof.assert(
+        ph.getAttribute("aria-hidden") === "true",
+        `Placeholder should have aria-hidden=true, got ${ph.getAttribute("aria-hidden")}`
+      );
+      toolproof.assert(
+        !ph.hasAttribute("role"),
+        `Placeholder should not have role attribute, got ${ph.getAttribute("role")}`
+      );
+  # Loaded results should have role=option and no aria-setsize/aria-posinset
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      let loadedResults = Array.from(
+        results.querySelectorAll("a.pf-searchbox-result:not(.pf-searchbox-subresult)")
+      );
+      toolproof.assert(loadedResults.length === 2, `Expected 2 loaded results, got ${loadedResults.length}`);
+      for (const result of loadedResults) {
+        toolproof.assert(
+          result.getAttribute("role") === "option",
+          `Loaded result should have role=option, got ${result.getAttribute("role")}`
+        );
+        toolproof.assert(!result.hasAttribute("aria-setsize"), "Loaded result should not have aria-setsize");
+        toolproof.assert(!result.hasAttribute("aria-posinset"), "Loaded result should not have aria-posinset");
+      }

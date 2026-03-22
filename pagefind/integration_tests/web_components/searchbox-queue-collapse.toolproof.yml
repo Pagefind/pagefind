@@ -1,0 +1,92 @@
+name: Web Components Tests > Searchbox queue collapses multiple arrow presses to final destination
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1><p>Apple content here too.</p></body></html>
+  - step: I have a "public/three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Third Result</h1><p>More apple content.</p></body></html>
+  - step: I have a "public/four/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Fourth Result</h1><p>Extra apple content.</p></body></html>
+  - step: I have a "public/five/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Fifth Result</h1><p>Even more apple content.</p></body></html>
+  - step: I have a "public/six/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Sixth Result</h1><p>Lots of apple content.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - macro: I set up test gates on "pagefind-searchbox" blocking results "2"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll("a.pf-searchbox-result").length >= 2,
+        "At least 2 results should load"
+      );
+      await toolproof.waitFor(
+        () => document.querySelector('.pf-searchbox-results [data-pf-selected]'),
+        "First result should be selected"
+      );
+  - step: In my browser, the console should be empty
+  # ArrowDown to result 1, then into skeleton, then two more queued
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let options = document.querySelectorAll('.pf-searchbox-results [role="option"]');
+      toolproof.assert(options[1].hasAttribute("data-pf-selected"), "Second option should be selected");
+      window.__selectedId = options[1].id;
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let selected = document.querySelector('.pf-searchbox-results [data-pf-selected]');
+      toolproof.assert(
+        selected && selected.id === window.__selectedId,
+        "Selection should still be on result 1 (blocked)"
+      );
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.pendingNavigation === 3,
+        `Expected pendingNavigation=3, got ${searchbox.pendingNavigation}`
+      );
+  # Resolve gate — queue collapses through loaded results to land on result 4
+  - step: In my browser, I evaluate {js}
+    js: |-
+      window.__testGates[2].resolve();
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(
+        () => {
+          let searchbox = document.querySelector("pagefind-searchbox");
+          return searchbox.pendingNavigation === 0;
+        },
+        "Queue should collapse after gate resolves"
+      );
+      let options = document.querySelectorAll('.pf-searchbox-results [role="option"]');
+      let selected = document.querySelector('.pf-searchbox-results [data-pf-selected]');
+      let selectedIdx = Array.from(options).indexOf(selected);
+      toolproof.assert(
+        selectedIdx === 4,
+        `Expected selection at option index 4, got ${selectedIdx}`
+      );

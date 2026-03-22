@@ -26,6 +26,7 @@
         "error_search": "Soek het misluk",
         "filter_selected_one": "[COUNT] gekies",
         "filter_selected_many": "[COUNT] gekies",
-        "input_hint": "Resultate sal verskyn terwyl jy tik"
+        "input_hint": "Resultate sal verskyn terwyl jy tik",
+        "loading": "Laai"
     }
 }

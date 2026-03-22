@@ -1,0 +1,82 @@
+name: Web Components Tests > Results component preloads ahead on keyboard navigation and handles boundary
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1><p>Apple content here too.</p></body></html>
+  - step: I have a "public/three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Third Result</h1><p>More apple content.</p></body></html>
+  - step: I have a "public/four/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Fourth Result</h1><p>Extra apple content.</p></body></html>
+  - step: I have a "public/five/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Fifth Result</h1><p>Even more apple content.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - macro: I set up test gates on "pagefind-results" blocking results "1, 2, 3, 4"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "apple"
+  # Wait for result 0 to load
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-results");
+      await toolproof.waitFor(
+        () => container.querySelectorAll(".pf-result a").length === 1,
+        "Exactly 1 result should be loaded"
+      );
+  - step: In my browser, the console should be empty
+  # Focus the first anchor and ArrowDown at boundary
+  - step: In my browser, I evaluate {js}
+    js: |-
+      document.querySelector(".pf-results .pf-result a").focus();
+  - step: In my browser, I press the "ArrowDown" key
+  # Resolve gates 1, 2, 3 — proves preloadAhead loaded them
+  - step: In my browser, I evaluate {js}
+    js: |-
+      window.__testGates[1].resolve();
+      window.__testGates[2].resolve();
+      window.__testGates[3].resolve();
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let container = await toolproof.querySelector(".pf-results");
+      await toolproof.waitFor(
+        () => container.querySelectorAll(".pf-result a").length >= 4,
+        "At least 4 anchors should exist (result 0 + preloaded 1, 2, 3)"
+      );
+  # Navigate through preloaded results
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let anchors = Array.from(document.querySelectorAll(".pf-results .pf-result a"));
+      toolproof.assert(document.activeElement === anchors[1], "Focus should be on second anchor");
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let anchors = Array.from(document.querySelectorAll(".pf-results .pf-result a"));
+      toolproof.assert(document.activeElement === anchors[2], "Focus should be on third anchor");
+  # Verify result 4 is still a skeleton
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let items = document.querySelectorAll(".pf-results > .pf-result");
+      toolproof.assert(
+        items[4] && items[4].getAttribute("aria-hidden") === "true",
+        "Result 4 should still be a skeleton (aria-hidden=true)"
+      );

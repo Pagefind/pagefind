@@ -26,6 +26,7 @@
         "error_search": "فشل البحث",
         "filter_selected_one": "[COUNT] محدد",
         "filter_selected_many": "[COUNT] محدد",
-        "input_hint": "ستظهر النتائج أثناء الكتابة"
+        "input_hint": "ستظهر النتائج أثناء الكتابة",
+        "loading": "جارٍ التحميل"
     }
 }

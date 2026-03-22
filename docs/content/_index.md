@@ -20,7 +20,7 @@ The goal of Pagefind is that websites with tens of thousands of pages should be 
 - Custom content weighting
 - Return results for sections of a page
 - Search across multiple domains
-- Index **anything** (e.g. PDFs, JSON files, or subtitles) with the NodeJS indexing library
+- Index anything (PDFs? JSON files? subtitles?) with the NodeJS indexing library
 - All features available with the same low-bandwidth footprint
 
 ## Development Sponsor

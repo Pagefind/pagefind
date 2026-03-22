@@ -58,13 +58,12 @@ const templateNodes = (templateResult: TemplateResult): Node[] => {
   return [];
 };
 
-const DEFAULT_RESULT_TEMPLATE = `<a class="pf-searchbox-result" id="{{ aria.result_id }}" href="{{ meta.url | default(url) | safeUrl }}" role="option" aria-selected="false" aria-labelledby="{{ aria.title_id }}"{{#if excerpt}} aria-describedby="{{ aria.excerpt_id }}"{{/if}}>
+const DEFAULT_RESULT_TEMPLATE = `{{#if and(options.show_sub_results, sub_results)}}<div class="pf-searchbox-group" role="group" aria-label="{{ meta.title | default('Untitled') }}">{{/if}}<a class="pf-searchbox-result" id="{{ aria.result_id }}" href="{{ meta.url | default(url) | safeUrl }}" role="option" aria-selected="false" aria-labelledby="{{ aria.title_id }}"{{#if excerpt}} aria-describedby="{{ aria.excerpt_id }}"{{/if}}>
   <p class="pf-searchbox-result-title" id="{{ aria.title_id }}">{{ meta.title | default("Untitled") }}</p>
   {{#if excerpt}}
   <p class="pf-searchbox-result-excerpt" id="{{ aria.excerpt_id }}">{{+ excerpt +}}</p>
   {{/if}}
-</a>
-{{#if and(options.show_sub_results, sub_results)}}
+</a>{{#if and(options.show_sub_results, sub_results)}}
 {{#each sub_results as sub}}
 <a class="pf-searchbox-result pf-searchbox-subresult" id="{{ sub.aria.result_id }}" href="{{ sub.url | safeUrl }}" role="option" aria-selected="false" aria-labelledby="{{ sub.aria.title_id }}"{{#if sub.excerpt}} aria-describedby="{{ sub.aria.excerpt_id }}"{{/if}}>
   <p class="pf-searchbox-result-title" id="{{ sub.aria.title_id }}">{{ sub.title | default("Section") }}</p>
@@ -73,13 +72,13 @@ const DEFAULT_RESULT_TEMPLATE = `<a class="pf-searchbox-result" id="{{ aria.resu
   {{/if}}
 </a>
 {{/each}}
-{{/if}}`;
+</div>{{/if}}`;
 
 const defaultResultTemplate: Template<SearchboxResultTemplateData> = compile(
   DEFAULT_RESULT_TEMPLATE,
 );
 
-const DEFAULT_PLACEHOLDER_TEMPLATE = `<div class="pf-searchbox-result pf-searchbox-placeholder" role="option" aria-selected="false">
+const DEFAULT_PLACEHOLDER_TEMPLATE = `<div class="pf-searchbox-result pf-searchbox-placeholder" aria-hidden="true">
   <p class="pf-searchbox-result-title pf-skeleton pf-skeleton-title"></p>
   <p class="pf-searchbox-result-excerpt pf-skeleton pf-skeleton-excerpt"></p>
 </div>`;
@@ -93,6 +92,7 @@ interface SearchboxResultOptions {
   placeholderEl: Element;
   renderFn: (result: PagefindResultData) => TemplateResult;
   intersectionRoot: Element | null;
+  index: number;
   onLoad?: () => void;
 }
 
@@ -103,6 +103,9 @@ class SearchboxResult {
   intersectionRoot: Element | null;
   onLoad?: () => void;
   data: PagefindResultData | null = null;
+  private index: number;
+  private loading: boolean = false;
+  private retryDelay: number = 0;
   private observer: IntersectionObserver | null = null;
 
   constructor(opts: SearchboxResultOptions) {
@@ -110,6 +113,7 @@ class SearchboxResult {
     this.placeholderEl = opts.placeholderEl;
     this.renderFn = opts.renderFn;
     this.intersectionRoot = opts.intersectionRoot;
+    this.index = opts.index;
     this.onLoad = opts.onLoad;
     this.setupObserver();
   }
@@ -136,18 +140,28 @@ class SearchboxResult {
   }
 
   async load(): Promise<void> {
-    this.data = await this.rawResult.data();
-    const templateResult = this.renderFn(this.data);
-    const nodes = templateNodes(templateResult);
+    if (this.data !== null || this.loading) return;
+    this.loading = true;
+    try {
+      this.data = await this.rawResult.data();
+      const templateResult = this.renderFn(this.data);
+      const nodes = templateNodes(templateResult);
 
-    if (nodes.length > 0 && this.placeholderEl.parentNode) {
-      const firstNode = nodes[0];
-      this.placeholderEl.replaceWith(...nodes);
-      if (firstNode instanceof Element) {
-        this.placeholderEl = firstNode;
+      if (nodes.length > 0 && this.placeholderEl.parentNode) {
+        // After load, placeholderEl points to the root element of the rendered
+        // template. For sub-results, this is the <div role="group"> wrapper —
+        // getOptionsForResult() relies on this to query [role="option"] children.
+        const firstElement = nodes.find((n) => n instanceof Element);
+        this.placeholderEl.replaceWith(...nodes);
+        if (firstElement instanceof Element) {
+          this.placeholderEl = firstElement;
+        }
       }
+    } catch {
+      await new Promise((r) => setTimeout(r, this.retryDelay || 100));
+      this.retryDelay = Math.min((this.retryDelay || 100) * 2, 10000);
+      this.loading = false;
     }
-
     this.onLoad?.();
   }
 
@@ -182,8 +196,11 @@ export class PagefindSearchbox extends PagefindElement {
   isLoading: boolean = false;
   results: SearchboxResult[] = [];
   activeIndex: number = -1;
+  activeOptionOffset: number = 0;
   searchID: number = 0;
   searchTerm: string = "";
+  private pendingNavigation: number = 0;
+  private loadingAnnouncementTimeout: number | null = null;
 
   private _userPlaceholder: string | null = null;
   debounce: number = 150;
@@ -424,6 +441,7 @@ export class PagefindSearchbox extends PagefindElement {
             if (this.results.length > 0) {
               this.rerenderLoadedResults();
               this.activeIndex = 0;
+              this.activeOptionOffset = 0;
               this.updateSelectionUI();
             } else {
               this.instance?.triggerSearch(this.inputEl.value);
@@ -432,6 +450,8 @@ export class PagefindSearchbox extends PagefindElement {
           break;
 
         case "Escape":
+          this.pendingNavigation = 0;
+          this.clearLoadingAnnouncement();
           if (this.isOpen) {
             e.preventDefault();
             this.closeDropdown();
@@ -439,6 +459,8 @@ export class PagefindSearchbox extends PagefindElement {
           break;
 
         case "Tab":
+          this.pendingNavigation = 0;
+          this.clearLoadingAnnouncement();
           if (this.isOpen) {
             this.closeDropdown();
           }
@@ -460,11 +482,14 @@ export class PagefindSearchbox extends PagefindElement {
     this.resultsEl.addEventListener("mousemove", (e) => {
       const resultLink = (e.target as Element).closest("a.pf-searchbox-result");
       if (resultLink) {
-        const index = this.getResultIndexFromElement(
-          resultLink as HTMLAnchorElement,
-        );
-        if (index !== -1 && index !== this.activeIndex) {
-          this.activeIndex = index;
+        const pos = this.getResultAndOffsetFromElement(resultLink);
+        if (
+          pos &&
+          (pos.resultIndex !== this.activeIndex ||
+            pos.optionOffset !== this.activeOptionOffset)
+        ) {
+          this.activeIndex = pos.resultIndex;
+          this.activeOptionOffset = pos.optionOffset;
           this.updateSelectionUI(false);
         }
       }
@@ -490,10 +515,13 @@ export class PagefindSearchbox extends PagefindElement {
   private closeDropdown(): void {
     if (!this.isOpen || !this.containerEl || !this.inputEl) return;
     this.isOpen = false;
+    this.pendingNavigation = 0;
+    this.clearLoadingAnnouncement();
     this.containerEl.classList.remove("open");
     this.inputEl.setAttribute("aria-expanded", "false");
     this.inputEl.removeAttribute("aria-activedescendant");
     this.activeIndex = -1;
+    this.activeOptionOffset = 0;
   }
 
   private showLoadingState(): void {
@@ -532,25 +560,230 @@ export class PagefindSearchbox extends PagefindElement {
     );
   }
 
-  private moveSelection(delta: number): void {
-    const totalItems = this.getTotalNavigableItems();
-    if (totalItems === 0) return;
-
-    let newIndex = this.activeIndex + delta;
-
-    if (newIndex < -1) {
-      newIndex = -1;
-    } else if (newIndex >= totalItems) {
-      newIndex = totalItems - 1;
+  private getOptionsForResult(result: SearchboxResult): Element[] {
+    if (!result.data || !result.placeholderEl) return [];
+    if (result.placeholderEl.getAttribute("role") === "group") {
+      return Array.from(
+        result.placeholderEl.querySelectorAll('[role="option"]'),
+      );
     }
-
-    this.activeIndex = newIndex;
-    this.updateSelectionUI(true);
+    if (result.placeholderEl.getAttribute("role") === "option") {
+      return [result.placeholderEl];
+    }
+    return [];
   }
 
-  private getTotalNavigableItems(): number {
-    if (!this.resultsEl) return 0;
-    return this.resultsEl.querySelectorAll(".pf-searchbox-result").length;
+  private moveSelection(delta: number): void {
+    const totalResults = this.results.length;
+    if (totalResults === 0) return;
+
+    if (delta < 0) {
+      if (this.activeIndex === -1) return;
+
+      if (this.activeOptionOffset > 0) {
+        this.activeOptionOffset--;
+        this.pendingNavigation = 0;
+        this.clearLoadingAnnouncement();
+        this.updateSelectionUI(true);
+        return;
+      }
+
+      const prevIndex = this.activeIndex - 1;
+      if (prevIndex < 0) {
+        this.pendingNavigation = 0;
+        this.clearLoadingAnnouncement();
+        this.activeIndex = -1;
+        this.activeOptionOffset = 0;
+        this.updateSelectionUI(true);
+        return;
+      }
+
+      const prevResult = this.results[prevIndex];
+      // Intentionally don't queue/block for unloaded results above
+      if (!prevResult || !prevResult.data) return;
+
+      const prevOptions = this.getOptionsForResult(prevResult);
+      this.activeIndex = prevIndex;
+      this.activeOptionOffset = Math.max(0, prevOptions.length - 1);
+      this.pendingNavigation = 0;
+      this.clearLoadingAnnouncement();
+      this.updateSelectionUI(true);
+      this.preloadAhead(prevIndex, delta);
+      return;
+    }
+
+    if (this.activeIndex === -1) {
+      if (this.results[0] && !this.results[0].data) {
+        this.pendingNavigation += delta;
+        this.results[0].load();
+        this.scheduleLoadingAnnouncement();
+        this.preloadAhead(0, delta);
+        return;
+      }
+      this.activeIndex = 0;
+      this.activeOptionOffset = 0;
+      this.pendingNavigation = 0;
+      this.clearLoadingAnnouncement();
+      this.updateSelectionUI(true);
+      this.preloadAhead(0, delta);
+      return;
+    }
+
+    const currentResult = this.results[this.activeIndex];
+    if (!currentResult?.data) {
+      // Current position is a skeleton (e.g. activeIndex set before load).
+      // Treat like navigating from input: force-load and queue.
+      if (currentResult) {
+        this.pendingNavigation += delta;
+        currentResult.load();
+        this.scheduleLoadingAnnouncement();
+        this.preloadAhead(this.activeIndex, delta);
+      }
+      return;
+    }
+
+    const currentOptions = this.getOptionsForResult(currentResult);
+    if (this.activeOptionOffset < currentOptions.length - 1) {
+      this.activeOptionOffset++;
+      this.pendingNavigation = 0;
+      this.clearLoadingAnnouncement();
+      this.updateSelectionUI(true);
+      return;
+    }
+
+    const nextIndex = this.activeIndex + 1;
+    if (nextIndex >= totalResults) return;
+
+    const nextResult = this.results[nextIndex];
+    if (nextResult && !nextResult.data) {
+      this.pendingNavigation += delta;
+      nextResult.load();
+      this.scheduleLoadingAnnouncement();
+      this.preloadAhead(nextIndex, delta);
+      return;
+    }
+
+    this.activeIndex = nextIndex;
+    this.activeOptionOffset = 0;
+    this.pendingNavigation = 0;
+    this.clearLoadingAnnouncement();
+    this.updateSelectionUI(true);
+    this.preloadAhead(nextIndex, delta);
+  }
+
+  private preloadAhead(fromIndex: number, direction: number): void {
+    const step = direction > 0 ? 1 : -1;
+    const count = Math.abs(this.pendingNavigation) + 3;
+    for (let i = 1; i <= count; i++) {
+      const idx = fromIndex + step * i;
+      if (idx >= 0 && idx < this.results.length) {
+        const result = this.results[idx];
+        if (result && !result.data) {
+          result.load();
+        }
+      }
+    }
+  }
+
+  private scheduleLoadingAnnouncement(): void {
+    // Don't reschedule if one is already pending
+    if (this.loadingAnnouncementTimeout) return;
+
+    this.loadingAnnouncementTimeout = window.setTimeout(() => {
+      this.loadingAnnouncementTimeout = null;
+      this.instance?.announce("loading", {}, "polite");
+    }, 800);
+  }
+
+  private clearLoadingAnnouncement(): void {
+    if (this.loadingAnnouncementTimeout) {
+      clearTimeout(this.loadingAnnouncementTimeout);
+      this.loadingAnnouncementTimeout = null;
+    }
+  }
+
+  private handleResultLoaded(): void {
+    this.clearLoadingAnnouncement();
+
+    if (this.pendingNavigation === 0) {
+      // No queued intent — just refresh the UI
+      this.updateSelectionUI();
+      return;
+    }
+
+    // We have queued navigation. Advance as far as possible toward the
+    // final destination in one pass.
+    const direction = this.pendingNavigation > 0 ? 1 : -1;
+    let currentResultIndex = this.activeIndex;
+    let currentOffset = this.activeOptionOffset;
+
+    while (this.pendingNavigation !== 0) {
+      if (direction > 0) {
+        // Advancing down
+        const currentResult = this.results[currentResultIndex];
+        if (currentResult?.data) {
+          const options = this.getOptionsForResult(currentResult);
+          if (currentOffset < options.length - 1) {
+            currentOffset++;
+            this.pendingNavigation--;
+            continue;
+          }
+        }
+
+        // Move to next result
+        const nextIdx = currentResultIndex + 1;
+        if (nextIdx >= this.results.length) {
+          this.pendingNavigation = 0;
+          break;
+        }
+
+        const nextResult = this.results[nextIdx];
+        if (nextResult?.data) {
+          currentResultIndex = nextIdx;
+          currentOffset = 0;
+          this.pendingNavigation--;
+        } else {
+          if (nextResult) {
+            nextResult.load();
+            this.scheduleLoadingAnnouncement();
+            this.preloadAhead(nextIdx, direction);
+          }
+          break;
+        }
+      } else {
+        // Advancing up
+        if (currentOffset > 0) {
+          currentOffset--;
+          this.pendingNavigation++;
+          continue;
+        }
+
+        const prevIdx = currentResultIndex - 1;
+        if (prevIdx < 0) {
+          this.pendingNavigation = 0;
+          break;
+        }
+
+        const prevResult = this.results[prevIdx];
+        if (prevResult?.data) {
+          const prevOptions = this.getOptionsForResult(prevResult);
+          currentResultIndex = prevIdx;
+          currentOffset = Math.max(0, prevOptions.length - 1);
+          this.pendingNavigation++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (
+      currentResultIndex !== this.activeIndex ||
+      currentOffset !== this.activeOptionOffset
+    ) {
+      this.activeIndex = currentResultIndex;
+      this.activeOptionOffset = currentOffset;
+      this.updateSelectionUI(true);
+    }
   }
 
   private updateSelectionUI(scroll: boolean = false): void {
@@ -561,7 +794,12 @@ export class PagefindSearchbox extends PagefindElement {
       el.setAttribute("aria-selected", "false");
     });
 
-    const activeEl = this.getResultElementByIndex(this.activeIndex);
+    const result =
+      this.activeIndex >= 0 ? this.results[this.activeIndex] : null;
+    const options = result ? this.getOptionsForResult(result) : [];
+    const activeEl = options[this.activeOptionOffset] as
+      | HTMLElement
+      | undefined;
 
     if (activeEl) {
       activeEl.setAttribute("data-pf-selected", "");
@@ -585,24 +823,31 @@ export class PagefindSearchbox extends PagefindElement {
     container.scrollTo({ top: targetScroll, behavior: "smooth" });
   }
 
-  private getResultElementByIndex(index: number): HTMLElement | null {
-    if (index < 0 || !this.resultsEl) return null;
-    const allLinks = this.resultsEl.querySelectorAll("a.pf-searchbox-result");
-    return (allLinks[index] as HTMLElement) || null;
-  }
-
-  private getResultIndexFromElement(el: HTMLAnchorElement): number {
-    if (!this.resultsEl) return -1;
-    const allLinks = Array.from(
-      this.resultsEl.querySelectorAll("a.pf-searchbox-result"),
-    );
-    return allLinks.indexOf(el);
+  private getResultAndOffsetFromElement(
+    el: Element,
+  ): { resultIndex: number; optionOffset: number } | null {
+    for (let i = 0; i < this.results.length; i++) {
+      const result = this.results[i];
+      if (!result.data) continue;
+      const options = this.getOptionsForResult(result);
+      const offset = options.indexOf(el);
+      if (offset !== -1) {
+        return { resultIndex: i, optionOffset: offset };
+      }
+    }
+    return null;
   }
 
   private activateCurrentSelection(keyboardEvent: KeyboardEvent): void {
-    const activeEl = this.getResultElementByIndex(
-      this.activeIndex,
-    ) as HTMLAnchorElement | null;
+    if (this.activeIndex < 0 || this.activeIndex >= this.results.length) return;
+
+    const result = this.results[this.activeIndex];
+    if (!result || !result.data) return;
+
+    const options = this.getOptionsForResult(result);
+    const activeEl = options[this.activeOptionOffset] as
+      | HTMLAnchorElement
+      | undefined;
     if (!activeEl || !activeEl.href) return;
 
     if (keyboardEvent.metaKey || keyboardEvent.ctrlKey) {
@@ -630,6 +875,9 @@ export class PagefindSearchbox extends PagefindElement {
       result.cleanup();
     }
 
+    this.pendingNavigation = 0;
+    this.clearLoadingAnnouncement();
+
     if (!searchResult.results || searchResult.results.length === 0) {
       this.results = [];
       this.showEmptyState();
@@ -647,7 +895,7 @@ export class PagefindSearchbox extends PagefindElement {
 
     const renderer = this.getResultRenderer();
 
-    this.results = limitedResults.map((rawResult) => {
+    this.results = limitedResults.map((rawResult, index) => {
       const placeholderHtml = defaultPlaceholderTemplate({});
       const placeholderNodes = templateNodes(placeholderHtml);
       const placeholderEl = placeholderNodes[0] as Element;
@@ -656,18 +904,23 @@ export class PagefindSearchbox extends PagefindElement {
         this.resultsEl.appendChild(placeholderEl);
       }
 
-      return new SearchboxResult({
+      const result = new SearchboxResult({
         rawResult,
         placeholderEl,
         renderFn: renderer,
         intersectionRoot: this.resultsEl,
+        index,
         onLoad: () => {
-          this.updateSelectionUI();
+          if (this.results[index] === result) {
+            this.handleResultLoaded();
+          }
         },
       });
+      return result;
     });
 
     this.activeIndex = 0;
+    this.activeOptionOffset = 0;
     this.updateSelectionUI();
     this.announceResults();
   }
@@ -868,6 +1121,7 @@ export class PagefindSearchbox extends PagefindElement {
   }
 
   cleanup(): void {
+    this.clearLoadingAnnouncement();
     for (const result of this.results) {
       result.cleanup();
     }

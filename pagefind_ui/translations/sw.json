@@ -26,6 +26,7 @@
         "error_search": "Utafutaji umeshindwa",
         "filter_selected_one": "[COUNT] imechaguliwa",
         "filter_selected_many": "[COUNT] zimechaguliwa",
-        "input_hint": "Matokeo yataonekana unapoandika"
+        "input_hint": "Matokeo yataonekana unapoandika",
+        "loading": "Inapakia"
     }
 }

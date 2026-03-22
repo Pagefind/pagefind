@@ -113,6 +113,7 @@ interface ResultOptions {
   showSubResults: boolean;
   maxSubResults: number;
   linkTarget: string | null;
+  onLoad?: () => void;
 }
 
 class Result {
@@ -128,6 +129,8 @@ class Result {
   maxSubResults: number;
   linkTarget: string | null;
   result: PagefindResultData | null = null;
+  onLoad?: () => void;
+  private loading: boolean = false;
   private observer: IntersectionObserver | null = null;
 
   constructor(opts: ResultOptions) {
@@ -139,6 +142,7 @@ class Result {
     this.showSubResults = opts.showSubResults;
     this.maxSubResults = opts.maxSubResults;
     this.linkTarget = opts.linkTarget;
+    this.onLoad = opts.onLoad;
     this.setupObserver();
   }
 
@@ -166,25 +170,33 @@ class Result {
 
   async load(): Promise<void> {
     if (!this.placeholderNodes?.length) return;
+    if (this.result !== null || this.loading) return;
+    this.loading = true;
 
-    this.result = await this.rawResult.data();
-    const resultTemplate = this.resultFn(this.result, {
-      showImages: this.showImages,
-      showSubResults: this.showSubResults,
-      maxSubResults: this.maxSubResults,
-      linkTarget: this.linkTarget,
-    });
-    const resultNodes = templateNodes(resultTemplate);
+    try {
+      this.result = await this.rawResult.data();
+      const resultTemplate = this.resultFn(this.result, {
+        showImages: this.showImages,
+        showSubResults: this.showSubResults,
+        maxSubResults: this.maxSubResults,
+        linkTarget: this.linkTarget,
+      });
+      const resultNodes = templateNodes(resultTemplate);
 
-    while (this.placeholderNodes.length > 1) {
-      const node = this.placeholderNodes.pop();
-      if (node instanceof Element) node.remove();
+      while (this.placeholderNodes.length > 1) {
+        const node = this.placeholderNodes.pop();
+        if (node instanceof Element) node.remove();
+      }
+
+      const firstNode = this.placeholderNodes[0];
+      if (firstNode instanceof Element) {
+        firstNode.replaceWith(...resultNodes);
+      }
+    } catch {
+      this.loading = false;
     }
 
-    const firstNode = this.placeholderNodes[0];
-    if (firstNode instanceof Element) {
-      firstNode.replaceWith(...resultNodes);
-    }
+    this.onLoad?.();
   }
 
   cleanup(): void {
@@ -221,6 +233,7 @@ export class PagefindResults extends PagefindElement {
     null;
 
   selectedIndex: number = -1;
+  private loadingAnnouncementTimeout: number | null = null;
 
   constructor() {
     super();
@@ -409,7 +422,7 @@ export class PagefindResults extends PagefindElement {
           const placeholderNodes = templateNodes(this.getPlaceholder());
           this.appendResults(placeholderNodes);
 
-          return new Result({
+          const result = new Result({
             result: r,
             placeholderNodes,
             resultFn: resultRenderer,
@@ -418,7 +431,13 @@ export class PagefindResults extends PagefindElement {
             showSubResults: !this.hideSubResults,
             maxSubResults: this.maxSubResults,
             linkTarget: this.linkTarget,
+            onLoad: () => {
+              if (result.result) {
+                this.clearLoadingAnnouncement();
+              }
+            },
           });
+          return result;
         });
       },
       this,
@@ -495,6 +514,24 @@ export class PagefindResults extends PagefindElement {
           const next = anchors[index + 1];
           next.focus();
           this.scrollToCenter(next, e.repeat);
+          const resultIdx = this.getResultIndexForAnchor(next);
+          if (resultIdx !== -1) this.preloadAhead(resultIdx, 1);
+        } else if (index === anchors.length - 1) {
+          // At the last loaded anchor — check if there are unloaded results.
+          // Unlike the searchbox (which uses virtual selection and can
+          // queue/collapse navigation), this component uses real DOM
+          // .focus() — so the user must press ArrowDown again once the
+          // result renders and becomes focusable.
+          const currentResultIdx = this.getResultIndexForAnchor(anchor);
+          const nextResultIdx = currentResultIdx + 1;
+          if (nextResultIdx > 0 && nextResultIdx < this.results.length) {
+            const nextResult = this.results[nextResultIdx];
+            if (nextResult && !nextResult.result) {
+              nextResult.load();
+              this.scheduleLoadingAnnouncement();
+            }
+            this.preloadAhead(nextResultIdx, 1);
+          }
         }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -502,6 +539,8 @@ export class PagefindResults extends PagefindElement {
           const prev = anchors[index - 1];
           prev.focus();
           this.scrollToCenter(prev, e.repeat);
+          const resultIdx = this.getResultIndexForAnchor(prev);
+          if (resultIdx !== -1) this.preloadAhead(resultIdx, -1);
         } else {
           // At first anchor, go back to input
           this.instance?.focusPreviousInput(document.activeElement as Element);
@@ -575,6 +614,42 @@ export class PagefindResults extends PagefindElement {
     });
   }
 
+  private getResultIndexForAnchor(anchor: Element): number {
+    const resultEl = anchor.closest(".pf-result");
+    if (!resultEl) return -1;
+    const allResultEls = this.getResultElements();
+    return allResultEls.indexOf(resultEl as HTMLElement);
+  }
+
+  private preloadAhead(fromIndex: number, direction: number): void {
+    const step = direction > 0 ? 1 : -1;
+    for (let i = 1; i <= 3; i++) {
+      const idx = fromIndex + (step * i);
+      if (idx >= 0 && idx < this.results.length) {
+        const result = this.results[idx];
+        if (result && !result.result) {
+          result.load();
+        }
+      }
+    }
+  }
+
+  private scheduleLoadingAnnouncement(): void {
+    if (this.loadingAnnouncementTimeout) return;
+
+    this.loadingAnnouncementTimeout = window.setTimeout(() => {
+      this.loadingAnnouncementTimeout = null;
+      this.instance?.announce("loading", {}, "polite");
+    }, 800);
+  }
+
+  private clearLoadingAnnouncement(): void {
+    if (this.loadingAnnouncementTimeout) {
+      clearTimeout(this.loadingAnnouncementTimeout);
+      this.loadingAnnouncementTimeout = null;
+    }
+  }
+
   clearSelection(): void {
     this.containerEl
       ?.querySelectorAll("[data-pf-selected]")
@@ -582,6 +657,7 @@ export class PagefindResults extends PagefindElement {
   }
 
   cleanup(): void {
+    this.clearLoadingAnnouncement();
     for (const result of this.results) {
       result.cleanup();
     }

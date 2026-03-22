@@ -26,6 +26,7 @@
         "error_search": "Hledání selhalo",
         "filter_selected_one": "[COUNT] vybraný",
         "filter_selected_many": "[COUNT] vybraných",
-        "input_hint": "Výsledky se zobrazí během psaní"
+        "input_hint": "Výsledky se zobrazí během psaní",
+        "loading": "Načítání"
     }
 }

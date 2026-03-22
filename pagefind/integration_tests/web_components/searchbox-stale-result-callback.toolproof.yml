@@ -1,0 +1,153 @@
+name: Web Components Tests > Searchbox discards stale result callbacks after new search
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/apple-one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Apple One</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/apple-two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Apple Two</h1><p>Apple content here too.</p></body></html>
+  - step: I have a "public/apple-three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Apple Three</h1><p>More apple content.</p></body></html>
+  - step: I have a "public/banana/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Banana Page</h1><p>Banana content here.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # Gate result 2 of the "apple" search
+  - step: In my browser, I evaluate {js}
+    js: |-
+      window.__testGates = {};
+      window.__gateCallbackFired = false;
+      let component = document.querySelector("pagefind-searchbox");
+      await toolproof.waitFor(
+        () => component.instance?.__pagefind__,
+        "Pagefind should be preloaded"
+      );
+      let realPf = component.instance.__pagefind__;
+      component.instance.__pagefind__ = new Proxy(realPf, {
+        get(target, prop) {
+          if (prop === 'search') {
+            return async (term, opts) => {
+              let results = await target.search(term, opts);
+              if (term.includes("apple")) {
+                for (let i of [2]) {
+                  if (i >= results.results.length) continue;
+                  let origData = results.results[i].data.bind(results.results[i]);
+                  let gate = {};
+                  gate.promise = new Promise(r => { gate.resolve = r; });
+                  window.__testGates[i] = gate;
+                  results.results[i].data = async () => {
+                    await gate.promise;
+                    let result = await origData();
+                    window.__gateCallbackFired = true;
+                    return result;
+                  };
+                }
+              }
+              return results;
+            };
+          }
+          return target[prop];
+        }
+      });
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll("a.pf-searchbox-result").length >= 2,
+        "At least 2 apple results should load"
+      );
+      await toolproof.waitFor(
+        () => document.querySelector('.pf-searchbox-results [data-pf-selected]'),
+        "First result should be selected"
+      );
+  - step: In my browser, the console should be empty
+  # Navigate into skeleton — pending navigation queued
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.pendingNavigation === 1,
+        `Expected pendingNavigation=1, got ${searchbox.pendingNavigation}`
+      );
+  # Select all text and type a new search term
+  - step: In my browser, I evaluate {js}
+    js: |-
+      document.querySelector("pagefind-searchbox input").select();
+  - step: In my browser, I type "banana"
+  # Wait for banana results
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => {
+          let links = results.querySelectorAll("a.pf-searchbox-result");
+          return links.length === 1;
+        },
+        "Should have exactly 1 banana result"
+      );
+  # Verify state is clean before resolving old gate
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.pendingNavigation === 0,
+        `Expected pendingNavigation=0 after new search, got ${searchbox.pendingNavigation}`
+      );
+      toolproof.assert(
+        searchbox.activeIndex === 0,
+        `Expected activeIndex=0, got ${searchbox.activeIndex}`
+      );
+  # Resolve old gate — stale callback fires but should be discarded
+  - step: In my browser, I evaluate {js}
+    js: |-
+      window.__testGates[2].resolve();
+      await toolproof.waitFor(
+        () => window.__gateCallbackFired,
+        "Gated data() should have resolved"
+      );
+      // Allow any stale side effects to propagate
+      await new Promise(r => setTimeout(r, 50));
+  # Verify state was not corrupted by stale callback
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.pendingNavigation === 0,
+        `pendingNavigation should still be 0, got ${searchbox.pendingNavigation}`
+      );
+      toolproof.assert(
+        searchbox.activeIndex === 0,
+        `activeIndex should still be 0, got ${searchbox.activeIndex}`
+      );
+      toolproof.assert(
+        searchbox.activeOptionOffset === 0,
+        `activeOptionOffset should still be 0, got ${searchbox.activeOptionOffset}`
+      );
+      let results = document.querySelectorAll('.pf-searchbox-results a.pf-searchbox-result');
+      toolproof.assert(
+        results.length === 1,
+        `Should still have 1 banana result, got ${results.length}`
+      );
+      toolproof.assert(
+        results[0].hasAttribute("data-pf-selected"),
+        "Banana result should still be selected"
+      );

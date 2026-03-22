@@ -1,0 +1,78 @@
+name: Web Components Tests > Searchbox mouse hover selects sub-results correctly
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox show-sub-results></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Apple Guide</h1>
+      <p>Learn about apple varieties.</p>
+      <h2 id="basics">Basic Apple Info</h2>
+      <p>This section covers basic apple types.</p>
+      <h2 id="advanced">Advanced Apple Info</h2>
+      <p>This section covers advanced apple varieties.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll('[role="option"]').length >= 3,
+        "Should have at least 3 options (main + 2 sub-results)"
+      );
+  - step: In my browser, the console should be empty
+  # Initial selection should be on the first option (main result)
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let options = document.querySelectorAll('.pf-searchbox-results [role="option"]');
+      toolproof.assert(
+        options[0].hasAttribute("data-pf-selected"),
+        "First option should be selected initially"
+      );
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.activeOptionOffset === 0,
+        `Expected activeOptionOffset=0 initially, got ${searchbox.activeOptionOffset}`
+      );
+  # Hover over the last sub-result
+  - step: In my browser, I hover the selector ".pf-searchbox-subresult:last-child"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let allSelected = document.querySelectorAll('.pf-searchbox-results [data-pf-selected]');
+      toolproof.assert(
+        allSelected.length === 1,
+        `Expected exactly 1 selected item, got ${allSelected.length}`
+      );
+      let selected = allSelected[0];
+      toolproof.assert(
+        selected.classList.contains("pf-searchbox-subresult"),
+        "Selected element should be a sub-result"
+      );
+      toolproof.assert(
+        selected.getAttribute("aria-selected") === "true",
+        "Hovered sub-result should have aria-selected=true"
+      );
+      let searchbox = document.querySelector("pagefind-searchbox");
+      toolproof.assert(
+        searchbox.activeOptionOffset === 2,
+        `Expected activeOptionOffset=2 for second sub-result, got ${searchbox.activeOptionOffset}`
+      );
+      let input = document.querySelector("pagefind-searchbox input");
+      toolproof.assert(
+        input.getAttribute("aria-activedescendant") === selected.id,
+        "aria-activedescendant should point to hovered sub-result"
+      );

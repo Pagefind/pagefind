@@ -26,6 +26,7 @@
         "error_search": "Haku epäonnistui",
         "filter_selected_one": "[COUNT] valittu",
         "filter_selected_many": "[COUNT] valittu",
-        "input_hint": "Tulokset näkyvät kirjoittaessasi"
+        "input_hint": "Tulokset näkyvät kirjoittaessasi",
+        "loading": "Ladataan"
     }
 }
