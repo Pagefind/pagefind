@@ -10,21 +10,30 @@ default:
     @just --list
 
 # Install all dependencies
-install:
-    @command -v rustup >/dev/null 2>&1 || { echo "Error: Rust is required but not installed. Please install Rust first."; exit 1; }
+install: install-npm install-rust install-python
+
+# Install npm dependencies for all packages
+install-npm:
     @command -v node >/dev/null 2>&1 || { echo "Error: Node.js is required but not installed. Please install Node.js first."; exit 1; }
-    @command -v python3 >/dev/null 2>&1 || { echo "Error: Python is required but not installed. Please install Python first."; exit 1; }
     cd pagefind_web_js && npm i
     cd pagefind_ui/default && npm i
     cd pagefind_ui/modular && npm i
     cd pagefind_ui/component && npm i
     cd pagefind_playground && npm i
     cd wrappers/node && npm i
-    cd wrappers/python && (python3 -m uv sync 2>/dev/null || (python3 -m pip install --user uv && python3 -m uv venv && python -m uv sync))
+
+# Install Rust toolchain and WASM build tools
+install-rust:
+    @command -v rustup >/dev/null 2>&1 || { echo "Error: Rust is required but not installed. Please install Rust first."; exit 1; }
     rustup target add wasm32-unknown-unknown
     rustup toolchain install nightly
     rustup component add rust-src --toolchain nightly
     cargo install wasm-pack --version 0.10.3
+
+# Install Python dependencies for wrappers
+install-python:
+    @command -v python3 >/dev/null 2>&1 || { echo "Error: Python is required but not installed. Please install Python first."; exit 1; }
+    cd wrappers/python && (python3 -m uv sync 2>/dev/null || (python3 -m pip install --user uv && python3 -m uv venv && python -m uv sync))
 
 # Build everything
 build: build-deps build-main
@@ -84,6 +93,10 @@ dev-ui:
 dev-ui-modular:
     cd pagefind_ui/modular && npm start
 
+# Deploy documentation site to Fly.io
+deploy-docs:
+    fly deploy --config docs/fly.toml --dockerfile docs/Dockerfile
+
 # Test with the documentation site
 test-docs:
     @command -v hugo >/dev/null 2>&1 || { echo "Error: Hugo is required but not installed. Please install Hugo first."; exit 1; }
@@ -91,13 +104,3 @@ test-docs:
     cd docs && npm i
     cd docs && hugo
     ./target/release/pagefind -s docs/public --serve
-
-# Test with the UI documentation site (indexes main docs, serves from docs-ui)
-test-docs-ui:
-    @command -v hugo >/dev/null 2>&1 || { echo "Error: Hugo is required but not installed. Please install Hugo first."; exit 1; }
-    cd docs && npm i
-    cd docs && hugo
-    cd docs-ui && rm -rf ./public
-    cd docs-ui && hugo
-    ./target/release/pagefind -s docs/public --output-path docs-ui/public/pagefind
-    python3 -m http.server -d docs-ui/public

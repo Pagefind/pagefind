@@ -1,0 +1,21 @@
+:8080 {
+	root * /srv
+
+	@noTrailingSlash {
+		not path */
+		not path *.*
+		file {path}/index.html
+	}
+	redir @noTrailingSlash {path}/ 301
+
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+
+	file_server
+
+	encode zstd gzip
+
+	import redirects
+}

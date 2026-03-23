@@ -1,0 +1,82 @@
+{{- $headings := findRE `<h[2-3][^>]*>` .Content -}}
+{{- if ge (len $headings) 2 -}}
+<aside class="toc-aside" data-pagefind-ignore>
+    <div class="toc">
+        <p class="toc-title">On this page</p>
+        <a href="#" class="toc-top-link">{{ .Title }}</a>
+        {{ .TableOfContents }}
+    </div>
+</aside>
+<script>
+(function () {
+    var toc = document.querySelector('.toc');
+    if (!toc) return;
+
+    var topLink = toc.querySelector('.toc-top-link');
+    var links = Array.from(toc.querySelectorAll('a[href^="#"]'));
+    var allLinks = topLink ? [topLink].concat(links) : links;
+
+    var headings = [];
+    links.forEach(function (link) {
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) headings.push({ el: el, link: link });
+    });
+
+    if (!headings.length) return;
+
+    var current = null;
+    function activate(link) {
+        if (link === current) return;
+        current = link;
+        allLinks.forEach(function (l) { l.classList.remove('is-active'); });
+        link.classList.add('is-active');
+    }
+
+    var ticking = false;
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () {
+            ticking = false;
+            var atBottom = (window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 50);
+            var titleEl = document.querySelector('.content-header h1');
+            var active = null;
+            if (atBottom) {
+                active = headings[headings.length - 1].link;
+            } else if (!titleEl || titleEl.getBoundingClientRect().bottom <= 0) {
+                for (var i = 0; i < headings.length; i++) {
+                    if (headings[i].el.getBoundingClientRect().top <= window.innerHeight * 0.35) {
+                        active = headings[i].link;
+                    }
+                }
+            }
+            activate(active || topLink);
+        });
+    }
+
+    var scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
+    allLinks.forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            var id = link.getAttribute('href').slice(1);
+            var target = id ? document.getElementById(id) : null;
+            if (target) {
+                if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+                var top = target.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.15;
+                window.scrollTo({ top: top, behavior: scrollBehavior });
+                target.focus({ preventScroll: true });
+                history.pushState(null, '', '#' + id);
+            } else {
+                window.scrollTo({ top: 0, behavior: scrollBehavior });
+                history.pushState(null, '', window.location.pathname);
+            }
+        });
+    });
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
+</script>
+{{- end -}}

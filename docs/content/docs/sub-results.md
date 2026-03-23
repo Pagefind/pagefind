@@ -9,21 +9,26 @@ Pagefind is able to provide context on which sections of a page match a search t
 
 No configuration is needed when indexing your site. When searching the index, you can choose whether or not to split each page into multiple results.
 
-## Showing sub results with the Default UI
+## Showing sub results with the Component UI
 
-If you are using the Default UI package, set the `showSubResults` option to `true`:
+The `<pagefind-results>` component shows sub results by default. To hide them, set the `hide-sub-results` attribute:
 
 {{< diffcode >}}
-```javascript
-new PagefindUI({
-    element: "#search",
-+    showSubResults: true // Defaults to false
-});
+```html
+<pagefind-input></pagefind-input>
++<pagefind-results hide-sub-results></pagefind-results>
 ```
 {{< /diffcode >}}
 
-This will split the page on headings (`h1` → `h6`) that have `id` attributes that can be linked to.
-A maximum of three sub results will be show per page, and sections with the most hits will be given priority if more than three exist.
+The `<pagefind-searchbox>` component hides sub results by default. To show them, set the `show-sub-results` attribute:
+
+{{< diffcode >}}
+```html
++<pagefind-searchbox show-sub-results></pagefind-searchbox>
+```
+{{< /diffcode >}}
+
+Sub results split the page on headings (`h1` → `h6`) that have `id` attributes that can be linked to. Sections with the most hits will be given priority.
 
 ## Retrieving sub results using the JavaScript API
 

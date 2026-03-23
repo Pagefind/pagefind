@@ -36,8 +36,8 @@ if (!version) {
 
 let docsNavContents = fs.readFileSync(docsNavFile, { encoding: "utf-8" });
 docsNavContents = docsNavContents.replace(
-  /\blink_label:.*Local.*$/gim,
-  `link_label: "${version}"`
+  /\bversion:.*$/im,
+  `version: ${version}`
 );
 fs.writeFileSync(docsNavFile, docsNavContents);
 

@@ -109,7 +109,7 @@ export class PagefindSummary extends PagefindElement {
         if (!this.containerEl) return;
         const err = error as PagefindError;
         const errorText = instance.translate("error_search") || "Search failed";
-        this.containerEl.textContent = err.message || errorText;
+        this.containerEl.textContent = `Error: ${err.message || errorText}`;
       },
       this,
     );

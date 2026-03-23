@@ -7,9 +7,12 @@ disableKinds = ["taxonomy"]
 [markup]
 highlight.noClasses = false
 
+[markup.tableOfContents]
+startLevel = 2
+endLevel = 3
+ordered = false
+
 [markup.goldmark.renderer]
 # ensures html inside markdown is allowed to render
 unsafe = true
 
-[[module.imports]]
-path = 'github.com/pagefind/docs-template'

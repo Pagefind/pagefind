@@ -998,6 +998,7 @@ pagefind-modal-trigger {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
     height: var(--pf-input-height);
     padding: 0 14px;
     background: var(--pf-background);
@@ -1027,6 +1028,8 @@ pagefind-modal-trigger {
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-trigger-text {
+    flex: 1;
+    text-align: left;
     color: var(--pf-text-muted);
 }
 

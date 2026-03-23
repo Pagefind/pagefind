@@ -1,0 +1,5 @@
+**/node_modules/
+docs/public/
+docs/resources/
+docs/.hugo_build.lock
+target/

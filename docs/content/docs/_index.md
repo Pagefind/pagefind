@@ -12,17 +12,14 @@ Since Pagefind indexes your site _after_ it builds, we'll do things slightly out
 Pagefind provides a prebuilt search UI out of the box. Add the following snippet to a page of your choice:
 
 ```html
-<link href="/pagefind/pagefind-ui.css" rel="stylesheet">
-<script src="/pagefind/pagefind-ui.js"></script>
-<div id="search"></div>
-<script>
-    window.addEventListener('DOMContentLoaded', (event) => {
-        new PagefindUI({ element: "#search", showSubResults: true });
-    });
-</script>
+<link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+<script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+
+<pagefind-modal-trigger></pagefind-modal-trigger>
+<pagefind-modal></pagefind-modal>
 ```
 
-> The `/pagefind/pagefind-ui.css` and `/pagefind/pagefind-ui.js` assets will be created by Pagefind when we index the site.
+> The `/pagefind/pagefind-component-ui.css` and `/pagefind/pagefind-component-ui.js` assets will be created by Pagefind when we index the site.
 
 Now build your site to an output directory — this guide assumes that you're running `hugo` and that your site is output to the `public/` directory. Pagefind works with any set of static HTML files, so adjust these configurations as needed.
 
@@ -32,18 +29,38 @@ Now build your site to an output directory — this guide assumes that you're ru
 
 The easiest way to run Pagefind is through one of the official wrapper packages. If you don't have Node or Python installed, or want to install Pagefind another way, see the [Installing Pagefind](/docs/installation/) guide.
 
-To use the Node wrapper, run the following command from your terminal, where `--site` points to the output directory of your static site generator. We'll also add `--serve` so that we can view our final site right away.
+{{< tabs >}}
+{{< tab "npx" "sync-node" >}}
+Run the following command from your terminal, where `--site` points to the output directory of your static site generator. We'll also add `--serve` so that we can view our final site right away.
 
 ```bash
 npx -y pagefind --site public --serve
 ```
-
-Using the Python wrapper is similar, but requires an initial install:
+{{< /tab >}}
+{{< tab "pip" "sync-python" >}}
+The Python wrapper requires an initial install, then you can run Pagefind with `--site` pointing to your output directory. We'll also add `--serve` so that we can view our final site right away.
 
 ```bash
 python3 -m pip install 'pagefind[extended]'
 python3 -m pagefind --site public --serve
 ```
+{{< /tab >}}
+{{< tab "Download binary" >}}
+Download a [precompiled release from GitHub](https://github.com/pagefind/pagefind/releases) and run the binary directly, with `--site` pointing to your output directory. We'll also add `--serve` so that we can view our final site right away.
+
+```bash
+./pagefind --site public --serve
+```
+{{< /tab >}}
+{{< tab "Build from source" >}}
+If you have [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) installed, you can build and install Pagefind from source, then run it with `--site` pointing to your output directory. We'll also add `--serve` so that we can view our final site right away.
+
+```bash
+cargo install pagefind
+pagefind --site public --serve
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 Regardless of the command you choose, after Pagefind has downloaded you should see some output along the lines of:
 ```
@@ -60,10 +77,10 @@ We can see that a bunch of content was indexed, and Pagefind will be running a p
 
 Loading this in your browser, you should see a search input on your page. Try searching for some content and you will see results appear from your site.
 
-The last required step is to run Pagefind after building your site on your CMS or hosting platform. If you're a CloudCannon user, add a [`.cloudcannon/postbuild`](https://cloudcannon.com/documentation/articles/extending-your-build-process-with-hooks/) file containing the npx command above (minus the `--serve` flag). For other platforms, set up an equivalent command to run after your site build — the end goal is that Pagefind will run after every build of your site before it is deployed.
+The last required step is to run Pagefind after building your site on your CMS or hosting platform. Set up the npx command above (minus the `--serve` flag) to run after your site build — the end goal is that Pagefind will run after every build of your site before it is deployed.
 
 For many use cases, you can stop here and mark it as complete. Or, you can dive deeper into Pagefind and configure it to your liking — check out [Configuring the index](/docs/indexing/) for some next steps.
 
 ## Notes
 
-> For optimal performance, ensure the `lang` attribute is set on your `html` element. See [Multilingual Search](/docs/multilingual) for more details.
+> For optimal performance, ensure the `lang` attribute is set on your `html` element. See [Multilingual Search](/docs/multilingual/) for more details.

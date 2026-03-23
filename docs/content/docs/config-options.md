@@ -10,7 +10,7 @@ These can be set via any [configuration source](/docs/config-sources/).
 
 > These configuration options only apply when running the Pagefind indexing tool on your site.
 > For configuring Pagefind search in the browser, see [Pagefind Search Config](/docs/search-config/).
-> For configuring the Pagefind Default UI, see [Pagefind UI](/docs/ui/).
+> For configuring the Pagefind Component UI, see [Pagefind Component UI](/docs/search-ui/).
 
 ## Required arguments
 

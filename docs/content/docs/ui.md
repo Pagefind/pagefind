@@ -3,6 +3,8 @@ title: "Pagefind UI configuration options"
 nav_title: "Default UI config"
 nav_section: References
 weight: 61
+noindex: true
+legacy_ui: true
 ---
 
 These options configure Pagefind UI itself. Any extra keys in this object will be passed on to [configure the Pagefind search API](/docs/search-config/).

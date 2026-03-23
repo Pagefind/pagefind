@@ -1,0 +1,13 @@
+<div class="tabs-panel-raw" data-tab-label="{{ .Get 0 }}"{{ with .Get 1 }} data-sync="{{ . }}"{{ end }}>
+<p class="tabs-noscript-heading"><strong>{{ .Get 0 }}</strong></p>
+{{- $raw := .Inner -}}
+{{- $segments := split $raw "```" -}}
+{{- range $i, $seg := $segments -}}
+  {{- if eq (mod $i 2) 0 -}}
+    {{- $seg | $.Page.RenderString (dict "display" "block") -}}
+  {{- else -}}
+    {{- $block := printf "```%s```" $seg -}}
+    {{- partial "diffcode.html" $block -}}
+  {{- end -}}
+{{- end -}}
+</div>

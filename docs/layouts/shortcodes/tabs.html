@@ -1,0 +1,6 @@
+{{ $id := printf "tabs-%d" .Ordinal }}
+{{ $label := .Get 0 | default "Content options" }}
+<div class="tabs" data-tabs data-tabs-label="{{ $label }}" data-tabs-id="{{ $id }}">
+  <div class="tabs-list"></div>
+  {{ .Inner }}
+</div>

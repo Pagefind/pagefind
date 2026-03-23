@@ -9,20 +9,21 @@ Pagefind can be configured to search across multiple sites, merging results and 
 
 The following examples reflect Pagefind running on a website at `blog.example.com` that wants to include pages from `docs.example.com` in the search results. _(Note that in a matching setup across domains, you will need to configure CORS headers. See [Cross origin indexes](#cross-origin-indexes) below.)_
 
-## Searching additional sites from Pagefind UI
+## Searching additional sites from the Component UI
 
-When initializing the Pagefind UI, include a `mergeIndex` option with an array of additional indexes to merge into the main index. The URL should be the path to a pagefind bundle folder.
+When configuring the Component UI, include a `mergeIndex` option with an array of additional indexes to merge into the main index. The URL should be the path to a pagefind bundle folder.
 
 {{< diffcode >}}
 ```js
 // Running on blog.example.com
 
-new PagefindUI({
-    element: "#search",
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
++configureInstance("default", {
 +    mergeIndex: [{
 +        bundlePath: "https://docs.example.com/pagefind"
 +    }]
-})
++});
 ```
 {{< /diffcode >}}
 
@@ -32,14 +33,15 @@ Pagefind options can be passed to the additional indexes alongside the `bundlePa
 ```js
 // Running on blog.example.com
 
-new PagefindUI({
-    element: "#search",
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
+configureInstance("default", {
 +    // ... options for the blog.example.com index
     mergeIndex: [{
         bundlePath: "https://docs.example.com/pagefind",
 +        // ... options for the docs.example.com index
     }]
-})
+});
 ```
 {{< /diffcode >}}
 
@@ -77,15 +79,16 @@ When searching across multiple sites you may want to rank each index higher or l
 
 {{< diffcode >}}
 ```js
-// UI:
-new PagefindUI({
-    element: "#search",
-+   indexWeight: 2,
+// Component UI:
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
+configureInstance("default", {
++    indexWeight: 2,
     mergeIndex: [{
         bundlePath: "https://docs.example.com/pagefind",
 +        indexWeight: 0.5
     }]
-})
+});
 
 // JS API:
 const pagefind = await import("/pagefind/pagefind.js");
@@ -102,9 +105,10 @@ When searching across multiple sites you may want to filter to each index, witho
 
 {{< diffcode >}}
 ```js
-// UI:
-new PagefindUI({
-    element: "#search",
+// Component UI:
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
+configureInstance("default", {
 +    mergeFilter: {
 +        resource: "Blog"
 +    },
@@ -114,7 +118,7 @@ new PagefindUI({
 +            resource: "Documentation"
 +        }
     }]
-})
+});
 
 // JS API:
 const pagefind = await import("/pagefind/pagefind.js");
@@ -133,14 +137,15 @@ Pagefind will attempt to grab a matching language when merging an index, falling
 
 {{< diffcode >}}
 ```js
-// UI:
-new PagefindUI({
-    element: "#search",
+// Component UI:
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
+configureInstance("default", {
     mergeIndex: [{
         bundlePath: "https://docs.example.com/pagefind",
 +        language: "pt-br"
     }]
-})
+});
 
 // JS API:
 const pagefind = await import("/pagefind/pagefind.js");

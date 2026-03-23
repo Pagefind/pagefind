@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="{{ .Site.LanguageCode }}">
+    <head>
+        <script>
+            (function () {
+                try { var stored = localStorage.getItem("theme"); } catch (e) {}
+                var prefersDark = window.matchMedia(
+                    "(prefers-color-scheme: dark)",
+                ).matches;
+                var theme = stored || (prefersDark ? "dark" : "light");
+                document.documentElement.setAttribute("data-pf-theme", theme);
+            })();
+        </script>
+        {{- partial "head.html" . -}}
+    </head>
+    <body>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <div class="site-wrapper">
+            <aside class="sidebar">{{- partial "nav.html" . -}}</aside>
+            <main id="main-content" class="main-content">{{- block "main" . }}{{- end }}</main>
+        </div>
+        <script>
+            function syncThemeToggle(theme) {
+                var pressed = theme === "dark" ? "true" : "false";
+                document.getElementById("theme-toggle").setAttribute("aria-pressed", pressed);
+                var mobile = document.getElementById("theme-toggle-mobile");
+                if (mobile) mobile.setAttribute("aria-pressed", pressed);
+            }
+            function toggleTheme() {
+                var current =
+                    document.documentElement.getAttribute("data-pf-theme");
+                var next = current === "dark" ? "light" : "dark";
+                document.documentElement.setAttribute("data-pf-theme", next);
+                localStorage.setItem("theme", next);
+                syncThemeToggle(next);
+            }
+            var desktopToggle = document.getElementById("theme-toggle");
+            if (desktopToggle) {
+                desktopToggle.addEventListener("click", toggleTheme);
+            }
+            var mobileToggle = document.getElementById("theme-toggle-mobile");
+            if (mobileToggle) {
+                mobileToggle.addEventListener("click", toggleTheme);
+            }
+            syncThemeToggle(document.documentElement.getAttribute("data-pf-theme"));
+
+            (function () {
+                var menuToggle = document.querySelector(".menu-toggle");
+                var mobileNav = document.getElementById("mobile-nav");
+
+                if (menuToggle && mobileNav) {
+                    menuToggle.addEventListener("click", function () {
+                        mobileNav.showModal();
+                        menuToggle.setAttribute("aria-expanded", "true");
+                    });
+
+                    mobileNav.addEventListener("close", function () {
+                        menuToggle.setAttribute("aria-expanded", "false");
+                        menuToggle.focus();
+                    });
+
+                    mobileNav.addEventListener("click", function (e) {
+                        if (e.target === mobileNav) mobileNav.close();
+                    });
+
+                    mobileNav.querySelectorAll("a").forEach(function (link) {
+                        link.addEventListener("click", function () {
+                            mobileNav.close();
+                        });
+                    });
+                }
+            })();
+
+            (function () {
+                var drilldownPrefix = "{{ with .Site.Data.nav.drilldown_prefix }}{{ . }}{{ else }}/docs/components/{{ end }}";
+                var isComponentPage =
+                    window.location.pathname.indexOf(drilldownPrefix) === 0 &&
+                    window.location.pathname !== drilldownPrefix;
+
+                document.querySelectorAll(".sidebar, .mobile-nav").forEach(function (container) {
+                    var drilldownLink = container.querySelector("[data-drilldown]");
+                    var backBtn = container.querySelector("[data-nav-back]");
+
+                    if (isComponentPage) {
+                        container.classList.add("no-transition", "show-components");
+                        if (drilldownLink) drilldownLink.setAttribute("aria-expanded", "true");
+                        requestAnimationFrame(function () {
+                            requestAnimationFrame(function () {
+                                container.classList.remove("no-transition");
+                            });
+                        });
+                    }
+
+                    if (drilldownLink) {
+                        drilldownLink.addEventListener("click", function () {
+                            container.classList.add("show-components");
+                            drilldownLink.setAttribute("aria-expanded", "true");
+                            var componentsPanel = container.querySelector(".nav-panel-components");
+                            var firstLink = componentsPanel && componentsPanel.querySelector("a");
+                            if (firstLink) firstLink.focus({ preventScroll: true });
+                        });
+                    }
+
+                    if (backBtn) {
+                        backBtn.addEventListener("click", function () {
+                            container.classList.remove("show-components");
+                            if (drilldownLink) {
+                                drilldownLink.setAttribute("aria-expanded", "false");
+                                drilldownLink.focus({ preventScroll: true });
+                            }
+                        });
+                    }
+                });
+            })();
+
+            (function () {
+                var STORAGE_KEY = 'pagefind-tabs';
+
+                function readPrefs() {
+                    try {
+                        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+                    } catch (e) {
+                        return [];
+                    }
+                }
+
+                function writePrefs(syncKey) {
+                    try {
+                        var prefs = readPrefs().filter(function (k) { return k !== syncKey; });
+                        prefs.unshift(syncKey);
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+                    } catch (e) {}
+                }
+
+                function syncAndPersist(activatedTab) {
+                    var syncKey = activatedTab.getAttribute('data-sync');
+                    if (!syncKey) return;
+
+                    writePrefs(syncKey);
+
+                    var thisGroup = activatedTab.closest('.tabs');
+                    var savedTop = thisGroup.getBoundingClientRect().top;
+
+                    document.querySelectorAll('[data-tabs-ready]').forEach(function (other) {
+                        if (other === thisGroup) return;
+                        var match = other.querySelector('.tabs-tab[data-sync="' + syncKey + '"]');
+                        if (match && match.getAttribute('aria-selected') !== 'true') {
+                            activateTab(match);
+                        }
+                    });
+
+                    var newTop = thisGroup.getBoundingClientRect().top;
+                    if (Math.abs(newTop - savedTop) > 1) {
+                        window.scrollBy(0, newTop - savedTop);
+                    }
+                }
+
+                function activateTab(tab) {
+                    var container = tab.closest('.tabs');
+                    var allTabs = container.querySelectorAll('.tabs-list .tabs-tab');
+                    var allPanels = container.querySelectorAll(':scope > .tabs-panel');
+
+                    allTabs.forEach(function (t) {
+                        t.setAttribute('aria-selected', 'false');
+                        t.setAttribute('tabindex', '-1');
+                    });
+                    allPanels.forEach(function (p) {
+                        p.setAttribute('hidden', '');
+                        p.classList.remove('is-active');
+                    });
+
+                    tab.setAttribute('aria-selected', 'true');
+                    tab.setAttribute('tabindex', '0');
+
+                    var panelId = tab.getAttribute('aria-controls');
+                    var panel = document.getElementById(panelId);
+                    if (panel) {
+                        panel.removeAttribute('hidden');
+                        panel.classList.add('is-active');
+                    }
+                }
+
+                function setupScrollAffordance(tablist) {
+                    function update() {
+                        var scrollLeft = tablist.scrollLeft;
+                        var maxScroll = tablist.scrollWidth - tablist.clientWidth;
+
+                        if (maxScroll <= 0) {
+                            tablist.removeAttribute('data-scroll-start');
+                            tablist.removeAttribute('data-scroll-end');
+                            return;
+                        }
+
+                        if (scrollLeft > 2) {
+                            tablist.setAttribute('data-scroll-end', '');
+                        } else {
+                            tablist.removeAttribute('data-scroll-end');
+                        }
+
+                        if (scrollLeft < maxScroll - 2) {
+                            tablist.setAttribute('data-scroll-start', '');
+                        } else {
+                            tablist.removeAttribute('data-scroll-start');
+                        }
+                    }
+
+                    tablist.addEventListener('scroll', update, { passive: true });
+                    update();
+                }
+
+                document.querySelectorAll('[data-tabs]').forEach(function (container) {
+                    var id = container.getAttribute('data-tabs-id');
+                    var tablist = container.querySelector('.tabs-list');
+                    var label = container.getAttribute('data-tabs-label') || 'Content options';
+                    var rawPanels = container.querySelectorAll(':scope > .tabs-panel-raw');
+
+                    // Build tab buttons and transform panels
+                    rawPanels.forEach(function (panel, i) {
+                        var tabLabel = panel.getAttribute('data-tab-label');
+                        var tabId = id + '-tab-' + i;
+                        var panelId = id + '-panel-' + i;
+
+                        // Create tab button
+                        var btn = document.createElement('button');
+                        btn.className = 'tabs-tab';
+                        btn.textContent = tabLabel;
+                        btn.id = tabId;
+                        var syncKey = panel.getAttribute('data-sync');
+                        if (syncKey) {
+                            btn.setAttribute('data-sync', syncKey);
+                        }
+                        tablist.appendChild(btn);
+
+                        // Transform panel
+                        panel.className = 'tabs-panel';
+                        panel.id = panelId;
+                        panel.removeAttribute('data-tab-label');
+                        panel.removeAttribute('data-sync');
+                    });
+
+                    // Now enhance with ARIA
+                    container.setAttribute('data-tabs-ready', '');
+                    tablist.setAttribute('role', 'tablist');
+                    tablist.setAttribute('aria-label', label);
+
+                    var tabs = tablist.querySelectorAll('.tabs-tab');
+                    var panels = container.querySelectorAll(':scope > .tabs-panel');
+
+                    tabs.forEach(function (tab, i) {
+                        var panelId = id + '-panel-' + i;
+                        tab.setAttribute('role', 'tab');
+                        tab.setAttribute('aria-controls', panelId);
+                        if (i === 0) {
+                            tab.setAttribute('aria-selected', 'true');
+                            tab.setAttribute('tabindex', '0');
+                        } else {
+                            tab.setAttribute('aria-selected', 'false');
+                            tab.setAttribute('tabindex', '-1');
+                        }
+                    });
+
+                    panels.forEach(function (panel, i) {
+                        var tabId = id + '-tab-' + i;
+                        panel.setAttribute('role', 'tabpanel');
+                        panel.setAttribute('aria-labelledby', tabId);
+                        panel.setAttribute('tabindex', '0');
+                        if (i === 0) {
+                            panel.classList.add('is-active');
+                        } else {
+                            panel.setAttribute('hidden', '');
+                        }
+                    });
+
+                    // Apply stored preference
+                    var stored = readPrefs();
+                    var preferredIndex = -1;
+                    for (var s = 0; s < stored.length && preferredIndex === -1; s++) {
+                        for (var t = 0; t < tabs.length; t++) {
+                            if (tabs[t].getAttribute('data-sync') === stored[s]) {
+                                preferredIndex = t;
+                                break;
+                            }
+                        }
+                    }
+                    if (preferredIndex > 0) {
+                        activateTab(tabs[preferredIndex]);
+                    }
+
+                    tablist.addEventListener('click', function (e) {
+                        var tab = e.target.closest('.tabs-tab');
+                        if (tab) {
+                            activateTab(tab);
+                            syncAndPersist(tab);
+                            tab.focus();
+                        }
+                    });
+
+                    tablist.addEventListener('keydown', function (e) {
+                        var tab = e.target.closest('.tabs-tab');
+                        if (!tab) return;
+
+                        var tabsArr = Array.prototype.slice.call(tabs);
+                        var index = tabsArr.indexOf(tab);
+
+                        var handled = true;
+                        switch (e.key) {
+                            case 'ArrowRight':
+                                index = (index + 1) % tabsArr.length;
+                                break;
+                            case 'ArrowLeft':
+                                index = (index - 1 + tabsArr.length) % tabsArr.length;
+                                break;
+                            case 'Home':
+                                index = 0;
+                                break;
+                            case 'End':
+                                index = tabsArr.length - 1;
+                                break;
+                            case 'ArrowDown':
+                                var panelId = tab.getAttribute('aria-controls');
+                                var panel = document.getElementById(panelId);
+                                if (panel) panel.focus();
+                                e.preventDefault();
+                                return;
+                            default:
+                                handled = false;
+                        }
+
+                        if (handled) {
+                            e.preventDefault();
+                            activateTab(tabsArr[index]);
+                            syncAndPersist(tabsArr[index]);
+                            tabsArr[index].focus();
+                        }
+                    });
+
+                    setupScrollAffordance(tablist);
+                });
+            })();
+        </script>
+    </body>
+</html>

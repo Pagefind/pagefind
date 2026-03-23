@@ -1,0 +1,23 @@
+{{- $section := "" -}}
+{{- range .Site.Data.nav.main -}}
+    {{- $group := .section -}}
+    {{- if $group -}}
+        {{- range .items -}}
+            {{- if eq .path $.Page.RelPermalink -}}
+                {{- $section = $group -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+{{- if not $section -}}
+    {{- range .Site.Data.nav.components -}}
+        {{- range .items -}}
+            {{- if eq .path $.Page.RelPermalink -}}
+                {{- $section = "Components" -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}
+{{- with $section -}}
+<span data-pagefind-filter="section" style="display:none">{{ . }}</span>
+{{- end -}}

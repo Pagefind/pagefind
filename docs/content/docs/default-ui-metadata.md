@@ -3,6 +3,8 @@ title: "Showing metadata in the Pagefind Default UI"
 nav_title: "Metadata in the Default UI"
 nav_section: Metadata
 weight: 11
+noindex: true
+legacy_ui: true
 ---
 
 Pagefind's Default UI uses the default metadata keys to customize the way results are displayed. The following metadata items are used in the Default UI:

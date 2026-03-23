@@ -112,7 +112,7 @@ async def main():
 ```
 
 Each method of `PagefindIndex` that talks to the backing Pagefind service can raise errors.
-If an error is is thrown inside `PagefindIndex`'s context, the context closes without writing the index files to disk.
+If an error is thrown inside `PagefindIndex`'s context, the context closes without writing the index files to disk.
 
 ```py
 async def main():

@@ -1,0 +1,54 @@
+{{ define "main" }}
+<article class="not-found">
+    <div class="not-found-hero">
+        <h1 class="not-found-title">Page not found</h1>
+        <p class="not-found-message">This page doesn't exist or has been moved.</p>
+        <p class="not-found-suggestion" hidden></p>
+    </div>
+</article>
+
+<script type="module">
+    (function () {
+        var path = window.location.pathname.replace(/\/+$/, '');
+        var segment = path.split('/').pop() || '';
+        var term = segment
+            .replace(/\.\w+$/, '')
+            .replace(/[-_]+/g, ' ')
+            .trim();
+
+        if (!term) return;
+
+        var suggestion = document.querySelector('.not-found-suggestion');
+        if (!suggestion) return;
+
+        var safe = document.createElement('span');
+        safe.textContent = term;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'not-found-trigger';
+        btn.innerHTML =
+            '<svg class="not-found-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '<span>search for \u201c' + safe.innerHTML + '\u201d</span>';
+
+        suggestion.append(
+            document.createTextNode('Perhaps you could '),
+            btn
+        );
+        suggestion.hidden = false;
+
+        btn.addEventListener('click', function () {
+            try {
+                var manager = window.PagefindComponents.getInstanceManager();
+                var instance = manager.getInstance('default');
+                var modals = instance.getUtilities('modal');
+                var modal = modals && modals[0];
+                if (modal && typeof modal.open === 'function') {
+                    instance.triggerSearch(term);
+                    modal.open();
+                }
+            } catch (e) {}
+        });
+    })();
+</script>
+{{ end }}

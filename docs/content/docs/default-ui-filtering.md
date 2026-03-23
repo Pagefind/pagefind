@@ -3,6 +3,8 @@ title: "Filtering results with the Pagefind Default UI"
 nav_title: "Filtering with the Default UI"
 nav_section: Filtering
 weight: 11
+noindex: true
+legacy_ui: true
 ---
 
 Pagefind's Default UI supports filters and will show them in a sidebar if they are present in your index.

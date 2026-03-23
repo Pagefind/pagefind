@@ -177,7 +177,7 @@ for (const file of files) {
 
 A response with an `errors` array containing error messages indicates that Pagefind failed to action this request.
 
-If successful, `files` will be an array containing file objects. Each object contains a `content` key with the raw data as a Uint8Array `path` key, and a `path` key which is the relative URL this file should be served at within a bundle directory.
+If successful, `files` will be an array containing file objects. Each object contains a `content` key with the raw data as a Uint8Array, and a `path` key which is the relative URL this file should be served at within a bundle directory.
 
 ## index.writeFiles
 

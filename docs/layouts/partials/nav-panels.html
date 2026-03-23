@@ -1,0 +1,75 @@
+<div class="nav-panels-container">
+    {{/* ── Main navigation panel ── */}}
+    <div class="nav-panel nav-panel-main">
+        {{ range .Site.Data.nav.main }}
+            {{ if .section }}
+                <div class="nav-group">
+                    <p class="nav-group-title">
+                        {{ .section }}
+                        {{ with .badge }}<span class="nav-badge">{{ . }}</span>{{ end }}
+                    </p>
+                    <ul class="nav-list">
+                        {{ range .items }}
+                        {{ $active := false }}
+                        {{ if .drilldown }}
+                            {{ $active = and (hasPrefix $.Page.RelPermalink "/docs/components/") (ne $.Page.RelPermalink "/docs/components/") }}
+                        {{ else }}
+                            {{ $active = eq $.Page.RelPermalink .path }}
+                        {{ end }}
+                        <li class="{{ if $active }}active{{ end }}{{ if .highlight }} highlight{{ end }}">
+                            {{ if .drilldown }}
+                            <button class="nav-drilldown" data-drilldown aria-expanded="false">
+                                <span>{{ .label }}</span>
+                                <svg class="nav-arrow" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                                    <path d="M5 3L9 7L5 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            {{ else }}
+                            <a href="{{ .path | relURL }}"{{ if $active }} aria-current="page"{{ end }}>
+                                <span>{{ .label }}</span>
+                            </a>
+                            {{ end }}
+                        </li>
+                        {{ end }}
+                    </ul>
+                </div>
+            {{ else }}
+                <ul class="nav-list">
+                    {{ range .items }}
+                    <li class="{{ if eq $.Page.RelPermalink .path }}active{{ end }}">
+                        <a href="{{ .path | relURL }}"{{ if eq $.Page.RelPermalink .path }} aria-current="page"{{ end }}>{{ .label }}</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            {{ end }}
+        {{ end }}
+    </div>
+
+    {{/* ── Component drilldown panel ── */}}
+    <div class="nav-panel nav-panel-components">
+        <button class="nav-back" data-nav-back>
+            <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true">
+                <path d="M9.5 3L5 7.5L9.5 12" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            All docs
+        </button>
+
+        <div class="nav-components-header">
+            <div class="nav-components-title">Components</div>
+            <div class="nav-components-subtitle">Web components for search UI</div>
+        </div>
+
+        {{ range .Site.Data.nav.components }}
+            <div class="nav-group">
+                <p class="nav-group-title">{{ .section }}</p>
+                <ul class="nav-list nav-list-mono">
+                    {{ range .items }}
+                    <li class="{{ if eq $.Page.RelPermalink .path }}active{{ end }}">
+                        <a href="{{ .path | relURL }}"{{ if eq $.Page.RelPermalink .path }} aria-current="page"{{ end }}>{{ .label }}</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            </div>
+        {{ end }}
+    </div>
+</div>

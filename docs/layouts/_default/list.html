@@ -1,0 +1,24 @@
+{{ define "main" }}
+<article class="content"{{ if .Params.noindex }} data-pagefind-ignore{{ end }}>
+    <header class="content-header">
+        <h1>{{ .Title }}</h1>
+    </header>
+    {{ if .Params.legacy_ui }}
+    <div class="legacy-banner" role="note">
+        <strong>This page documents the "Default UI", which is still supported but no longer the primary recommendation.</strong>
+        The <a href="/docs/search-ui/">Component UI</a> is now the main way to add search to your site.
+    </div>
+    {{ end }}
+    {{ if .Params.new_ui }}
+    <div class="new-ui-banner" role="note">
+        <strong>The Component UI is new.</strong>
+        Documentation for the previous UI is still available — see <a href="/docs/ui-usage/">usage</a> and <a href="/docs/ui/">config</a>.
+    </div>
+    {{ end }}
+    <div class="content-body">
+        {{ .Content }}
+    </div>
+    {{- partial "page-section.html" . -}}
+</article>
+{{- partial "toc.html" . -}}
+{{ end }}

@@ -67,7 +67,7 @@ This will return an object with the following structure:
 
 At this point you will have access to the number of search results, and a unique ID for each result. Also see [Debounced search](#debounced-search) below for an alternative API.
 
-> Note that the prefix `en` in `en_6fceec9` matches the `lang` attribute of your `html` element. If `lang` is not set, the prefix defaults to `unknown`. See [Multilingual Search](/docs/multilingual) for more details.
+> Note that the prefix `en` in `en_6fceec9` matches the `lang` attribute of your `html` element. If `lang` is not set, the prefix defaults to `unknown`. See [Multilingual Search](/docs/multilingual/) for more details.
 
 ## Loading a result
 
@@ -243,7 +243,7 @@ See [Sorting using the Pagefind JavaScript API](/docs/js-api-sorting/) for more 
 
 ## Re-initializing the search API
 
-In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this langauge change.
+In some cases you might need to re-initialize Pagefind. For example, if you dynamically change the language of the page without reloading, Pagefind will need to be re-initialized to reflect this language change.
 
 The currently loaded Pagefind can be destroyed by running `pagefind.destroy()`:
 

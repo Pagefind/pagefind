@@ -1,0 +1,4 @@
+{{- if and .Parent (eq .Parent.Name "tab") -}}
+  {{- errorf "Do not use {{</* diffcode */>}} inside {{</* tab */>}} — code blocks in tabs are automatically diffcoded. Found in %s" .Page.File.Path -}}
+{{- end -}}
+{{ partial "diffcode.html" .Inner }}

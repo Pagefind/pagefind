@@ -1,10 +1,118 @@
-side_nav_title: Docs
-nav_links:
-  - link_title: GitHub
-    link_url: https://github.com/pagefind/pagefind
-    link_label: Local
-    link_icon_path: /github.svg
 logo:
-  logo_heading: Pagefind
-  logo_image: /pagefind.svg
-  logo_image_dark: /pagefind-dark.svg
+  text: Pagefind
+  version: Unreleased
+
+github_url: https://github.com/pagefind/pagefind
+
+main:
+  - section: Overview
+    items:
+      - label: Home
+        path: /
+      - label: Quick Start
+        path: /docs/
+  - section: Indexing
+    items:
+      - label: Running Pagefind
+        path: /docs/running-pagefind/
+      - label: Configuring the index
+        path: /docs/indexing/
+      - label: Setting up metadata
+        path: /docs/metadata/
+      - label: Setting up filters
+        path: /docs/filtering/
+      - label: Setting up sorting
+        path: /docs/sorts/
+      - label: Weighting content
+        path: /docs/weighting/
+      - label: Multilingual search
+        path: /docs/multilingual/
+  - section: Search UI
+    badge: new
+    items:
+      - label: Getting Started
+        path: /docs/search-ui/
+      - label: Component Overview
+        path: /docs/components/
+      - label: Components
+        drilldown: true
+      - label: CSS Variables
+        path: /docs/css-variables/
+      - label: Custom Components
+        path: /docs/custom-components/
+  - section: Search API
+    items:
+      - label: Using the search API
+        path: /docs/api/
+      - label: Metadata in the JS API
+        path: /docs/js-api-metadata/
+      - label: Filtering with the JS API
+        path: /docs/js-api-filtering/
+      - label: Sorting with the JS API
+        path: /docs/js-api-sorting/
+      - label: Customize ranking
+        path: /docs/ranking/
+      - label: Multiple results per page
+        path: /docs/sub-results/
+      - label: Highlighting search terms
+        path: /docs/highlighting/
+      - label: Searching multiple sites
+        path: /docs/multisite/
+  - section: References
+    items:
+      - label: Installing the CLI
+        path: /docs/installation/
+      - label: CLI config sources
+        path: /docs/config-sources/
+      - label: CLI config options
+        path: /docs/config-options/
+      - label: Search API config
+        path: /docs/search-config/
+      - label: Highlight API config
+        path: /docs/highlight-config/
+      - label: Search API Reference
+        path: /docs/api-reference/
+      - label: Using the Python API
+        path: /docs/py-api/
+      - label: Using the NodeJS API
+        path: /docs/node-api/
+  - section: Resources
+    items:
+      - label: Pagefind Playground
+        path: /docs/playground/
+      - label: Troubleshoot hosting
+        path: /docs/hosting/
+      - label: Community resources
+        path: /docs/resources/
+
+components:
+  - section: Prebuilt
+    items:
+      - label: pagefind-modal
+        path: /docs/components/modal/
+      - label: pagefind-modal-trigger
+        path: /docs/components/modal-trigger/
+      - label: pagefind-searchbox
+        path: /docs/components/searchbox/
+  - section: Primitives
+    items:
+      - label: pagefind-input
+        path: /docs/components/input/
+      - label: pagefind-results
+        path: /docs/components/results/
+      - label: pagefind-summary
+        path: /docs/components/summary/
+      - label: pagefind-keyboard-hints
+        path: /docs/components/keyboard-hints/
+  - section: Filtering
+    items:
+      - label: pagefind-filter-pane
+        path: /docs/components/filter-pane/
+      - label: pagefind-filter-dropdown
+        path: /docs/components/filter-dropdown/
+  - section: Configuration
+    items:
+      - label: pagefind-config
+        path: /docs/components/config/
+
+drilldown_prefix: /docs/components/

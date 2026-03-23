@@ -9,20 +9,17 @@ Pagefind includes the ability to highlight search terms on the result page.
 
 To enable this feature, first configure Pagefind to insert a query parameter on search results.
 
-## Configuring highlighting via the Default UI
-
-{{< diffcode >}}
+{{< tabs >}}
+{{< tab "Component UI" "sync-cfg-programmatic" >}}
 ```javascript
-new PagefindUI({
-    element: "#search",
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
++configureInstance("default", {
 +    highlightParam: "highlight"
-});
++});
 ```
-{{< /diffcode >}}
-
-## Configuring highlighting via the JavaScript API
-
-{{< diffcode >}}
+{{< /tab >}}
+{{< tab "Search API" "sync-cfg-searchapi" >}}
 ```javascript
 const pagefind = await import("/pagefind/pagefind.js");
 await pagefind.options({
@@ -30,7 +27,8 @@ await pagefind.options({
 });
 const search = await pagefind.search("static");
 ```
-{{< /diffcode >}}
+{{< /tab >}}
+{{< /tabs >}}
 
 ## Enabling highlights on result pages
 
@@ -48,4 +46,4 @@ To opt-in, import `/pagefind/pagefind-highlight.js` on all pages of your site an
 
 Ensure that the `highlightParam` configured here matches the `highlightParam` given to Pagefind when searching.
 
-To see all options available to PagefindHighlight, see [Highlight Config](/docs/highlight-config).
+To see all options available to PagefindHighlight, see [Highlight Config](/docs/highlight-config/).

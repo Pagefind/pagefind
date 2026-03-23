@@ -15,9 +15,24 @@ Ranking parameters are configured within the `ranking` option passed to Pagefind
 
 ## Configuring ranking parameters
 
+{{< tabs >}}
+{{< tab "Component UI" "sync-cfg-programmatic" >}}
+Ranking parameters can be passed to the Component UI via `configureInstance`:
+
+```javascript
+import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+
++configureInstance("default", {
++    ranking: {
++        // optional parameters, e.g:
++        pageLength: 0.75
++    }
++});
+```
+{{< /tab >}}
+{{< tab "Search API" "sync-cfg-searchapi" >}}
 Ranking parameters can be passed to the JavaScript API via `pagefind.options()`:
 
-{{< diffcode >}}
 ```javascript
 const pagefind = await import("/pagefind/pagefind.js");
 await pagefind.options({
@@ -27,21 +42,10 @@ await pagefind.options({
 +    }
 });
 ```
-{{< /diffcode >}}
+{{< /tab >}}
+{{< /tabs >}}
 
-Ranking parameters can be passed to the Default UI during initialization:
-
-{{< diffcode >}}
-```javascript
-new PagefindUI({
-    element: "#search",
-+    ranking: {
-+        // optional parameters, e.g:
-+        pageLength: 0.75
-+    }
-});
-```
-{{< /diffcode >}}
+> The examples below use the Search API syntax. For the Component UI, pass the same `ranking` object to `configureInstance` as shown above.
 
 ## Configuring Term Frequency
 
@@ -120,7 +124,7 @@ await pagefind.options({
 `termSaturation` controls how quickly a term "saturates" on a page. Once a term has appeared on a page many times, further appearances have a reduced impact on the page rank.
 
 - The maximum value is `2.0`, where pages will take a long time to saturate, giving pages with very high term frequencies a boost in ranking.
-- As this value trends to 0, it does not take many terms to saturate and allow other paramaters to influence the ranking.
+- As this value trends to 0, it does not take many terms to saturate and allow other parameters to influence the ranking.
 - The minimum value is `0.0`, where terms will saturate immediately and results will not distinguish between one term and many.
 
 Decreasing the `termSaturation` parameter is a good way to suppress pages that are ranking well due to an extremely high number of search terms existing in their content.

@@ -1,0 +1,2 @@
+# Redirect rules — add one redir per line
+# Format: redir <from> <to> [status]
