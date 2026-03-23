@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm-bindgen = "0.2.92"
 bit-set = "0.8"
-pagefind_stem = "0.2.0"
+pagefind_stem = "1.0.0"
 minicbor = "2.1.1"
 pagefind_microjson = "0.1.4"
 write-json = "0.1.4"
@@ -56,4 +56,7 @@ es = ["pagefind_stem/spanish"]
 sv = ["pagefind_stem/swedish"]
 ta = ["pagefind_stem/tamil"]
 tr = ["pagefind_stem/turkish"]
+eo = ["pagefind_stem/esperanto"]
+et = ["pagefind_stem/estonian"]
+pl = ["pagefind_stem/polish"]
 yi = ["pagefind_stem/yiddish"]

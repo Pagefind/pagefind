@@ -27,13 +27,26 @@ pub enum Algorithm {
 ${algorithms.map(a => `    #[cfg(feature = "${a.low}")]\n    ${a.high},`).join('\n')}
 }
 
+/// Retrieves the primary algorithm that this crate was compiled with.
+/// Allows consumer crates to change algorithm based only on feature flag usage,
+/// without changes to the consuming code.
+/// Assumes that the crate was compiled with only one feature flag enabled.
+/// If multiple flags are enabled, no guarantee is given on which algorithm is returned
+/// (though it will likely be alphabetical).
+#[allow(unreachable_code)]
+pub fn get_algorithm() -> Option<fn(&mut super::SnowballEnv) -> bool> {
+${algorithms.map(a => `    #[cfg(feature = "${a.low}")]\n    return Some(${a.low}::stem);`).join('\n')}
+    None
+}
+
 impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
     fn from(lang: Algorithm) -> Self {
         match lang {
 ${algorithms.map(a => `            #[cfg(feature = "${a.low}")]\n            Algorithm::${a.high} => ${a.low}::stem,`).join('\n')}
         }
     }
-}`;
+}
+`;
 }
 
 fs.rmSync(thisSnowballDir, { recursive: true, force: true });

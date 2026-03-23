@@ -1,3 +1,4 @@
+
 #[cfg(feature = "arabic")]
 pub mod arabic;
 #[cfg(feature = "armenian")]
@@ -10,16 +11,20 @@ pub mod catalan;
 pub mod danish;
 #[cfg(feature = "dutch")]
 pub mod dutch;
+#[cfg(feature = "dutch_porter")]
+pub mod dutch_porter;
 #[cfg(feature = "english")]
 pub mod english;
+#[cfg(feature = "esperanto")]
+pub mod esperanto;
+#[cfg(feature = "estonian")]
+pub mod estonian;
 #[cfg(feature = "finnish")]
 pub mod finnish;
 #[cfg(feature = "french")]
 pub mod french;
 #[cfg(feature = "german")]
 pub mod german;
-#[cfg(feature = "german2")]
-pub mod german2;
 #[cfg(feature = "greek")]
 pub mod greek;
 #[cfg(feature = "hindi")]
@@ -32,8 +37,6 @@ pub mod indonesian;
 pub mod irish;
 #[cfg(feature = "italian")]
 pub mod italian;
-#[cfg(feature = "kraaij_pohlmann")]
-pub mod kraaij_pohlmann;
 #[cfg(feature = "lithuanian")]
 pub mod lithuanian;
 #[cfg(feature = "lovins")]
@@ -78,16 +81,20 @@ pub enum Algorithm {
     Danish,
     #[cfg(feature = "dutch")]
     Dutch,
+    #[cfg(feature = "dutch_porter")]
+    Dutch_porter,
     #[cfg(feature = "english")]
     English,
+    #[cfg(feature = "esperanto")]
+    Esperanto,
+    #[cfg(feature = "estonian")]
+    Estonian,
     #[cfg(feature = "finnish")]
     Finnish,
     #[cfg(feature = "french")]
     French,
     #[cfg(feature = "german")]
     German,
-    #[cfg(feature = "german2")]
-    German2,
     #[cfg(feature = "greek")]
     Greek,
     #[cfg(feature = "hindi")]
@@ -100,8 +107,6 @@ pub enum Algorithm {
     Irish,
     #[cfg(feature = "italian")]
     Italian,
-    #[cfg(feature = "kraaij_pohlmann")]
-    Kraaij_pohlmann,
     #[cfg(feature = "lithuanian")]
     Lithuanian,
     #[cfg(feature = "lovins")]
@@ -110,6 +115,8 @@ pub enum Algorithm {
     Nepali,
     #[cfg(feature = "norwegian")]
     Norwegian,
+    #[cfg(feature = "polish")]
+    Polish,
     #[cfg(feature = "porter")]
     Porter,
     #[cfg(feature = "portuguese")]
@@ -120,8 +127,6 @@ pub enum Algorithm {
     Russian,
     #[cfg(feature = "serbian")]
     Serbian,
-    #[cfg(feature = "polish")]
-    Polish,
     #[cfg(feature = "spanish")]
     Spanish,
     #[cfg(feature = "swedish")]
@@ -140,6 +145,7 @@ pub enum Algorithm {
 /// Assumes that the crate was compiled with only one feature flag enabled.
 /// If multiple flags are enabled, no guarantee is given on which algorithm is returned
 /// (though it will likely be alphabetical).
+#[allow(unreachable_code)]
 pub fn get_algorithm() -> Option<fn(&mut super::SnowballEnv) -> bool> {
     #[cfg(feature = "arabic")]
     return Some(arabic::stem);
@@ -153,16 +159,20 @@ pub fn get_algorithm() -> Option<fn(&mut super::SnowballEnv) -> bool> {
     return Some(danish::stem);
     #[cfg(feature = "dutch")]
     return Some(dutch::stem);
+    #[cfg(feature = "dutch_porter")]
+    return Some(dutch_porter::stem);
     #[cfg(feature = "english")]
     return Some(english::stem);
+    #[cfg(feature = "esperanto")]
+    return Some(esperanto::stem);
+    #[cfg(feature = "estonian")]
+    return Some(estonian::stem);
     #[cfg(feature = "finnish")]
     return Some(finnish::stem);
     #[cfg(feature = "french")]
     return Some(french::stem);
     #[cfg(feature = "german")]
     return Some(german::stem);
-    #[cfg(feature = "german2")]
-    return Some(german2::stem);
     #[cfg(feature = "greek")]
     return Some(greek::stem);
     #[cfg(feature = "hindi")]
@@ -175,8 +185,6 @@ pub fn get_algorithm() -> Option<fn(&mut super::SnowballEnv) -> bool> {
     return Some(irish::stem);
     #[cfg(feature = "italian")]
     return Some(italian::stem);
-    #[cfg(feature = "kraaij_pohlmann")]
-    return Some(kraaij_pohlmann::stem);
     #[cfg(feature = "lithuanian")]
     return Some(lithuanian::stem);
     #[cfg(feature = "lovins")]
@@ -225,16 +233,20 @@ impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
             Algorithm::Danish => danish::stem,
             #[cfg(feature = "dutch")]
             Algorithm::Dutch => dutch::stem,
+            #[cfg(feature = "dutch_porter")]
+            Algorithm::Dutch_porter => dutch_porter::stem,
             #[cfg(feature = "english")]
             Algorithm::English => english::stem,
+            #[cfg(feature = "esperanto")]
+            Algorithm::Esperanto => esperanto::stem,
+            #[cfg(feature = "estonian")]
+            Algorithm::Estonian => estonian::stem,
             #[cfg(feature = "finnish")]
             Algorithm::Finnish => finnish::stem,
             #[cfg(feature = "french")]
             Algorithm::French => french::stem,
             #[cfg(feature = "german")]
             Algorithm::German => german::stem,
-            #[cfg(feature = "german2")]
-            Algorithm::German2 => german2::stem,
             #[cfg(feature = "greek")]
             Algorithm::Greek => greek::stem,
             #[cfg(feature = "hindi")]
@@ -247,8 +259,6 @@ impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
             Algorithm::Irish => irish::stem,
             #[cfg(feature = "italian")]
             Algorithm::Italian => italian::stem,
-            #[cfg(feature = "kraaij_pohlmann")]
-            Algorithm::Kraaij_pohlmann => kraaij_pohlmann::stem,
             #[cfg(feature = "lithuanian")]
             Algorithm::Lithuanian => lithuanian::stem,
             #[cfg(feature = "lovins")]
@@ -257,6 +267,8 @@ impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
             Algorithm::Nepali => nepali::stem,
             #[cfg(feature = "norwegian")]
             Algorithm::Norwegian => norwegian::stem,
+            #[cfg(feature = "polish")]
+            Algorithm::Polish => polish::stem,
             #[cfg(feature = "porter")]
             Algorithm::Porter => porter::stem,
             #[cfg(feature = "portuguese")]
@@ -267,8 +279,6 @@ impl From<Algorithm> for fn(&mut super::SnowballEnv) -> bool {
             Algorithm::Russian => russian::stem,
             #[cfg(feature = "serbian")]
             Algorithm::Serbian => serbian::stem,
-            #[cfg(feature = "polish")]
-            Algorithm::Polish => polish::stem,
             #[cfg(feature = "spanish")]
             Algorithm::Spanish => spanish::stem,
             #[cfg(feature = "swedish")]

@@ -647,6 +647,8 @@ fn get_stemmer(lang: &str) -> Option<Stemmer> {
         "da" => Some(Stemmer::create(Algorithm::Danish)),
         "nl" => Some(Stemmer::create(Algorithm::Dutch)),
         "en" => Some(Stemmer::create(Algorithm::English)),
+        "eo" => Some(Stemmer::create(Algorithm::Esperanto)),
+        "et" => Some(Stemmer::create(Algorithm::Estonian)),
         "fi" => Some(Stemmer::create(Algorithm::Finnish)),
         "fr" => Some(Stemmer::create(Algorithm::French)),
         "de" => Some(Stemmer::create(Algorithm::German)),

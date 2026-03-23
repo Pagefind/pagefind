@@ -2310,7 +2310,7 @@ dependencies = [
  "lol_html",
  "minicbor",
  "minifier",
- "pagefind_stem 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pagefind_stem 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "path-slash",
  "portpicker",
  "rayon",
@@ -2329,13 +2329,13 @@ dependencies = [
 
 [[package]]
 name = "pagefind_stem"
-version = "0.2.0"
+version = "1.0.0"
 
 [[package]]
 name = "pagefind_stem"
-version = "0.2.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70b9cf5d3cd867dd32e54385d85ecfda45c6f2f896a9d464426ab564e7391467"
+checksum = "8dfa810b158f3ac364e5acd43ca4a6020a6e729d40c15ce1bed1d911237a52e5"
 
 [[package]]
 name = "parking_lot"

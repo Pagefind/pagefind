@@ -19,7 +19,7 @@ tokio = { version = "1", features = [
     "macros",
     "sync",
 ] }
-pagefind_stem = { version = "0.2.0", features = [
+pagefind_stem = { version = "1.0.0", features = [
     "arabic",
     "armenian",
     "basque",
@@ -27,6 +27,8 @@ pagefind_stem = { version = "0.2.0", features = [
     "danish",
     "dutch",
     "english",
+    "esperanto",
+    "estonian",
     "finnish",
     "french",
     "german",
