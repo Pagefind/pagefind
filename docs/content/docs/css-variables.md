@@ -45,6 +45,18 @@ The Component UI uses CSS custom properties for theming. Override these variable
 
   /* Sizing */
   --pf-input-height: 36px;
+  --pf-input-font-size: 16px; /* Keep at 16px+ to prevent iOS auto-zoom on focus */
+  --pf-summary-font-size: 12px;
+  --pf-result-title-font-size: 14px;
+  --pf-result-excerpt-font-size: 13px;
+
+  /* Results layout */
+  --pf-results-display: flex;
+  --pf-results-flex-direction: column;
+  --pf-results-flex-wrap: nowrap;
+  --pf-results-columns: none; /* grid-template-columns value, used when display is grid */
+  --pf-results-gap: 8px;
+
   --pf-border-radius: 6px;
   --pf-image-width: 64px;
   --pf-image-height: 48px;
@@ -53,7 +65,8 @@ The Component UI uses CSS custom properties for theming. Override these variable
   --pf-icon-search: url("data:image/svg+xml,...");
   --pf-icon-arrow: url("data:image/svg+xml,...");
 
-  /* Modal dimensions */
+  /* Modal */
+  --pf-modal-backdrop: rgba(0, 0, 0, 0.5);
   --pf-modal-max-width: 560px;
   --pf-modal-max-height: min(80dvh, 800px);
   --pf-modal-top: 10dvh;

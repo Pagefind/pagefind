@@ -131,3 +131,17 @@ Here's the built-in template. Copy and customize it:
   </script>
 </pagefind-results>
 ```
+
+## Results Layout
+
+By default, results display in a single column. You can change the layout of the results container using CSS variables, for example a grid layout:
+
+```css
+:root {
+    --pf-results-display: grid;
+    --pf-results-columns: repeat(auto-fill, minmax(250px, 1fr));
+    --pf-results-gap: 16px;
+}
+```
+
+See [CSS Variables](/docs/css-variables/) for all available layout variables.
