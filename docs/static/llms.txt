@@ -1,0 +1,68 @@
+# Pagefind
+
+> Pagefind is a fully static search library. It indexes your site after it builds and provides instant client-side search using WebAssembly — no server required.
+
+Pagefind works with any static site generator (Hugo, Eleventy, Astro, Next.js, Jekyll, etc.). Run the CLI after your build, and it generates a search index plus UI assets in a `/pagefind/` directory.
+
+## Important: Use the Component UI
+
+The **Component UI** (`pagefind-component-ui.js`, web components like `<pagefind-modal>`) is the current way to add search UI to your site. It replaces the old "Default UI" (`pagefind-ui.js`, `new PagefindUI()`). The Default UI is legacy and no longer recommended. Always use the Component UI for new projects.
+
+## Docs
+
+All pages below are available as markdown at their listed URLs.
+
+### Component UI (start here for adding search to a site)
+
+- [Component UI Guide](https://pagefind.app/llms-component-ui.txt): Complete reference for adding search UI using web components. Installation, component reference, templates, CSS theming, and custom components.
+- [Component System Overview](https://pagefind.app/docs/components/index.md): How the component system works
+- [<pagefind-modal>](https://pagefind.app/docs/components/modal/index.md): Full-screen search modal
+- [<pagefind-modal-trigger>](https://pagefind.app/docs/components/modal-trigger/index.md): Button to open the modal
+- [<pagefind-searchbox>](https://pagefind.app/docs/components/searchbox/index.md): Search input with dropdown results
+- [<pagefind-input>](https://pagefind.app/docs/components/input/index.md): Standalone search input
+- [<pagefind-results>](https://pagefind.app/docs/components/results/index.md): Results display with templates
+- [<pagefind-summary>](https://pagefind.app/docs/components/summary/index.md): Search status and result count
+- [<pagefind-keyboard-hints>](https://pagefind.app/docs/components/keyboard-hints/index.md): Keyboard navigation hints
+- [<pagefind-filter-dropdown>](https://pagefind.app/docs/components/filter-dropdown/index.md): Filter dropdown
+- [<pagefind-filter-pane>](https://pagefind.app/docs/components/filter-pane/index.md): Filter sidebar panel
+- [<pagefind-config>](https://pagefind.app/docs/components/config/index.md): Declarative configuration
+- [CSS Variables](https://pagefind.app/docs/css-variables/index.md): Theming with CSS custom properties
+- [Custom Components](https://pagefind.app/docs/custom-components/index.md): Building your own components
+
+### Getting Started
+
+- [Quick Start](https://pagefind.app/docs/index.md): Getting started with Pagefind
+- [Installation](https://pagefind.app/docs/installation/index.md): Installing via npm, pip, or binary
+- [Running Pagefind](https://pagefind.app/docs/running-pagefind/index.md): CLI usage
+- [Hosting](https://pagefind.app/docs/hosting/index.md): Hosting troubleshooting
+
+### Indexing and Configuration
+
+- [Indexing](https://pagefind.app/docs/indexing/index.md): Controlling what content is indexed
+- [Weighting](https://pagefind.app/docs/weighting/index.md): Weighting sections higher or lower
+- [Ranking](https://pagefind.app/docs/ranking/index.md): Customizing result ranking
+- [CLI Options](https://pagefind.app/docs/config-options/index.md): All CLI configuration flags
+- [Config Sources](https://pagefind.app/docs/config-sources/index.md): Configuration file formats
+
+### Search Features
+
+- [Search Config](https://pagefind.app/docs/search-config/index.md): Browser-side search options
+- [Filtering](https://pagefind.app/docs/filtering/index.md): Setting up filters
+- [Metadata](https://pagefind.app/docs/metadata/index.md): Adding metadata to pages
+- [Sorting](https://pagefind.app/docs/sorts/index.md): Setting up sort attributes
+- [Highlighting](https://pagefind.app/docs/highlighting/index.md): Highlighting search terms on page
+- [Sub-results](https://pagefind.app/docs/sub-results/index.md): Multiple results per page
+- [Multilingual](https://pagefind.app/docs/multilingual/index.md): Multi-language search
+- [Multisite](https://pagefind.app/docs/multisite/index.md): Searching across multiple sites
+
+### Search API
+
+- [Search API](https://pagefind.app/docs/api/index.md): Using the JavaScript search API directly
+- [Filtering via API](https://pagefind.app/docs/js-api-filtering/index.md): Filtering with the JS API
+- [Metadata via API](https://pagefind.app/docs/js-api-metadata/index.md): Getting metadata with the JS API
+- [Sorting via API](https://pagefind.app/docs/js-api-sorting/index.md): Sorting with the JS API
+
+### Programmatic Indexing
+
+- [Node API](https://pagefind.app/docs/node-api/index.md): Indexing from Node.js
+- [Python API](https://pagefind.app/docs/py-api/index.md): Indexing from Python

@@ -59,6 +59,7 @@ pub struct FossickedData {
     pub force_inclusion: bool,
     pub has_html_element: bool,
     pub has_old_bundle_reference: bool,
+    pub has_default_ui_reference: bool,
     pub language: String,
 }
 
@@ -310,6 +311,7 @@ impl Fossicker {
             force_inclusion: data.force_inclusion,
             has_html_element: data.has_html_element,
             has_old_bundle_reference: data.has_old_bundle_reference,
+            has_default_ui_reference: data.has_default_ui_reference,
             language: data.language,
             fragment: PageFragment {
                 page_number: 0, // This page number is updated later once determined

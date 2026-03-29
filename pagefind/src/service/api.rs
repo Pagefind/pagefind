@@ -151,6 +151,7 @@ impl PagefindIndex {
             force_inclusion: true,
             has_html_element: true,
             has_old_bundle_reference: false,
+            has_default_ui_reference: false,
             language: force_language.unwrap_or(language),
         };
         let file = Fossicker::new_with_data(url, data);

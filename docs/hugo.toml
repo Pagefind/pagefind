@@ -4,6 +4,16 @@ title = 'Pagefind'
 summaryLength = 30
 disableKinds = ["taxonomy"]
 
+[outputFormats.md]
+mediaType = "text/markdown"
+baseName = "index"
+isPlainText = true
+
+[outputs]
+home = ["HTML", "md"]
+page = ["HTML", "md"]
+section = ["HTML", "md"]
+
 [markup]
 highlight.noClasses = false
 

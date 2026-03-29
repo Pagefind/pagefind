@@ -337,6 +337,23 @@
                     setupScrollAffordance(tablist);
                 });
             })();
+
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.copy-markdown-btn');
+                if (!btn) return;
+
+                var source = document.getElementById('page-markdown');
+                if (!source) return;
+
+                navigator.clipboard.writeText(source.textContent).then(function () {
+                    btn.classList.remove('copied');
+                    void btn.offsetWidth;
+                    btn.classList.add('copied');
+                    setTimeout(function () {
+                        btn.classList.remove('copied');
+                    }, 1500);
+                });
+            });
         </script>
     </body>
 </html>

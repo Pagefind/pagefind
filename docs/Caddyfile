@@ -13,6 +13,16 @@
 		file_server
 	}
 
+	@wantsMarkdown {
+		header Accept *text/markdown*
+		path_regexp mdpath ^(.+?)/?$
+	}
+	handle @wantsMarkdown {
+		rewrite * {re.mdpath.1}/index.md
+		header Content-Type "text/markdown; charset=utf-8"
+		file_server
+	}
+
 	file_server
 
 	encode zstd gzip

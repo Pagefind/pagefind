@@ -1,0 +1,24 @@
+{{- $md := .RawContent -}}
+
+{{- /* Strip shortcodes */ -}}
+{{- $md = replaceRE `\{\{< tabs[^>]*>\}\}\n?` "" $md -}}
+{{- $md = replaceRE `\{\{< /tabs >\}\}\n?` "" $md -}}
+{{- $md = replaceRE `\{\{< tab "([^"]+)"[^>]*>\}\}\n?` "**$1:**\n\n" $md -}}
+{{- $md = replaceRE `\{\{< /tab >\}\}\n?` "" $md -}}
+{{- $md = replaceRE `\{\{< /?diffcode >\}\}\n?` "" $md -}}
+{{- $md = replaceRE `\{\{<[\s\S]*?resource[\s\S]*?>\}\}` "" $md -}}
+
+{{- /* Escape </script> to prevent breaking the hidden script container */ -}}
+{{- $md = replaceRE `(?i)</script>` `<\\/script>` $md -}}
+
+{{- /* Clean up excessive blank lines */ -}}
+{{- $md = replaceRE `\n{3,}` "\n\n" $md -}}
+
+> **Important: Pagefind 1.5.0 introduces the Component UI, which replaces the
+> Default UI (pagefind-ui.js / PagefindUI). It includes a search modal, better
+> accessibility and customization.** Full component guide:
+> https://pagefind.app/llms-component-ui.txt
+
+# {{ .Title | safeHTML }}
+
+{{ $md | safeHTML -}}

@@ -61,6 +61,7 @@ struct DomParserData {
     language: Option<String>,
     has_html_element: bool,
     has_old_bundle_reference: bool,
+    has_default_ui_reference: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -112,6 +113,7 @@ pub struct DomParserResult {
     pub force_inclusion: bool, // Include this page even if there is no body
     pub has_html_element: bool,
     pub has_old_bundle_reference: bool,
+    pub has_default_ui_reference: bool,
     pub language: String,
 }
 
@@ -512,6 +514,7 @@ impl<'a> DomParser<'a> {
                         Ok(())
                     })},
                     // Dig into script and style references to see if they refer to pre-1.0 conventions
+                    // or the Default UI (pagefind-ui.js / pagefind-modular-ui.js)
                     enclose! { (data) element!("script, link", move |el| {
                         if el.tag_name() == "script" {
                             if let Some(src) = el.get_attribute("src") {
@@ -519,12 +522,20 @@ impl<'a> DomParser<'a> {
                                     let mut data = data.borrow_mut();
                                     data.has_old_bundle_reference = true;
                                 }
+                                if src.contains("pagefind-ui.js") || src.contains("pagefind-modular-ui.js") {
+                                    let mut data = data.borrow_mut();
+                                    data.has_default_ui_reference = true;
+                                }
                             }
                         } else if el.tag_name() == "link" {
                             if let Some(href) = el.get_attribute("href") {
                                 if href.starts_with("_pagefind") || href.contains("/_pagefind") {
                                     let mut data = data.borrow_mut();
                                     data.has_old_bundle_reference = true;
+                                }
+                                if href.contains("pagefind-ui.css") || href.contains("pagefind-modular-ui.css") {
+                                    let mut data = data.borrow_mut();
+                                    data.has_default_ui_reference = true;
                                 }
                             }
                         }
@@ -611,6 +622,7 @@ impl<'a> DomParser<'a> {
             force_inclusion: false,
             has_html_element: data.has_html_element,
             has_old_bundle_reference: data.has_old_bundle_reference,
+            has_default_ui_reference: data.has_default_ui_reference,
             language: data
                 .language
                 .filter(|lang| !lang.is_empty())

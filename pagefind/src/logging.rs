@@ -43,6 +43,20 @@ macro_rules! plural {
     };
 }
 
+pub fn boxed(text: &str) -> String {
+    let lines: Vec<&str> = text.lines().collect();
+    let width = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0);
+
+    let mut out = String::new();
+    out.push_str(&format!("┌{}┐\n", "─".repeat(width + 4)));
+    for line in &lines {
+        let padding = width - line.chars().count();
+        out.push_str(&format!("│  {}{}  │\n", line, " ".repeat(padding)));
+    }
+    out.push_str(&format!("└{}┘", "─".repeat(width + 4)));
+    out
+}
+
 impl Debug for Logger {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Logger")

@@ -98,6 +98,23 @@ pub async fn run_indexer() -> Result<()> {
                     _ = &runner.write_files(Some(old_bundle_location)).await;
                 }
 
+                let has_default_ui = runner
+                    .fossicked_pages
+                    .iter()
+                    .any(|p| p.has_default_ui_reference);
+
+                if has_default_ui {
+                    logger.status(&crate::logging::boxed(
+"Pagefind found references to the Default UI (pagefind-ui.js)\n\
+on your site. The Default UI is supported and will continue\n\
+to work.\n\
+\n\
+As of 1.5.0, if you are setting up a new integration, use the\n\
+Component UI instead. It includes a search modal, better\n\
+accessibility and customization: https://pagefind.app/docs/search-ui/",
+                    ));
+                }
+
                 let duration = start.elapsed();
 
                 logger.status(&format!(

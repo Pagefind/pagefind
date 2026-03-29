@@ -19,6 +19,14 @@
         {{ .Content }}
     </div>
     {{- partial "page-section.html" . -}}
+    <hr class="copy-markdown-divider">
+    <button class="copy-markdown-btn copy-markdown-btn--mobile" aria-label="Copy page as Markdown" title="Copy as Markdown">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M3 10.5H2.5A1.5 1.5 0 0 1 1 9V2.5A1.5 1.5 0 0 1 2.5 1H9a1.5 1.5 0 0 1 1.5 1.5V3"/></svg>
+        Copy as Markdown <span class="copy-tick">&#10003;</span>
+    </button>
 </article>
+<script type="text/plain" id="page-markdown">
+{{- partial "page-markdown.html" . -}}
+</script>
 {{- partial "toc.html" . -}}
 {{ end }}

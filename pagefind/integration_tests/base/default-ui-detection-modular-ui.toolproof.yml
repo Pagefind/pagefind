@@ -1,0 +1,13 @@
+name: Base Tests > Default UI detection triggers for Modular UI
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-modular-ui.css" rel="stylesheet">
+      <script src="/pagefind/pagefind-modular-ui.js"></script>
+      </head><body>
+      <p>Hello world</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Pagefind found references to the Default UI (pagefind-ui.js)"
