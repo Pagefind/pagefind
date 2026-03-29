@@ -232,7 +232,7 @@ jobs:
           name: pagefind-x86_64-unknown-linux-musl
           path: docs/pagefind-bin
       - run: chmod +x docs/pagefind-bin/pagefind
-      - uses: superfly/flyctl-action/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --config docs/fly.toml --dockerfile docs/Dockerfile.prebuilt
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_STAGING }}
