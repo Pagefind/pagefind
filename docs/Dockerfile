@@ -26,7 +26,7 @@ RUN rustup target add wasm32-unknown-unknown && \
     rustup toolchain install nightly && \
     rustup component add rust-src --toolchain nightly && \
     cargo install wasm-pack --version 0.10.3 && \
-    cargo install wasm-bindgen-cli --version 0.2.92
+    cargo install wasm-bindgen-cli --version 0.2.100
 
 WORKDIR /repo
 COPY . .

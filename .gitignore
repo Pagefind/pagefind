@@ -1,5 +1,6 @@
 # Custom
 public
+docs/pagefind-bin/
 .DS_Store
 .hugo_build.lock
 _gen

@@ -12,6 +12,31 @@ env:
   WASM_PACK_VERSION: "v0.10.3"
 
 jobs:
+  deploy-docs-prod:
+    name: Deploy Docs (Production)
+    needs: test-and-build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-docs-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-x86_64-unknown-linux-musl
+          path: docs/pagefind-bin
+      - name: Extract extended binary
+        run: |
+          cd docs/pagefind-bin
+          tar xzf pagefind_extended-*.tar.gz
+          mv pagefind_extended pagefind
+          chmod +x pagefind
+      - uses: superfly/flyctl-action/setup-flyctl@master
+      - run: flyctl deploy --config docs/fly.prod.toml --dockerfile docs/Dockerfile.prebuilt --build-arg PAGEFIND_VERSION=${{ github.ref_name }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_PRODUCTION }}
+
   publish-crate:
     name: Publish Crate
     runs-on: ubuntu-24.04
@@ -315,7 +340,7 @@ jobs:
   publish-github-release:
     name: GitHub Release
     runs-on: ubuntu-24.04
-    needs: test-and-build
+    needs: [test-and-build, deploy-docs-prod]
     defaults:
       run:
         working-directory: ./
@@ -380,20 +405,6 @@ jobs:
           content: ${{ env.CHANGELOG }}
         env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-      - name: Release documentation branch
-        uses: octokit/request-action@v2.x
-        if: env.GIT_TAG == 'latest'
-        id: merge_docs
-        with:
-          route: POST /repos/{owner}/{repo}/merges
-          owner: pagefind
-          repo: pagefind
-          base: production-docs
-          head: main
-          commit_message: Release documentation for ${{ env.GIT_VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
-
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG == 'latest'
