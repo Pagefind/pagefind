@@ -10,7 +10,6 @@
   "compilerOptions": {
     // File Layout
     "rootDir": ".",
-    "baseUrl": ".",
     "outDir": "./npm_dist",
     // Environment Settings
     "moduleResolution": "bundler",

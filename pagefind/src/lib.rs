@@ -10,7 +10,8 @@ use options::{PagefindInboundConfig, SearchOptions};
 use output::SyntheticFile;
 use rayon::prelude::*;
 pub use service::api;
-use wax::{Glob, WalkEntry};
+use wax::walk::Entry;
+use wax::Glob;
 
 use crate::index::build_indexes;
 
@@ -53,7 +54,7 @@ impl SearchState {
             Ok(glob
                 .walk(&dir)
                 .filter_map(Result::ok)
-                .map(WalkEntry::into_path)
+                .map(|e| e.into_path())
                 .map(|file_path| Fossicker::new_relative_to(file_path, dir.clone()))
                 .collect())
         } else {

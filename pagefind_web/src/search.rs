@@ -498,7 +498,7 @@ impl SearchIndex {
                 word_maps.push(set);
             }
             if let Some(result) = union_maps(word_maps) {
-                combined_page_counts.push(result.len());
+                combined_page_counts.push(result.count());
                 maps.push(result);
             } else {
                 combined_page_counts.push(0);

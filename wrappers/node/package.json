@@ -19,12 +19,12 @@
   "author": "Pagefind",
   "license": "MIT",
   "optionalDependencies": {
-    "@pagefind/linux-x64": "0.0.0",
-    "@pagefind/linux-arm64": "0.0.0",
-    "@pagefind/darwin-x64": "0.0.0",
     "@pagefind/darwin-arm64": "0.0.0",
-    "@pagefind/windows-x64": "0.0.0",
-    "@pagefind/freebsd-x64": "0.0.0"
+    "@pagefind/darwin-x64": "0.0.0",
+    "@pagefind/freebsd-x64": "0.0.0",
+    "@pagefind/linux-arm64": "0.0.0",
+    "@pagefind/linux-x64": "0.0.0",
+    "@pagefind/windows-x64": "0.0.0"
   },
   "keywords": [
     "jamstack",
@@ -39,6 +39,6 @@
   },
   "homepage": "https://github.com/pagefind/pagefind#readme",
   "devDependencies": {
-    "@types/node": "^20.4.5"
+    "@types/node": "^22.0.0"
   }
 }

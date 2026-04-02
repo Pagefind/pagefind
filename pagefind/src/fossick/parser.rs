@@ -261,7 +261,8 @@ impl<'a> DomParser<'a> {
                             node
                         };
 
-                        let can_have_content = el.on_end_tag(enclose! { (data, node, tag_name) move |end| {
+                        let can_have_content = if let Some(handlers) = el.end_tag_handlers() {
+                            handlers.push(Box::new(enclose! { (data, node, tag_name) move |end| {
                             let mut data = data.borrow_mut();
                             let mut node = node.borrow_mut();
 
@@ -411,12 +412,16 @@ impl<'a> DomParser<'a> {
                             };
 
                             Ok(())
-                        }});
+                        }}));
+                            true
+                        } else {
+                            false
+                        };
 
                         // Try to handle tags like <img /> which have no end tag,
                         // and thus will never hit the logic to reset the current node.
                         // TODO: This could still be missed for tags with implied ends?
-                        if can_have_content.is_err() {
+                        if !can_have_content {
                             let mut data = data.borrow_mut();
                             let node = node.borrow();
                             if let Some(parent) = &node.parent {

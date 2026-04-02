@@ -26,9 +26,9 @@
     "bcp-47": "^2.1.0"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.27.5",
     "esbuild-plugin-import-glob": "^0.1.1",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.2"
   },
   "files": [
     "./npm_dist",

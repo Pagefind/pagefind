@@ -140,7 +140,10 @@ fn get_discrete_words<S: AsRef<str>>(s: S) -> (String, Option<Vec<String>>) {
     let words = s
         .as_ref()
         .replace(|c: char| c.is_ascii_punctuation(), " ")
-        .to_case(Case::Lower);
+        .to_case(Case::Lower)
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
 
     if EMOJI.is_match(s.as_ref()) {
         extras = Some(
