@@ -9,7 +9,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  WASM_PACK_VERSION: "v0.10.3"
+  WASM_PACK_VERSION: "v0.14.0"
 
 jobs:
   test:
@@ -60,12 +60,9 @@ jobs:
           node-version: 20
 
       - name: Install Nightly Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          target: ${{ matrix.target }}
-          override: true
-          default: true
+          targets: ${{ matrix.target }}
           components: rustfmt, clippy, rust-src
 
       - name: Set up python 3.12
@@ -90,12 +87,9 @@ jobs:
         run: ./local_build.sh
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@beta
         with:
-          toolchain: beta
-          target: ${{ matrix.target }}
-          override: true
-          default: true
+          targets: ${{ matrix.target }}
           components: rustfmt, clippy
 
       - name: Check versions
