@@ -1,61 +1,181 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Dependabot configuration
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
 updates:
+  # ── Cargo (Rust) ──────────────────────────────────────────────────────
   - package-ecosystem: "cargo"
-    directory: "/pagefind"
-    open-pull-requests-limit: 1
+    directories:
+      - "/pagefind"
+      - "/pagefind_stem"
+      - "/pagefind_web"
     schedule:
-      interval: "daily"
-  - package-ecosystem: "cargo"
-    directory: "/pagefind_stem"
-    open-pull-requests-limit: 1
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "cargo"
-    directory: "/pagefind_web"
-    open-pull-requests-limit: 1
-    schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── npm: pagefind_web_js ──────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/pagefind_web_js"
-    open-pull-requests-limit: 1
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      web-js-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "esbuild"
         update-types: ["version-update:semver-patch"]
       - dependency-name: "@types/node"
+
+  # ── npm: Svelte UIs (default + modular) ──────────────────────────────
   - package-ecosystem: "npm"
-    directory: "/pagefind_ui/default"
-    open-pull-requests-limit: 1
+    directories:
+      - "/pagefind_ui/default"
+      - "/pagefind_ui/modular"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      svelte-ui-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "esbuild"
         update-types: ["version-update:semver-patch"]
       - dependency-name: "svelte"
-        update-types: ["version-update:semver-patch"]
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-patch"
       - dependency-name: "@types/node"
+
+  # ── npm: component UI ────────────────────────────────────────────────
   - package-ecosystem: "npm"
-    directory: "/pagefind_ui/modular"
-    open-pull-requests-limit: 1
+    directory: "/pagefind_ui/component"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      component-ui-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "esbuild"
         update-types: ["version-update:semver-patch"]
-      - dependency-name: "svelte"
+
+  # ── npm: playground ──────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/pagefind_playground"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      playground-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "esbuild"
         update-types: ["version-update:semver-patch"]
-      - dependency-name: "@types/node"
+
+  # ── npm: Node wrapper ────────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/wrappers/node"
-    open-pull-requests-limit: 1
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      node-wrapper-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "@pagefind/*"
       - dependency-name: "@types/node"
+
+  # ── npm: docs ────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # ── pip: Python wrapper ──────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/wrappers/python"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # ── GitHub Actions ───────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
