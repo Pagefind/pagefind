@@ -35,7 +35,7 @@ steps:
     js: |-
       let resultsComponent = document.querySelector("pagefind-results");
       let resultAnchors = resultsComponent.querySelectorAll(".pf-result a");
-      toolproof.assert(document.activeElement === resultAnchors[0], "First result should be focused");
+      await toolproof.waitFor(() => document.activeElement === resultAnchors[0], "First result should be focused");
   - step: In my browser, I press the "Backspace" key
   - step: In my browser, I evaluate {js}
     js: |-
@@ -48,6 +48,11 @@ steps:
       let results = await toolproof.querySelector("pagefind-results ul");
       await toolproof.waitFor(() => results.querySelectorAll("li a").length === 2);
   - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let resultsComponent = document.querySelector("pagefind-results");
+      let resultAnchors = resultsComponent.querySelectorAll(".pf-result a");
+      await toolproof.waitFor(() => document.activeElement === resultAnchors[0], "Result should be focused before pressing /");
   - step: In my browser, I press the "/" key
   - step: In my browser, I evaluate {js}
     js: |-
@@ -58,7 +63,7 @@ steps:
     js: |-
       let resultsComponent = document.querySelector("pagefind-results");
       let resultAnchors = resultsComponent.querySelectorAll(".pf-result a");
-      toolproof.assert(document.activeElement === resultAnchors[0], "First result should be focused again");
+      await toolproof.waitFor(() => document.activeElement === resultAnchors[0], "First result should be focused again");
   - step: In my browser, I press the "x" key
   - step: In my browser, I evaluate {js}
     js: |-

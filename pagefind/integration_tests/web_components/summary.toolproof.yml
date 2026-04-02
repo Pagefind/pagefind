@@ -31,14 +31,14 @@ steps:
     js: |-
       let summary = await toolproof.querySelector("pagefind-summary .pf-summary");
       toolproof.assert(summary !== null, "Summary container should exist");
-      toolproof.assert(summary.textContent.trim() === "", "Summary should be empty initially");
+      await toolproof.waitFor(() => summary.textContent.trim() === "", "Summary should be empty initially");
   - step: In my browser, I click the selector "pagefind-input input"
   - step: In my browser, I type "page"
   - step: In my browser, the console should be empty
   - snapshot: In my browser, the result of {js}
     js: |-
       let summary = await toolproof.querySelector("pagefind-summary");
-      await toolproof.waitFor(() => summary.textContent.includes("2"));
+      await toolproof.waitFor(() => summary.textContent.includes("2 result"));
       return summary.textContent.trim();
     snapshot_content: |-
       ╎2 results for page
@@ -48,7 +48,7 @@ steps:
   - snapshot: In my browser, the result of {js}
     js: |-
       let summary = await toolproof.querySelector("pagefind-summary");
-      await toolproof.waitFor(() => summary.textContent.includes("1"));
+      await toolproof.waitFor(() => summary.textContent.includes("1 result"));
       return summary.textContent.trim();
     snapshot_content: |-
       ╎1 result for cat
