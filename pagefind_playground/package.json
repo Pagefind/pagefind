@@ -13,7 +13,7 @@
     "esbuild": "^0.27.5",
     "esbuild-svelte": "^0.9.4",
     "svelte": "^5.55.1",
-    "svelte-preprocess": "^6.0.3",
+
     "typescript": "^6.0.2"
   }
 }

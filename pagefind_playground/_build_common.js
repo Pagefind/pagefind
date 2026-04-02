@@ -1,7 +1,6 @@
 import esbuild from "esbuild";
 import path from "path";
 import sveltePlugin from "esbuild-svelte";
-import { sveltePreprocess } from "svelte-preprocess";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
@@ -36,7 +35,7 @@ export const commonOptions = (extraBanner) => {
     plugins: [
       sveltePlugin({
         compileOptions: { css: "injected" },
-        preprocess: sveltePreprocess(),
+        preprocess: [],
       }),
     ],
     define: {
