@@ -67,7 +67,7 @@ jobs:
           fetch-depth: 1
 
       - name: Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -487,7 +487,7 @@ jobs:
         run: ./wrappers/python/scripts/ci/github/setup_uv.sh
 
       - name: cache venv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: wrappers/python/.venv
           key: ${{ runner.os }}-uv-3.12-${{ hashFiles('**/uv.lock') }}
