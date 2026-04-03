@@ -297,7 +297,7 @@ jobs:
           echo "EXTENDED_CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_ENV
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.target }}
           path: |
@@ -306,7 +306,7 @@ jobs:
             ${{ env.EXTENDED_ASSET_PATH }}
             ${{ env.EXTENDED_CHECKSUM_PATH }}
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-checksums-${{ matrix.target }}
           path: |
@@ -377,7 +377,7 @@ jobs:
           npm pack
 
       - name: Upload prepared package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prepared-${{ matrix.package }}
           path: ${{ matrix.package }}/*.tgz
@@ -440,25 +440,25 @@ jobs:
 
       # --- Upload all prepared packages ---
       - name: Upload Default UI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prepared-default-ui
           path: pagefind_ui/default/*.tgz
 
       - name: Upload Modular UI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prepared-modular-ui
           path: pagefind_ui/modular/*.tgz
 
       - name: Upload Component UI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prepared-component-ui
           path: pagefind_ui/component/*.tgz
 
       - name: Upload wrapper package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prepared-pagefind-wrapper
           path: wrappers/node/*.tgz
@@ -520,7 +520,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
 
       - name: Upload python packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           path: wrappers/python/dist
           name: python-packages
