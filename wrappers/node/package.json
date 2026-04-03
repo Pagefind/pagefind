@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pagefind/pagefind"
+    "url": "https://github.com/Pagefind/pagefind"
   },
   "exports": {
     ".": {
@@ -35,9 +35,9 @@
     "find"
   ],
   "bugs": {
-    "url": "https://github.com/pagefind/pagefind/issues"
+    "url": "https://github.com/Pagefind/pagefind/issues"
   },
-  "homepage": "https://github.com/pagefind/pagefind#readme",
+  "homepage": "https://github.com/Pagefind/pagefind#readme",
   "devDependencies": {
     "@types/node": "^22.0.0"
   }

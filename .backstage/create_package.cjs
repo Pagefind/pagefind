@@ -19,7 +19,7 @@ fs.writeFileSync(
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/pagefind/pagefind.git",
+      url: "git+https://github.com/Pagefind/pagefind.git",
     },
     author: "Pagefind",
     os: [os],

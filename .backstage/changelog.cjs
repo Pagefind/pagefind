@@ -21,36 +21,61 @@ if (!fs.existsSync(changelogFile)) err(`Script expected a file at ${changelogFil
 
 let contents = fs.readFileSync(changelogFile, { encoding: "utf-8" });
 let release = [], lines = contents.split(/\n/g);
-let it = lines.entries();
 
-while (!(entry = it.next()).done) {
-    let [num, line] = entry.value;
-    // Read until we reach our unreleased changelog section.
-    if (/^\s*## Unreleased\s*$/.test(line)) {
-        let releaseHeader = `## v${version} (${date()})`;
-        lines[num] = `## Unreleased\n\n${releaseHeader}`;
-        break;
+const versionPattern = new RegExp(`^\\s*##\\s+v${version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`);
+const existingIndex = lines.findIndex(line => versionPattern.test(line));
+
+if (existingIndex !== -1) {
+    console.log(`Version v${version} already exists in CHANGELOG, extracting release notes...`);
+    let it = lines.slice(existingIndex + 1).entries();
+    while (!(entry = it.next()).done) {
+        let [, line] = entry.value;
+        if (/^\s*##\s+v/i.test(line)) break;
+        release.push(line);
     }
-}
 
-
-while (!(entry = it.next()).done) {
-    let [, line] = entry.value;
-    // Read until we reach the section for a new version.
-    if (/^\s*##\s+v/i.test(line)) {
-        break;
+    if (!release.some(v => v.trim().length)) {
+        err([
+            `Version v${version} exists in ${changelogFile} but has no release notes.`,
+            `Cancelling release — please write release notes!`
+        ].join('\n'));
     }
-    release.push(line);
-}
 
-if (!release.some((v => v.trim().length))) {
-    err([
-        `No unreleased changes exist in ${changelogFile}.`,
-        `Cancelling release — please write release notes!`
-    ].join('\n'));
-}
+    if (process.argv[2] === "write") {
+        fs.writeFileSync(releaseFile, release.join('\n'));
+    }
+} else {
+    let it = lines.entries();
 
-if (process.argv[2] === "write") {
-    fs.writeFileSync(releaseFile, release.join('\n'));
-    fs.writeFileSync(changelogFile, lines.join('\n'));
+    while (!(entry = it.next()).done) {
+        let [num, line] = entry.value;
+        // Read until we reach our unreleased changelog section.
+        if (/^\s*## Unreleased\s*$/.test(line)) {
+            let releaseHeader = `## v${version} (${date()})`;
+            lines[num] = `## Unreleased\n\n${releaseHeader}`;
+            break;
+        }
+    }
+
+
+    while (!(entry = it.next()).done) {
+        let [, line] = entry.value;
+        // Read until we reach the section for a new version.
+        if (/^\s*##\s+v/i.test(line)) {
+            break;
+        }
+        release.push(line);
+    }
+
+    if (!release.some((v => v.trim().length))) {
+        err([
+            `No unreleased changes exist in ${changelogFile}.`,
+            `Cancelling release — please write release notes!`
+        ].join('\n'));
+    }
+
+    if (process.argv[2] === "write") {
+        fs.writeFileSync(releaseFile, release.join('\n'));
+        fs.writeFileSync(changelogFile, lines.join('\n'));
+    }
 }

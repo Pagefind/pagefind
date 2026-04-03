@@ -10,6 +10,10 @@
   },
   "author": "Pagefind",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pagefind/pagefind.git"
+  },
   "devDependencies": {
     "bcp-47": "^2.1.0",
     "esbuild": "^0.27.5",

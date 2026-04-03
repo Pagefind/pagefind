@@ -5,6 +5,7 @@ edition = "2021"
 include = ["/src", "/vendor", "/features", "/tests"]
 description = "Implement search on any static website."
 license = "MIT"
+repository = "https://github.com/Pagefind/pagefind"
 
 [dependencies]
 anyhow = "1.0"

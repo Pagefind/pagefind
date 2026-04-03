@@ -21,6 +21,10 @@
   },
   "author": "Pagefind",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pagefind/pagefind.git"
+  },
   "dependencies": {
     "adequate-little-templates": "^1.0.2",
     "bcp-47": "^2.1.0"

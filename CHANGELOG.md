@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v1.5.0-beta.1 (January 11, 2026)
+
 Hey! This is a big one, so I thought we'd give a beta release a try. This release addresses a lot of long-standing issues and feature requests, alongside delivering an entirely new search UI.
 
 ### Pagefind Component UI
