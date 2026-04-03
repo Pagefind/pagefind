@@ -9,6 +9,21 @@
 
 ## Unreleased
 
+Changes since v1.5.0-beta.1:
+
+- New: Greek translations
+- Core refactor to speed up indexing
+- Improved type exports for the component UI
+- Better keybind configuration for searchbox and modal
+- Fixed closing the modal with Esc when the input is focused
+- Improved a11y and usability of keyboard navigation in the searchbox when results are loading
+- Moved some crate dependencies behind a serve feature flag for crate consumers
+- Upgraded the stemming library (Snowball), introducing Polish and Estonian stemming
+- Exposed more CSS variables for customizing component UI styling
+- Some misc. UI tidy-ups
+
+v1.5.0 will follow in a few days.
+
 ## v1.5.0-beta.1 (January 11, 2026)
 
 Hey! This is a big one, so I thought we'd give a beta release a try. This release addresses a lot of long-standing issues and feature requests, alongside delivering an entirely new search UI.
