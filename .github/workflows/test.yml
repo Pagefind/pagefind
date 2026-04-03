@@ -41,7 +41,7 @@ jobs:
             cross: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -220,7 +220,7 @@ jobs:
       group: deploy-docs-staging
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/download-artifact@v4
         with:
           name: pagefind-x86_64-unknown-linux-musl
