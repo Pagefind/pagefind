@@ -127,12 +127,13 @@ pagefind-summary {
 
     /* Typography baseline */
     font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        sans-serif;
+        var(--pf-font,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Roboto,
+            sans-serif);
     font-size: 16px;
     line-height: 1.5;
     color: CanvasText;
@@ -282,6 +283,7 @@ pagefind-modal-trigger {
     background-color: var(--pf-background);
     border: 1px solid var(--pf-border);
     border-radius: var(--pf-border-radius);
+    font-family: var(--pf-font, inherit);
     font-size: var(--pf-input-font-size);
     color: var(--pf-text);
     box-sizing: border-box;
