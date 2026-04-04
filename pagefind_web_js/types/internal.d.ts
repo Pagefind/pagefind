@@ -10,6 +10,7 @@ export type PagefindEntryLanguage = {
   hash: string;
   wasm?: string;
   page_count: number;
+  max_fragments?: number;
 };
 
 export type PagefindSearchResponse = {
@@ -24,6 +25,8 @@ export type PagefindSearchResponse = {
 export type PagefindSearchResponseResult = {
   /** Page hash */
   p: string;
+  /** Group hash */
+  g: string;
   /** Page score */
   s: number;
   /** Matching word locations */
