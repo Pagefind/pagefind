@@ -20,7 +20,7 @@
     "esbuild-plugin-import-glob": "^0.1.1",
     "esbuild-svelte": "^0.7.4",
     "svelte": "^3.59.2",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   },
   "files": [
     "npm_dist/**",
