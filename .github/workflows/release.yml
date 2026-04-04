@@ -538,6 +538,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
+      discussions: write
     defaults:
       run:
         working-directory: ./
