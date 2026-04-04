@@ -1305,6 +1305,7 @@ pagefind-modal-trigger {
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-input:focus {
     padding-right: 12px;
+    border-color: var(--pf-border-focus);
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox.open .pf-searchbox-input {
