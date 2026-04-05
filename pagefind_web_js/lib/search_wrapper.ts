@@ -54,6 +54,10 @@ export class PagefindWrapper {
       this.basePath = this.basePath.replace(window.location.origin, "");
     }
 
+    // Pass the resolved basePath downstream so the worker/fallback
+    // doesn't need access to window.location.origin to strip it again.
+    this.initOptions = { ...this.initOptions, basePath: this.basePath };
+
     this.initCleanup();
     this.initPromise = this.init();
   }
