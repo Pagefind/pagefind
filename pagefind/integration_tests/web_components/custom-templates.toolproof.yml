@@ -26,7 +26,7 @@ steps:
     html: >-
       <!DOCTYPE html><html
       lang="en"><head></head><body><h1>First Result</h1><p>This is the first
-      result page.</p></body></html>
+      result page. It has extra result content for result ranking.</p></body></html>
   - step: I have a "public/second/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
@@ -54,7 +54,7 @@ steps:
       ╎<li class="custom-result" data-pf-result-index="0">
       ╎      <h2 class="custom-title">First Result</h2>
       ╎      <a class="custom-link" href="/first/">/first/</a>
-      ╎      <div class="custom-excerpt">First <mark>Result.</mark> This is the first <mark>result</mark> page.</div>
+      ╎      <div class="custom-excerpt">First <mark>Result.</mark> This is the first <mark>result</mark> page. It has extra <mark>result</mark> content for <mark>result</mark> ranking.</div>
       ╎    </li><li class="custom-result" data-pf-result-index="1">
       ╎      <h2 class="custom-title">Second Result</h2>
       ╎      <a class="custom-link" href="/second/">/second/</a>
