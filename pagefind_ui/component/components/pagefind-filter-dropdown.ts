@@ -37,6 +37,7 @@ export class PagefindFilterDropdown extends PagefindElement {
   clearEl: HTMLButtonElement | null = null;
   badgeEl: HTMLElement | null = null;
   optionElements: OptionRef[] = [];
+  focusedOptionEl: HTMLElement | null = null;
 
   typeAheadBuffer: string = "";
   typeAheadTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -254,8 +255,9 @@ export class PagefindFilterDropdown extends PagefindElement {
 
     this.triggerEl?.removeAttribute("aria-activedescendant");
 
-    for (const { el } of this.optionElements) {
-      el.classList.remove("pf-dropdown-option-focused");
+    if (this.focusedOptionEl) {
+      this.focusedOptionEl.classList.remove("pf-dropdown-option-focused");
+      this.focusedOptionEl = null;
     }
 
     this.instance?.deregisterAllShortcuts(this);
@@ -342,14 +344,15 @@ export class PagefindFilterDropdown extends PagefindElement {
     if (index < 0 || index >= this.optionElements.length || !this.optionsEl)
       return;
 
-    for (const { el } of this.optionElements) {
-      el.classList.remove("pf-dropdown-option-focused");
+    if (this.focusedOptionEl) {
+      this.focusedOptionEl.classList.remove("pf-dropdown-option-focused");
     }
 
     this.activeIndex = index;
     const option = this.optionElements[index];
 
     option.el.classList.add("pf-dropdown-option-focused");
+    this.focusedOptionEl = option.el;
     this.triggerEl?.setAttribute("aria-activedescendant", option.el.id);
 
     this.scrollToCenter(option.el);
@@ -442,12 +445,14 @@ export class PagefindFilterDropdown extends PagefindElement {
       error.textContent = `No filter "${this.filterName}" found`;
       this.optionsEl.appendChild(error);
       this.optionElements = [];
+      this.focusedOptionEl = null;
       return;
     }
 
     this.wrapperEl?.removeAttribute("data-pf-hidden");
     this.optionsEl.innerHTML = "";
     this.optionElements = [];
+    this.focusedOptionEl = null;
 
     const baseId = this.id || this.ensureId("pf-dropdown");
 
@@ -702,6 +707,7 @@ export class PagefindFilterDropdown extends PagefindElement {
   cleanup(): void {
     document.removeEventListener("click", this._handleClickOutside);
     this.instance?.deregisterAllShortcuts(this);
+    this.focusedOptionEl = null;
     if (this.typeAheadTimeout) {
       clearTimeout(this.typeAheadTimeout);
     }

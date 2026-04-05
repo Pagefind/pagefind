@@ -51,6 +51,7 @@ export class PagefindInstance {
   private maxConcurrentFetches: number = 100;
 
   raw_ptr: number | null;
+  initError: Error | null;
   searchMeta: any;
   languages: Record<string, internal.PagefindEntryLanguage> | null;
   loadedLanguage?: string;
@@ -102,6 +103,7 @@ export class PagefindInstance {
     this.loaded_fragments = {};
 
     this.raw_ptr = null;
+    this.initError = null;
     this.searchMeta = null;
     this.languages = null;
   }
@@ -229,25 +231,30 @@ export class PagefindInstance {
   }
 
   async init(language: string, opts: { load_wasm: boolean }) {
-    await this.loadEntry();
-    let index = this.findIndex(language);
-    let lang_wasm = index.wasm ? index.wasm : "unknown";
-    this.loadedLanguage = language;
+    try {
+      await this.loadEntry();
+      let index = this.findIndex(language);
+      let lang_wasm = index.wasm ? index.wasm : "unknown";
+      this.loadedLanguage = language;
 
-    let resources = [this.loadMeta(index.hash)];
-    if (opts.load_wasm === true) {
-      resources.push(this.loadWasm(lang_wasm));
-    }
-    await Promise.all(resources);
-    this.raw_ptr = this.backend.init_pagefind(new Uint8Array(this.searchMeta));
+      let resources = [this.loadMeta(index.hash)];
+      if (opts.load_wasm === true) {
+        resources.push(this.loadWasm(lang_wasm));
+      }
+      await Promise.all(resources);
+      this.raw_ptr = this.backend.init_pagefind(new Uint8Array(this.searchMeta));
 
-    if (Object.keys(this.mergeFilter)?.length) {
-      let filters = this.stringifyFilters(this.mergeFilter);
-      let ptr = await this.getPtr();
-      this.raw_ptr = this.backend.add_synthetic_filter(ptr, filters);
-    }
-    if (this.ranking) {
-      await this.set_ranking(this.ranking);
+      if (Object.keys(this.mergeFilter)?.length) {
+        let filters = this.stringifyFilters(this.mergeFilter);
+        let ptr = await this.getPtr();
+        this.raw_ptr = this.backend.add_synthetic_filter(ptr, filters);
+      }
+      if (this.ranking) {
+        await this.set_ranking(this.ranking);
+      }
+    } catch (e) {
+      this.initError = e instanceof Error ? e : new Error(String(e));
+      throw e;
     }
   }
 
@@ -469,6 +476,9 @@ export class PagefindInstance {
 
   async getPtr() {
     while (this.raw_ptr === null) {
+      if (this.initError) {
+        throw this.initError;
+      }
       await asyncSleep(50);
     }
     if (!this.raw_ptr) {

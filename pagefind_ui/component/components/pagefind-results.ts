@@ -85,6 +85,15 @@ const defaultPlaceholderTemplate: Template<Record<string, never>> = compile(
   DEFAULT_PLACEHOLDER_TEMPLATE,
 );
 
+const stampResultIndex = (nodes: Node[], index: number): void => {
+  for (const node of nodes) {
+    if (node instanceof Element) {
+      node.setAttribute("data-pf-result-index", String(index));
+      break;
+    }
+  }
+};
+
 const nearestScrollParent = (el: Element | null): Element | null => {
   if (!(el instanceof HTMLElement)) return null;
   const overflowY = window.getComputedStyle(el).overflowY;
@@ -103,6 +112,7 @@ interface ResultRenderOptions {
 
 interface ResultOptions {
   result: PagefindRawResult;
+  index: number;
   placeholderNodes: Node[];
   resultFn: (
     result: PagefindResultData,
@@ -118,8 +128,8 @@ interface ResultOptions {
 
 class Result {
   rawResult: PagefindRawResult;
+  private index: number;
   placeholderNodes: Node[];
-  renderedNodes: Node[] = [];
   resultFn: (
     result: PagefindResultData,
     options: ResultRenderOptions,
@@ -136,6 +146,7 @@ class Result {
 
   constructor(opts: ResultOptions) {
     this.rawResult = opts.result;
+    this.index = opts.index;
     this.placeholderNodes = opts.placeholderNodes;
     this.resultFn = opts.resultFn;
     this.intersectionEl = opts.intersectionEl;
@@ -183,6 +194,7 @@ class Result {
         linkTarget: this.linkTarget,
       });
       const resultNodes = templateNodes(resultTemplate);
+      stampResultIndex(resultNodes, this.index);
 
       while (this.placeholderNodes.length > 1) {
         const node = this.placeholderNodes.pop();
@@ -193,7 +205,6 @@ class Result {
       if (firstNode instanceof Element) {
         firstNode.replaceWith(...resultNodes);
       }
-      this.renderedNodes = resultNodes;
     } catch {
       this.loading = false;
     }
@@ -201,18 +212,11 @@ class Result {
     this.onLoad?.();
   }
 
-  getNodes(): Node[] {
-    return this.renderedNodes.length > 0
-      ? this.renderedNodes
-      : this.placeholderNodes;
-  }
-
   cleanup(): void {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
-    this.renderedNodes = [];
   }
 }
 
@@ -222,6 +226,7 @@ export class PagefindResults extends PagefindElement {
       "show-images",
       "hide-sub-results",
       "max-sub-results",
+      "max-results",
       "link-target",
     ];
   }
@@ -232,6 +237,7 @@ export class PagefindResults extends PagefindElement {
   showImages: boolean = false;
   hideSubResults: boolean = false;
   maxSubResults: number = 3;
+  maxResults: number = 0; // 0 means no limit
   linkTarget: string | null = null;
 
   resultTemplate: ((result: PagefindResultData) => TemplateResult) | null =
@@ -242,6 +248,7 @@ export class PagefindResults extends PagefindElement {
     null;
 
   selectedIndex: number = -1;
+  private selectedAnchor: HTMLAnchorElement | null = null;
   private loadingAnnouncementTimeout: number | null = null;
 
   constructor() {
@@ -258,6 +265,9 @@ export class PagefindResults extends PagefindElement {
     if (this.hasAttribute("max-sub-results")) {
       this.maxSubResults =
         parseInt(this.getAttribute("max-sub-results") || "3", 10) || 3;
+    }
+    if (this.hasAttribute("max-results")) {
+      this.maxResults = parseInt(this.getAttribute("max-results") || "0", 10);
     }
     if (this.hasAttribute("link-target")) {
       this.linkTarget = this.getAttribute("link-target");
@@ -403,8 +413,14 @@ export class PagefindResults extends PagefindElement {
         this.intersectionEl = nearestScrollParent(this.containerEl);
 
         this.selectedIndex = -1;
+        this.selectedAnchor = null;
 
-        const count = searchResult?.results?.length ?? 0;
+        const limitedResults =
+          this.maxResults > 0
+            ? searchResult.results.slice(0, this.maxResults)
+            : searchResult.results;
+
+        const count = limitedResults.length;
         const term = instance.searchTerm;
         if (term) {
           const key =
@@ -427,12 +443,14 @@ export class PagefindResults extends PagefindElement {
         }
 
         const resultRenderer = this.getResultRenderer();
-        this.results = searchResult.results.map((r) => {
+        this.results = limitedResults.map((r, idx) => {
           const placeholderNodes = templateNodes(this.getPlaceholder());
+          stampResultIndex(placeholderNodes, idx);
           this.appendResults(placeholderNodes);
 
           const result = new Result({
             result: r,
+            index: idx,
             placeholderNodes,
             resultFn: resultRenderer,
             intersectionEl: this.intersectionEl,
@@ -460,6 +478,7 @@ export class PagefindResults extends PagefindElement {
         this.containerEl.innerHTML = "";
         this.containerEl.setAttribute("aria-busy", "true");
         this.selectedIndex = -1;
+        this.selectedAnchor = null;
       },
       this,
     );
@@ -496,39 +515,52 @@ export class PagefindResults extends PagefindElement {
     );
   }
 
-  getResultElements(): HTMLElement[] {
-    const elements: HTMLElement[] = [];
-    for (const result of this.results) {
-      for (const node of result.getNodes()) {
-        if (node instanceof HTMLElement) {
-          elements.push(node);
-          break; // one root element per result
-        }
-      }
-    }
-    return elements;
+  /**
+   * Find the next or previous anchor relative to the given one using DOM
+   * traversal. Returns the neighbor anchor and the index of the Result it
+   * belongs to, or null if there is no neighbor in that direction.
+   */
+  private findNeighborAnchor(
+    current: HTMLAnchorElement,
+    direction: 1 | -1,
+  ): { anchor: HTMLAnchorElement; resultIndex: number } | null {
+    if (!this.containerEl) return null;
+
+    const walker = document.createTreeWalker(
+      this.containerEl,
+      NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node: Node) =>
+          (node as Element).tagName === "A"
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_SKIP,
+      },
+    );
+    walker.currentNode = current;
+    const neighbor = direction > 0 ? walker.nextNode() : walker.previousNode();
+    if (!neighbor || !(neighbor instanceof HTMLAnchorElement)) return null;
+
+    // Determine the result index by finding the top-level child of the
+    // container and matching it to the results array.
+    const resultIndex = this.resultIndexForNode(neighbor);
+    return { anchor: neighbor, resultIndex };
   }
 
-  getNavigableAnchors(): {
-    anchors: HTMLAnchorElement[];
-    resultIndexOf: (a: Element) => number;
-  } {
-    const anchors: HTMLAnchorElement[] = [];
-    const map = new Map<Element, number>();
-    for (let i = 0; i < this.results.length; i++) {
-      for (const node of this.results[i].getNodes()) {
-        if (node instanceof HTMLAnchorElement) {
-          anchors.push(node);
-          map.set(node, i);
-        } else if (node instanceof Element) {
-          for (const a of node.querySelectorAll("a")) {
-            anchors.push(a as HTMLAnchorElement);
-            map.set(a, i);
-          }
-        }
-      }
+  /**
+   * Given a node inside the results container, walk up to the direct child
+   * of containerEl and read its data-pf-result-index attribute.
+   */
+  private resultIndexForNode(node: Node): number {
+    if (!this.containerEl) return -1;
+    let el: Node | null = node;
+    while (el && el.parentNode !== this.containerEl) {
+      el = el.parentNode;
     }
-    return { anchors, resultIndexOf: (a) => map.get(a) ?? -1 };
+    if (!el || !(el instanceof Element)) return -1;
+    const attr = el.getAttribute("data-pf-result-index");
+    if (attr === null) return -1;
+    const idx = parseInt(attr, 10);
+    return Number.isNaN(idx) ? -1 : idx;
   }
 
   private setupKeyboardHandlers(): void {
@@ -538,25 +570,24 @@ export class PagefindResults extends PagefindElement {
       const anchor = (e.target as Element).closest("a");
       if (!anchor) return;
 
-      const { anchors, resultIndexOf } = this.getNavigableAnchors();
-      const index = anchors.indexOf(anchor as HTMLAnchorElement);
-      if (index === -1) return;
-
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        if (index < anchors.length - 1) {
-          const next = anchors[index + 1];
-          next.focus();
-          this.scrollToCenter(next, e.repeat);
-          const resultIdx = resultIndexOf(next);
-          if (resultIdx !== -1) this.preloadAhead(resultIdx, 1);
-        } else if (index === anchors.length - 1) {
+        const neighbor = this.findNeighborAnchor(
+          anchor as HTMLAnchorElement,
+          1,
+        );
+        if (neighbor) {
+          neighbor.anchor.focus();
+          this.scrollToCenter(neighbor.anchor, e.repeat);
+          if (neighbor.resultIndex !== -1)
+            this.preloadAhead(neighbor.resultIndex, 1);
+        } else {
           // At the last loaded anchor — check if there are unloaded results.
           // Unlike the searchbox (which uses virtual selection and can
           // queue/collapse navigation), this component uses real DOM
           // .focus() — so the user must press ArrowDown again once the
           // result renders and becomes focusable.
-          const currentResultIdx = resultIndexOf(anchor);
+          const currentResultIdx = this.resultIndexForNode(anchor);
           const nextResultIdx = currentResultIdx + 1;
           if (nextResultIdx > 0 && nextResultIdx < this.results.length) {
             const nextResult = this.results[nextResultIdx];
@@ -569,12 +600,15 @@ export class PagefindResults extends PagefindElement {
         }
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        if (index > 0) {
-          const prev = anchors[index - 1];
-          prev.focus();
-          this.scrollToCenter(prev, e.repeat);
-          const resultIdx = resultIndexOf(prev);
-          if (resultIdx !== -1) this.preloadAhead(resultIdx, -1);
+        const neighbor = this.findNeighborAnchor(
+          anchor as HTMLAnchorElement,
+          -1,
+        );
+        if (neighbor) {
+          neighbor.anchor.focus();
+          this.scrollToCenter(neighbor.anchor, e.repeat);
+          if (neighbor.resultIndex !== -1)
+            this.preloadAhead(neighbor.resultIndex, -1);
         } else {
           // At first anchor, go back to input
           this.instance?.focusPreviousInput(document.activeElement as Element);
@@ -596,11 +630,14 @@ export class PagefindResults extends PagefindElement {
     });
 
     this.containerEl.addEventListener("focusin", (e) => {
-      const anchor = (e.target as Element).closest("a");
+      const anchor = (e.target as Element).closest(
+        "a",
+      ) as HTMLAnchorElement | null;
       if (!anchor) return;
 
       this.clearSelection();
       anchor.setAttribute("data-pf-selected", "");
+      this.selectedAnchor = anchor;
 
       const navigateText =
         this.instance?.translate("keyboard_navigate") || "navigate";
@@ -651,7 +688,7 @@ export class PagefindResults extends PagefindElement {
   private preloadAhead(fromIndex: number, direction: number): void {
     const step = direction > 0 ? 1 : -1;
     for (let i = 1; i <= 3; i++) {
-      const idx = fromIndex + (step * i);
+      const idx = fromIndex + step * i;
       if (idx >= 0 && idx < this.results.length) {
         const result = this.results[idx];
         if (result && !result.result) {
@@ -678,9 +715,10 @@ export class PagefindResults extends PagefindElement {
   }
 
   clearSelection(): void {
-    this.containerEl
-      ?.querySelectorAll("[data-pf-selected]")
-      .forEach((el) => el.removeAttribute("data-pf-selected"));
+    if (this.selectedAnchor) {
+      this.selectedAnchor.removeAttribute("data-pf-selected");
+      this.selectedAnchor = null;
+    }
   }
 
   cleanup(): void {
@@ -689,6 +727,7 @@ export class PagefindResults extends PagefindElement {
       result.cleanup();
     }
     this.results = [];
+    this.selectedAnchor = null;
   }
 
   update(): void {

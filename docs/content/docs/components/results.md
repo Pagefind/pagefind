@@ -26,6 +26,7 @@ Displays search results with automatic lazy loading. Results load their full dat
 | `show-images` | boolean | `false` | Show/hide result images |
 | `hide-sub-results` | boolean | `false` | Hide anchor-based sub-results |
 | `max-sub-results` | number | `3` | Maximum number of sub-results per result |
+| `max-results` | number | unlimited | Limit number of results shown |
 | `link-target` | string | — | Set `target` attribute on result links (e.g., `_blank` for new tab) |
 | `instance` | string | `"default"` | Connect to a specific Pagefind instance |
 
@@ -59,7 +60,7 @@ Customize result rendering using `<script type="text/pagefind-template">` elemen
 </pagefind-results>
 ```
 
-Keyboard navigation moves between `<a>` elements in the results list, so ensure your main result link is an `<a>` tag.
+Your template must have a single root element (e.g. a single `<li>`). Keyboard navigation moves between `<a>` elements in the results list, so ensure your main result link is an `<a>` tag.
 
 The full templating syntax can be seen in the [adequate-little-templates](https://github.com/bglw/adequate-little-templates?tab=readme-ov-file#syntax) package.
 
@@ -83,18 +84,7 @@ Each sub-result has: `title`, `url`, `excerpt`.
 
 ### Placeholder Template
 
-While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`:
-
-```html
-<pagefind-results>
-  <script type="text/pagefind-template">
-    <!-- your result template -->
-  </script>
-  <script type="text/pagefind-template" data-template="placeholder">
-    <li class="my-loading-skeleton">Loading...</li>
-  </script>
-</pagefind-results>
-```
+While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`, as shown in the full example below. The placeholder template receives no data — it is static HTML.
 
 ### Full Template Example
 
@@ -127,6 +117,17 @@ Here's the built-in template. Copy and customize it:
         {{/each}}
       </ul>
       {{/if}}
+    </li>
+  </script>
+  <script type="text/pagefind-template" data-template="placeholder">
+    <li class="pf-result" aria-hidden="true">
+      <div class="pf-result-card">
+        <div class="pf-skeleton pf-skeleton-image"></div>
+        <div class="pf-result-content">
+          <p class="pf-result-title pf-skeleton pf-skeleton-title"></p>
+          <p class="pf-result-excerpt pf-skeleton pf-skeleton-excerpt"></p>
+        </div>
+      </div>
     </li>
   </script>
 </pagefind-results>
