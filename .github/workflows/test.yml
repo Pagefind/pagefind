@@ -86,6 +86,16 @@ jobs:
         with:
           version: ${{env.WASM_PACK_VERSION}}
 
+      - name: Check Unix tools availability
+        if: matrix.build == 'windows-arm64'
+        run: |
+          echo "Shell: $SHELL"
+          echo "Bash: $(bash --version | head -1)"
+          which gzip && gzip --version | head -1 || echo "gzip: NOT FOUND"
+          which grep && grep --version | head -1 || echo "grep: NOT FOUND"
+          which printf || echo "printf: NOT FOUND"
+          which cat || echo "cat: NOT FOUND"
+
       - name: Build WASM
         working-directory: ./pagefind_web
         run: ./local_build.sh
