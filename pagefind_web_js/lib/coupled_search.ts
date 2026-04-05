@@ -41,6 +41,7 @@ export class PagefindInstance {
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
   exactDiacritics: boolean;
+  metaCacheTag: string | null;
 
   loaded_chunks: Record<string, Promise<void>>;
   loaded_filters: Record<string, Promise<void>>;
@@ -97,6 +98,7 @@ export class PagefindInstance {
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
     this.exactDiacritics = opts.exactDiacritics ?? false;
+    this.metaCacheTag = opts.metaCacheTag ?? null;
 
     this.loaded_chunks = {};
     this.loaded_filters = {};
@@ -165,6 +167,7 @@ export class PagefindInstance {
       "highlightParam",
       "ranking",
       "exactDiacritics",
+      "metaCacheTag",
     ];
     for (const [k, v] of Object.entries(options)) {
       if (k === "mergeFilter") {
@@ -183,6 +186,8 @@ export class PagefindInstance {
           this.highlightParam = v;
         if (k === "exactDiacritics" && typeof v === "boolean")
           this.exactDiacritics = v;
+        if (k === "metaCacheTag" && typeof v === "string")
+          this.metaCacheTag = v;
       } else if (!["basePath"].includes(k)) {
         console.warn(
           `Unknown Pagefind option ${k}. Allowed options: [${opts.join(", ")}]`,
@@ -262,9 +267,13 @@ export class PagefindInstance {
     try {
       // We always load a fresh copy of the entry metadata,
       // as it ensures we don't try to load an old build's chunks,
-      let entry_response = await this.throttledFetch(
-        `${this.basePath}pagefind-entry.json?ts=${Date.now()}`,
-      );
+      let entryUrl = `${this.basePath}pagefind-entry.json`;
+      if (this.metaCacheTag !== null) {
+        entryUrl += `?ts=${this.metaCacheTag}`;
+      } else {
+        entryUrl += `?ts=${Date.now()}`;
+      }
+      let entry_response = await this.throttledFetch(entryUrl);
       let entry_json =
         (await entry_response.json()) as internal.PagefindEntryJson;
       this.languages = entry_json.languages;

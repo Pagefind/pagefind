@@ -50,6 +50,15 @@ declare global {
      * falling back to the main thread if workers are not supported or fail to initialize.
      */
     noWorker?: boolean;
+    /**
+     * If set, replaces the default cache-busting timestamp on the metadata request
+     * with a fixed string. Useful for PWAs and offline-capable sites so that
+     * a service worker can cache the request. Change this value each time
+     * you rebuild your site.
+     *
+     * The search index itself is unaffected and can always be cached.
+     */
+    metaCacheTag?: string;
   };
 
   type PagefindRankingWeights = {

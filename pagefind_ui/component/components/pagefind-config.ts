@@ -29,6 +29,11 @@ export class PagefindConfig extends PagefindElement {
       instance.setLanguage(lang);
     }
 
+    const metaCacheTag = this.getAttribute("meta-cache-tag");
+    if (metaCacheTag) {
+      instance.pagefindOptions.metaCacheTag = metaCacheTag;
+    }
+
     if (this.hasAttribute("faceted")) {
       instance.faceted = true;
     }
