@@ -45,12 +45,12 @@ jobs:
             cross: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
       - name: Cache
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             ~/.cargo/registry
@@ -59,7 +59,7 @@ jobs:
             target
           key: ${{ runner.os }}-min165
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 20
 
@@ -70,7 +70,7 @@ jobs:
           components: rustfmt, clippy, rust-src
 
       - name: Set up python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
           # NOTE: ^this strategy leaves older python versions intentionally
@@ -82,7 +82,7 @@ jobs:
           rustc --version
 
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
+        uses: jetli/wasm-pack-action@0d096b08b4e5a7de8c28de67e11e945404e9eefa # v0.4.0
         with:
           version: ${{env.WASM_PACK_VERSION}}
 
@@ -155,13 +155,13 @@ jobs:
 
       - name: Upload Testing Binary
         if: matrix.build!= 'freebsd'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: pagefind-${{ matrix.target }}
           path: target/release/pagefind${{ startsWith(matrix.build, 'windows') && '.exe' || '' }}
       
       - name: Upload Testing Binary (FreeBSD)
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: matrix.build == 'freebsd'
         with:
           name: pagefind-${{ matrix.target }}
@@ -182,7 +182,7 @@ jobs:
 
       - name: cache venv
         if: matrix.build != 'freebsd'
-        uses: actions/cache@v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: wrappers/python/.venv
           key: ${{ runner.os }}-uv-3.12-${{ hashFiles('**/uv.lock') }}
@@ -235,13 +235,13 @@ jobs:
       group: deploy-docs-staging
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pagefind-x86_64-unknown-linux-musl
           path: docs/pagefind-bin
       - run: chmod +x docs/pagefind-bin/pagefind
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
       - run: flyctl deploy --config docs/fly.toml --dockerfile docs/Dockerfile.prebuilt
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_STAGING }}
