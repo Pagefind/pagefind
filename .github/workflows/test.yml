@@ -222,7 +222,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: pagefind-x86_64-unknown-linux-musl
           path: docs/pagefind-bin

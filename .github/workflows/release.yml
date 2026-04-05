@@ -350,7 +350,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-${{ matrix.target }}
           path: build-artifacts
@@ -395,7 +395,7 @@ jobs:
       - name: Get Version
         run: echo GIT_VERSION="$(git describe --tags | sed 's/^v\(.*\)$/\1/')" >> $GITHUB_ENV
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: wrappers/node/checksums
           pattern: release-checksums-*
@@ -473,7 +473,7 @@ jobs:
       - name: Clone
         uses: actions/checkout@v6
       - name: Download CLI binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: release-*
           merge-multiple: true
@@ -608,7 +608,7 @@ jobs:
 
       # --- NPM Packages ---
       - name: Download all prepared NPM packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: prepared-*
 
@@ -685,7 +685,7 @@ jobs:
 
       # --- Python ---
       - name: Download python packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: python-packages
           path: python-dist
@@ -703,7 +703,7 @@ jobs:
           verbose: true
 
       # --- GitHub Release ---
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: build-artifacts
           pattern: release-*
@@ -744,7 +744,7 @@ jobs:
             build-artifacts/*
 
       # --- Deploy Docs ---
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-x86_64-unknown-linux-musl
           path: docs/pagefind-bin
