@@ -4,6 +4,8 @@ export const calculate_sub_results = (
   fragment: PagefindSearchFragment,
   desired_excerpt_length: number
 ): PagefindSubResult[] => {
+  const effective_url = fragment.meta?.url || fragment.url;
+
   const anchors = fragment.anchors
     .filter(
       (a) => /h\d/i.test(a.element) && a.text?.length && /\S/.test(a.text)
@@ -14,7 +16,7 @@ export const calculate_sub_results = (
   let current_anchor_position = 0;
   let current_anchor: PagefindSubResult = {
     title: fragment.meta["title"],
-    url: fragment.url,
+    url: effective_url,
     weighted_locations: [],
     locations: [],
     excerpt: "",
@@ -58,7 +60,7 @@ export const calculate_sub_results = (
         next_anchor = anchors.shift()!;
       }
 
-      let anchored_url = fragment.url;
+      let anchored_url = effective_url;
       try {
         const url_is_fq = /^((https?:)?\/\/)/.test(anchored_url);
         if (url_is_fq) {
