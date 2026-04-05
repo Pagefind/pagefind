@@ -1,0 +1,20 @@
+name: auto-approve
+
+on: pull_request_target
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'bglw' && github.repository == 'pagefind/pagefind'
+    steps:
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v4
+        with:
+          application_id: ${{ secrets.PF_BOT_ID }}
+          application_private_key: ${{ secrets.PF_BOT_PEM }}
+      - name: Approve PR
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
