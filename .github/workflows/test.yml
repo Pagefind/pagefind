@@ -216,6 +216,7 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: staging
     concurrency:
       group: deploy-docs-staging
       cancel-in-progress: true
