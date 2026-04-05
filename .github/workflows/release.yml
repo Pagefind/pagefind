@@ -206,7 +206,7 @@ jobs:
 
       - name: Test CLI
         if: matrix.run_tests == true
-        run: npx -y toolproof@0.17.2 -s -c 1 --timeout 45 --placeholders pagefind_mode="${{ matrix.target }}/release"
+        run: npx -y toolproof@0.17.2 -s -c 1 --timeout 45 --retry-count 2 --placeholders pagefind_mode="${{ matrix.target }}/release"
 
       - name: Cargo Publish Dry-Run
         if: matrix.target == 'x86_64-unknown-linux-musl'

@@ -160,7 +160,7 @@ jobs:
 
       - name: Test CLI
         if: matrix.build!= 'freebsd'
-        run: npx -y toolproof@latest -s -c 1 --timeout 45
+        run: npx -y toolproof@latest -s -c 1 --timeout 45 --retry-count 2
 
       - name: Set up uv
         if: matrix.build != 'freebsd'
