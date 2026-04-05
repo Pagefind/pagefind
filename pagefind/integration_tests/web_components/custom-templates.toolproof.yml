@@ -30,7 +30,7 @@ steps:
   - step: I have a "public/second/index.html" file with the content {html}
     html: >-
       <!DOCTYPE html><html
-      lang="en"><head></head><body><h1>Second Result</h1><p>This is the second
+      lang="en"><head></head><body><h1>Second Page</h1><p>This is the second
       result page.</p></body></html>
   - macro: I run Pagefind
   - step: stdout should contain "Running Pagefind"
@@ -56,7 +56,7 @@ steps:
       ╎      <a class="custom-link" href="/first/">/first/</a>
       ╎      <div class="custom-excerpt">First <mark>Result.</mark> This is the first <mark>result</mark> page. It has extra <mark>result</mark> content for <mark>result</mark> ranking.</div>
       ╎    </li><li class="custom-result" data-pf-result-index="1">
-      ╎      <h2 class="custom-title">Second Result</h2>
+      ╎      <h2 class="custom-title">Second Page</h2>
       ╎      <a class="custom-link" href="/second/">/second/</a>
-      ╎      <div class="custom-excerpt">Second <mark>Result.</mark> This is the second <mark>result</mark> page.</div>
+      ╎      <div class="custom-excerpt">Second Page. This is the second <mark>result</mark> page.</div>
       ╎    </li>

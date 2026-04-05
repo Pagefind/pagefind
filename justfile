@@ -28,7 +28,7 @@ install-rust:
     rustup target add wasm32-unknown-unknown
     rustup toolchain install nightly
     rustup component add rust-src --toolchain nightly
-    cargo install wasm-pack --version 0.10.3
+    cargo install wasm-pack --version 0.14.0
 
 # Install Python dependencies for wrappers
 install-python:
