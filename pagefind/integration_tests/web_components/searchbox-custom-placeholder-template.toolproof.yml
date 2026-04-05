@@ -1,0 +1,63 @@
+name: Web Components Tests > Searchbox custom placeholder template is used while results load
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox>
+        <script type="text/pagefind-template">
+          <a class="custom-result" id="{{ aria.result_id }}" href="{{ meta.url | default(url) | safeUrl }}" role="option" aria-selected="false" aria-labelledby="{{ aria.title_id }}">
+            <p id="{{ aria.title_id }}">{{ meta.title }}</p>
+          </a>
+        </script>
+        <script type="text/pagefind-template" data-template="placeholder">
+          <div class="custom-placeholder" aria-hidden="true">Custom loading skeleton</div>
+        </script>
+      </pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1><p>Apple content here.</p></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1><p>Apple content here too.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - macro: I set up test gates on "pagefind-searchbox" blocking results "1"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "apple"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(
+        () => results.querySelectorAll(".custom-result").length === 1,
+        "1 result should load (result 1 is gated)"
+      );
+  - step: In my browser, the console should be empty
+  # Custom placeholder template should be rendered for the gated result
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      let placeholders = results.querySelectorAll(".custom-placeholder");
+      toolproof.assert(placeholders.length === 1, `Expected 1 custom placeholder, got ${placeholders.length}`);
+      toolproof.assert(
+        placeholders[0].textContent.trim() === "Custom loading skeleton",
+        `Expected custom placeholder text, got "${placeholders[0].textContent.trim()}"`
+      );
+      toolproof.assert(
+        placeholders[0].getAttribute("aria-hidden") === "true",
+        `Custom placeholder should have aria-hidden=true`
+      );
+  # Default placeholder class should NOT be present
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      let defaultPlaceholders = results.querySelectorAll(".pf-searchbox-placeholder");
+      toolproof.assert(defaultPlaceholders.length === 0, `Expected 0 default placeholders, got ${defaultPlaceholders.length}`);

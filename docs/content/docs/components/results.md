@@ -83,18 +83,7 @@ Each sub-result has: `title`, `url`, `excerpt`.
 
 ### Placeholder Template
 
-While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`:
-
-```html
-<pagefind-results>
-  <script type="text/pagefind-template">
-    <!-- your result template -->
-  </script>
-  <script type="text/pagefind-template" data-template="placeholder">
-    <li class="my-loading-skeleton">Loading...</li>
-  </script>
-</pagefind-results>
-```
+While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`, as shown in the full example below. The placeholder template receives no data — it is static HTML.
 
 ### Full Template Example
 
@@ -127,6 +116,17 @@ Here's the built-in template. Copy and customize it:
         {{/each}}
       </ul>
       {{/if}}
+    </li>
+  </script>
+  <script type="text/pagefind-template" data-template="placeholder">
+    <li class="pf-result" aria-hidden="true">
+      <div class="pf-result-card">
+        <div class="pf-skeleton pf-skeleton-image"></div>
+        <div class="pf-result-content">
+          <p class="pf-result-title pf-skeleton pf-skeleton-title"></p>
+          <p class="pf-result-excerpt pf-skeleton pf-skeleton-excerpt"></p>
+        </div>
+      </div>
     </li>
   </script>
 </pagefind-results>

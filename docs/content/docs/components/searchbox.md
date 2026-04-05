@@ -124,8 +124,18 @@ Here's the built-in template. Copy and customize it:
     {{/each}}
     </div>{{/if}}
   </script>
+  <script type="text/pagefind-template" data-template="placeholder">
+    <div class="pf-searchbox-result pf-searchbox-placeholder" aria-hidden="true">
+      <p class="pf-searchbox-result-title pf-skeleton pf-skeleton-title"></p>
+      <p class="pf-searchbox-result-excerpt pf-skeleton pf-skeleton-excerpt"></p>
+    </div>
+  </script>
 </pagefind-searchbox>
 ```
+
+### Placeholder Template
+
+While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`, as shown in the full example above. The placeholder template receives no data — it is static HTML. Include `aria-hidden="true"` on the root element so screen readers skip the loading skeletons.
 
 ### Template Requirements
 

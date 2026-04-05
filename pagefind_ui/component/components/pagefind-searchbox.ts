@@ -224,6 +224,8 @@ export class PagefindSearchbox extends PagefindElement {
 
   private compiledResultTemplate: Template<SearchboxResultTemplateData> | null =
     null;
+  private compiledPlaceholderTemplate: Template<Record<string, never>> | null =
+    null;
   private _documentClickHandler: ((e: MouseEvent) => void) | null = null;
   private _shortcutKeyHandler: ((e: KeyboardEvent) => void) | null = null;
   private _keyBinding: KeyBinding | null = null;
@@ -288,6 +290,22 @@ export class PagefindSearchbox extends PagefindElement {
         (resultScript.textContent || "").trim(),
       );
     }
+
+    const placeholderScript = this.querySelector(
+      'script[type="text/pagefind-template"][data-template="placeholder"]',
+    );
+    if (placeholderScript) {
+      this.compiledPlaceholderTemplate = compile(
+        (placeholderScript.textContent || "").trim(),
+      );
+    }
+  }
+
+  private getPlaceholder(): string {
+    if (this.compiledPlaceholderTemplate) {
+      return this.compiledPlaceholderTemplate({});
+    }
+    return defaultPlaceholderTemplate({});
   }
 
   render(): void {
@@ -956,7 +974,7 @@ export class PagefindSearchbox extends PagefindElement {
     const renderer = this.getResultRenderer();
 
     this.results = limitedResults.map((rawResult, index) => {
-      const placeholderHtml = defaultPlaceholderTemplate({});
+      const placeholderHtml = this.getPlaceholder();
       const placeholderNodes = templateNodes(placeholderHtml);
       const placeholderEl = placeholderNodes[0] as Element;
 
@@ -1072,7 +1090,7 @@ export class PagefindSearchbox extends PagefindElement {
           this.resultsEl.appendChild(node);
         }
       } else {
-        const placeholderHtml = defaultPlaceholderTemplate({});
+        const placeholderHtml = this.getPlaceholder();
         const placeholderNodes = templateNodes(placeholderHtml);
         const placeholderEl = placeholderNodes[0] as Element;
         if (placeholderEl) {
