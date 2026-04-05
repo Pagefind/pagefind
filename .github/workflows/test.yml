@@ -64,10 +64,9 @@ jobs:
           node-version: 20
 
       - name: Install Nightly Rust
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.target }}
-          components: rustfmt, clippy, rust-src
+        run: |
+          rustup toolchain install nightly --component rustfmt,clippy,rust-src --target ${{ matrix.target }}
+          rustup default nightly
 
       - name: Set up python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -101,10 +100,9 @@ jobs:
         run: ./local_build.sh
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@beta
-        with:
-          targets: ${{ matrix.target }}
-          components: rustfmt, clippy
+        run: |
+          rustup toolchain install beta --component rustfmt,clippy --target ${{ matrix.target }}
+          rustup default beta
 
       - name: Check versions
         run: |

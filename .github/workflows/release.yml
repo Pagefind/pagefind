@@ -124,16 +124,14 @@ jobs:
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/usr/aarch64-linux-gnu/bin/ld" >> $GITHUB_ENV
 
       - name: Install Nightly Rust
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          targets: ${{ matrix.target }}
-          components: rustfmt, clippy, rust-src
+        run: |
+          rustup toolchain install nightly --component rustfmt,clippy,rust-src --target ${{ matrix.target }}
+          rustup default nightly
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-          components: rustfmt, clippy
+        run: |
+          rustup toolchain install stable --component rustfmt,clippy --target ${{ matrix.target }}
+          rustup default stable
 
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@0d096b08b4e5a7de8c28de67e11e945404e9eefa # v0.4.0
@@ -656,9 +654,9 @@ jobs:
 
       # --- Crate ---
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+        run: |
+          rustup toolchain install stable --component rustfmt,clippy
+          rustup default stable
 
       - name: Prepare Git
         run: |
