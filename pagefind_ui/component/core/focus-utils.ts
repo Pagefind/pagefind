@@ -3,36 +3,18 @@ const FOCUSABLE_SELECTOR = "a[href], button, input, [tabindex]";
 type FocusableElement = HTMLElement & { disabled?: boolean };
 
 /**
- * Get all tabbable elements in tab order.
+ * Check whether a container has at least one tabbable child element.
  */
-export function getTabbablesInOrder(
-  container: Document | Element = document,
-): HTMLElement[] {
-  const elements = Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  );
-
-  const tabbable = elements.filter((el): el is FocusableElement => {
-    if (el.tabIndex < 0) return false;
-    if ((el as FocusableElement).disabled) return false;
-    if (el.hasAttribute("hidden")) return false;
-    if (window.getComputedStyle(el).display === "none") return false;
+function hasTabbableChild(container: Element): boolean {
+  const elements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  for (const el of elements) {
+    if (el.tabIndex < 0) continue;
+    if ((el as FocusableElement).disabled) continue;
+    if (el.hasAttribute("hidden")) continue;
+    if (window.getComputedStyle(el).display === "none") continue;
     return true;
-  });
-
-  const withPositiveTabIndex: HTMLElement[] = [];
-  const withZeroTabIndex: HTMLElement[] = [];
-
-  for (const el of tabbable) {
-    if (el.tabIndex > 0) {
-      withPositiveTabIndex.push(el);
-    } else {
-      withZeroTabIndex.push(el);
-    }
   }
-
-  withPositiveTabIndex.sort((a, b) => a.tabIndex - b.tabIndex);
-  return [...withPositiveTabIndex, ...withZeroTabIndex];
+  return false;
 }
 
 /**
@@ -43,22 +25,28 @@ export function findNextComponentInTabOrder(
   fromElement: Element,
   components: HTMLElement[],
 ): HTMLElement | null {
-  const tabbables = getTabbablesInOrder();
-  const currentIndex = tabbables.indexOf(fromElement as HTMLElement);
-  if (currentIndex === -1) return null;
+  let closest: HTMLElement | null = null;
 
-  const componentsWithTabPos = components
-    .map((component) => {
-      const firstTabbable = tabbables.find((t) => component.contains(t));
-      return {
-        component,
-        tabPos: firstTabbable ? tabbables.indexOf(firstTabbable) : -1,
-      };
-    })
-    .filter((c) => c.tabPos > currentIndex)
-    .sort((a, b) => a.tabPos - b.tabPos);
+  for (const component of components) {
+    // Skip components that contain the current element
+    if (component.contains(fromElement)) continue;
 
-  return componentsWithTabPos[0]?.component || null;
+    const pos = fromElement.compareDocumentPosition(component);
+    // Component must follow fromElement in document order
+    if (!(pos & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+
+    if (!hasTabbableChild(component)) continue;
+
+    if (
+      closest === null ||
+      component.compareDocumentPosition(closest) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ) {
+      closest = component;
+    }
+  }
+
+  return closest;
 }
 
 /**
@@ -69,21 +57,26 @@ export function findPreviousComponentInTabOrder(
   fromElement: Element,
   components: HTMLElement[],
 ): HTMLElement | null {
-  const tabbables = getTabbablesInOrder();
-  const currentIndex = tabbables.indexOf(fromElement as HTMLElement);
-  if (currentIndex === -1) return null;
+  let closest: HTMLElement | null = null;
 
-  const componentsWithTabPos = components
-    .map((component) => {
-      const componentTabbables = tabbables.filter((t) => component.contains(t));
-      const lastTabbable = componentTabbables[componentTabbables.length - 1];
-      return {
-        component,
-        tabPos: lastTabbable ? tabbables.indexOf(lastTabbable) : -1,
-      };
-    })
-    .filter((c) => c.tabPos >= 0 && c.tabPos < currentIndex)
-    .sort((a, b) => b.tabPos - a.tabPos);
+  for (const component of components) {
+    // Skip components that contain the current element
+    if (component.contains(fromElement)) continue;
 
-  return componentsWithTabPos[0]?.component || null;
+    const pos = fromElement.compareDocumentPosition(component);
+    // Component must precede fromElement in document order
+    if (!(pos & Node.DOCUMENT_POSITION_PRECEDING)) continue;
+
+    if (!hasTabbableChild(component)) continue;
+
+    if (
+      closest === null ||
+      component.compareDocumentPosition(closest) &
+        Node.DOCUMENT_POSITION_PRECEDING
+    ) {
+      closest = component;
+    }
+  }
+
+  return closest;
 }

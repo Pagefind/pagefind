@@ -59,7 +59,7 @@ steps:
         .replace(/^\s+/gm, m => "  ".repeat(Math.floor(m.length / 2)));
       return formatted.trim();
     snapshot_content: |-
-      ╎<li class="custom-result">
+      ╎<li class="custom-result" data-pf-result-index="0">
       ╎      <h2 class="custom-title">Configuration Guide</h2>
       ╎      <div class="custom-excerpt">
       ╎<mark>Configuration</mark> Guide. Learn about <mark>configuration</mark> options. Basic <mark>Configuration.</mark> This section covers basic <mark>configuration</mark> settings. Advanced <mark>Configuration.</mark> This section covers advanced <mark>configuration</mark> options.</div>

@@ -33,7 +33,6 @@ export interface PagefindComponent extends HTMLElement {
   reconcileAria?: () => void;
   register?: (instance: Instance) => void;
   render?: () => void;
-  getResultElements?: () => HTMLElement[];
 }
 
 let scriptBundlePath: string | undefined;
@@ -322,15 +321,9 @@ export class Instance {
     const resultsComponent = findNextComponentInTabOrder(fromElement, results);
     if (!resultsComponent) return false;
 
-    const resultEls =
-      (resultsComponent as PagefindComponent).getResultElements?.() || [];
-    const firstResultEl = resultEls[0];
-    const firstLink =
-      firstResultEl instanceof HTMLAnchorElement
-        ? firstResultEl
-        : firstResultEl?.querySelector("a");
+    const firstLink = (resultsComponent as HTMLElement).querySelector("a");
     if (firstLink) {
-      (firstLink as HTMLElement).focus();
+      firstLink.focus();
       return true;
     }
     return false;

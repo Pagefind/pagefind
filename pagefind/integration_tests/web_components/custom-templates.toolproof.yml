@@ -51,11 +51,11 @@ steps:
       items.sort((a, b) => a.querySelector(".custom-title").textContent.localeCompare(b.querySelector(".custom-title").textContent));
       return items.map(el => el.outerHTML).join("");
     snapshot_content: |-
-      ╎<li class="custom-result">
+      ╎<li class="custom-result" data-pf-result-index="0">
       ╎      <h2 class="custom-title">First Result</h2>
       ╎      <a class="custom-link" href="/first/">/first/</a>
       ╎      <div class="custom-excerpt">First <mark>Result.</mark> This is the first <mark>result</mark> page.</div>
-      ╎    </li><li class="custom-result">
+      ╎    </li><li class="custom-result" data-pf-result-index="1">
       ╎      <h2 class="custom-title">Second Result</h2>
       ╎      <a class="custom-link" href="/second/">/second/</a>
       ╎      <div class="custom-excerpt">Second <mark>Result.</mark> This is the second <mark>result</mark> page.</div>

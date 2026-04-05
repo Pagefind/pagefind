@@ -26,6 +26,7 @@ Displays search results with automatic lazy loading. Results load their full dat
 | `show-images` | boolean | `false` | Show/hide result images |
 | `hide-sub-results` | boolean | `false` | Hide anchor-based sub-results |
 | `max-sub-results` | number | `3` | Maximum number of sub-results per result |
+| `max-results` | number | unlimited | Limit number of results shown |
 | `link-target` | string | — | Set `target` attribute on result links (e.g., `_blank` for new tab) |
 | `instance` | string | `"default"` | Connect to a specific Pagefind instance |
 
@@ -59,7 +60,7 @@ Customize result rendering using `<script type="text/pagefind-template">` elemen
 </pagefind-results>
 ```
 
-Keyboard navigation moves between `<a>` elements in the results list, so ensure your main result link is an `<a>` tag.
+Your template must have a single root element (e.g. a single `<li>`). Keyboard navigation moves between `<a>` elements in the results list, so ensure your main result link is an `<a>` tag.
 
 The full templating syntax can be seen in the [adequate-little-templates](https://github.com/bglw/adequate-little-templates?tab=readme-ov-file#syntax) package.
 

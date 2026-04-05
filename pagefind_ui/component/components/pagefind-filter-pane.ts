@@ -33,6 +33,7 @@ export class PagefindFilterPane extends PagefindElement {
 
   filterElements: Map<string, FilterElementRefs> = new Map();
   groupElements: Map<string, GroupElementRefs> = new Map();
+  groupVisibleCounts: Map<string, number> = new Map();
   isRendered: boolean = false;
 
   constructor() {
@@ -179,6 +180,7 @@ export class PagefindFilterPane extends PagefindElement {
     this.containerEl.innerHTML = "";
     this.filterElements.clear();
     this.groupElements.clear();
+    this.groupVisibleCounts.clear();
 
     const filterNames = Object.keys(this.totalFilters);
 
@@ -213,7 +215,20 @@ export class PagefindFilterPane extends PagefindElement {
       elements.countSpan.textContent = String(count);
 
       const shouldShow = this.showEmpty || availableCount > 0 || isSelected;
+      const wasHidden = elements.label.hasAttribute("data-pf-hidden");
       elements.label.toggleAttribute("data-pf-hidden", !shouldShow);
+
+      if (shouldShow && wasHidden) {
+        this.groupVisibleCounts.set(
+          filterName,
+          (this.groupVisibleCounts.get(filterName) ?? 0) + 1,
+        );
+      } else if (!shouldShow && !wasHidden) {
+        this.groupVisibleCounts.set(
+          filterName,
+          (this.groupVisibleCounts.get(filterName) ?? 1) - 1,
+        );
+      }
 
       elements.checkbox.checked = isSelected || false;
     }
@@ -231,17 +246,8 @@ export class PagefindFilterPane extends PagefindElement {
         }
       }
 
-      let hasVisibleOptions = false;
-      const options = elements.optionsContainer.querySelectorAll(
-        ".pf-filter-checkbox",
-      );
-      for (const option of options) {
-        if (!option.hasAttribute("data-pf-hidden")) {
-          hasVisibleOptions = true;
-          break;
-        }
-      }
-      elements.group.toggleAttribute("data-pf-hidden", !hasVisibleOptions);
+      const visibleCount = this.groupVisibleCounts.get(filterName) ?? 0;
+      elements.group.toggleAttribute("data-pf-hidden", visibleCount === 0);
     }
   }
 
@@ -330,11 +336,13 @@ export class PagefindFilterPane extends PagefindElement {
       selectedCountSpan,
     });
 
+    let visibleCount = 0;
     for (const [value, totalCount] of valueEntries) {
       const availableCount = availableValues[value] ?? 0;
       const isSelected = this.selectedFilters[filterName]?.has(value) || false;
       const count = isSelected ? totalCount : availableCount;
       const shouldShow = this.showEmpty || availableCount > 0 || isSelected;
+      if (shouldShow) visibleCount++;
 
       this.renderCheckbox(
         optionsContainer,
@@ -345,6 +353,7 @@ export class PagefindFilterPane extends PagefindElement {
         shouldShow,
       );
     }
+    this.groupVisibleCounts.set(filterName, visibleCount);
 
     return group;
   }

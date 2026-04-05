@@ -334,6 +334,7 @@ Displays search results with lazy loading (loads full data only when scrolled in
 | `show-images` | boolean | `false` | Show result images |
 | `hide-sub-results` | boolean | `false` | Hide anchor sub-results |
 | `max-sub-results` | number | `3` | Max sub-results per result |
+| `max-results` | number | unlimited | Limit results shown |
 | `link-target` | string | — | Set `target` on links (e.g., `_blank`) |
 | `instance` | string | `"default"` | Instance name |
 
