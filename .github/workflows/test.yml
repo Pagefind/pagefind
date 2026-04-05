@@ -39,6 +39,10 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             cross: false
+          - build: windows-arm64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            cross: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -144,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pagefind-${{ matrix.target }}
-          path: target/release/pagefind${{ matrix.build == 'windows' && '.exe' || '' }}
+          path: target/release/pagefind${{ startsWith(matrix.build, 'windows') && '.exe' || '' }}
       
       - name: Upload Testing Binary (FreeBSD)
         uses: actions/upload-artifact@v7

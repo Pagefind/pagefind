@@ -29,6 +29,12 @@ jobs:
             target: x86_64-pc-windows-msvc
             cross: false
             run_tests: true
+          - build: windows-arm64
+            os: windows-11-arm
+            rust: stable
+            target: aarch64-pc-windows-msvc
+            cross: false
+            run_tests: true
           - build: linux
             os: ubuntu-latest
             rust: stable
@@ -323,6 +329,10 @@ jobs:
             package: windows-x64
             os: win32
             cpu: x64
+          - target: aarch64-pc-windows-msvc
+            package: windows-arm64
+            os: win32
+            cpu: arm64
           - target: x86_64-unknown-linux-musl
             package: linux-x64
             os: linux
@@ -614,7 +624,7 @@ jobs:
 
       - name: Publish binary NPM packages
         run: |
-          for pkg in windows-x64 linux-x64 linux-arm64 darwin-x64 freebsd-x64 darwin-arm64; do
+          for pkg in windows-x64 windows-arm64 linux-x64 linux-arm64 darwin-x64 freebsd-x64 darwin-arm64; do
             echo "Publishing @pagefind/$pkg..."
             if npm view "@pagefind/$pkg@$GIT_VERSION" version >/dev/null 2>&1; then
               echo "  Already published, skipping."

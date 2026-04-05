@@ -24,6 +24,7 @@
     "@pagefind/freebsd-x64": "0.0.0",
     "@pagefind/linux-arm64": "0.0.0",
     "@pagefind/linux-x64": "0.0.0",
+    "@pagefind/windows-arm64": "0.0.0",
     "@pagefind/windows-x64": "0.0.0"
   },
   "keywords": [
