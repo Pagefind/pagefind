@@ -1210,7 +1210,7 @@ pagefind-modal-trigger {
 
 :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-body,
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-body {
-    flex: 1;
+    flex: 1 1 auto;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 8px 16px 16px;
