@@ -10,7 +10,7 @@ const init_pagefind = () => {
     // Derive basePath if not explicitly provided
     if (!basePath && typeof import.meta.url !== "undefined") {
       let derivedBasePath = import.meta.url.match(
-        /^(?:https?:\/\/[^/]+)?(.*\/)pagefind.*\.js.*$/,
+        /^(.*\/)pagefind.js.*$/,
       )?.[1];
       if (derivedBasePath) {
         basePath = derivedBasePath;
