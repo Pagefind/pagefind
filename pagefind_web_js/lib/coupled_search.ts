@@ -46,6 +46,10 @@ export class PagefindInstance {
   loaded_filters: Record<string, Promise<void>>;
   loaded_fragments: Record<string, Promise<PagefindSearchFragment>>;
 
+  private fetchQueue: Array<{ resolve: (response: Response) => void; reject: (error: any) => void; input: RequestInfo | URL }> = [];
+  private activeFetches: number = 0;
+  private maxConcurrentFetches: number = 100;
+
   raw_ptr: number | null;
   searchMeta: any;
   languages: Record<string, internal.PagefindEntryLanguage> | null;
@@ -100,6 +104,32 @@ export class PagefindInstance {
     this.raw_ptr = null;
     this.searchMeta = null;
     this.languages = null;
+  }
+
+  private throttledFetch(input: RequestInfo | URL): Promise<Response> {
+    return new Promise<Response>((resolve, reject) => {
+      this.fetchQueue.push({ resolve, reject, input });
+      this.dequeueNextFetch();
+    });
+  }
+
+  private dequeueNextFetch() {
+    while (this.fetchQueue.length > 0 && this.activeFetches < this.maxConcurrentFetches) {
+      const next = this.fetchQueue.shift()!;
+      this.activeFetches++;
+      this.performFetch(next);
+    }
+  }
+
+  private async performFetch(queued: { resolve: (response: Response) => void; reject: (error: any) => void; input: RequestInfo | URL }) {
+    try {
+      queued.resolve(await fetch(queued.input));
+    } catch (error) {
+      queued.reject(error);
+    } finally {
+      this.activeFetches--;
+      this.dequeueNextFetch();
+    }
   }
 
   private initPrimaryBasePath(basePath: string): string {
@@ -225,7 +255,7 @@ export class PagefindInstance {
     try {
       // We always load a fresh copy of the entry metadata,
       // as it ensures we don't try to load an old build's chunks,
-      let entry_response = await fetch(
+      let entry_response = await this.throttledFetch(
         `${this.basePath}pagefind-entry.json?ts=${Date.now()}`,
       );
       let entry_json =
@@ -278,7 +308,7 @@ export class PagefindInstance {
 
   async loadMeta(index: string) {
     try {
-      let compressed_resp = await fetch(
+      let compressed_resp = await this.throttledFetch(
         `${this.basePath}pagefind.${index}.pf_meta`,
       );
       let compressed_meta = await compressed_resp.arrayBuffer();
@@ -294,7 +324,7 @@ export class PagefindInstance {
   async loadWasm(language: string) {
     try {
       const wasm_url = `${this.basePath}wasm.${language}.pagefind`;
-      let compressed_resp = await fetch(wasm_url);
+      let compressed_resp = await this.throttledFetch(wasm_url);
       let compressed_wasm = await compressed_resp.arrayBuffer();
       const final_wasm = this.decompress(
         new Uint8Array(compressed_wasm),
@@ -312,7 +342,7 @@ export class PagefindInstance {
 
   async _loadGenericChunk(url: string, method: string) {
     try {
-      let compressed_resp = await fetch(url);
+      let compressed_resp = await this.throttledFetch(url);
       let compressed_chunk = await compressed_resp.arrayBuffer();
       let chunk = this.decompress(new Uint8Array(compressed_chunk), url);
 
@@ -346,7 +376,7 @@ export class PagefindInstance {
   }
 
   async _loadFragment(hash: string) {
-    let compressed_resp = await fetch(
+    let compressed_resp = await this.throttledFetch(
       `${this.basePath}fragment/${hash}.pf_fragment`,
     );
     let compressed_fragment = await compressed_resp.arrayBuffer();
