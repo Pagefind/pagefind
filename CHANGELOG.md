@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v1.5.0 (April 6, 2026)
+
 Hey! This is a big one. Pagefind 1.5.0 has been fermenting for a while, and addresses a _lot_ of long-standing issues and feature requests. This release brings an entirely new search UI built on web components, major improvements to search relevance and ranking, diacritics support, automatic CJK segmentation, Web Worker search, notably smaller indexes, and a much faster indexing binary. Enormous thanks to everyone who contributed features and fixes, as well as to everyone who tested the beta releases and provided feedback ❤️ - @bglw
 
 If you only read this far, I should mention up front: The existing Default UI and Modular UI remain available and supported for now, so you can upgrade your sites to Pagefind v1.5.0 without migrating to the Component UI.
