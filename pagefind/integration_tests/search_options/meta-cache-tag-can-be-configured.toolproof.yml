@@ -1,0 +1,47 @@
+name: Search Options > Meta cache tag can be configured
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p
+      data-url>Nothing</p><p data-cache-tag>No tag</p></body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      // Patch fetch before pagefind loads to capture the entry URL
+      let origFetch = window.fetch;
+      window.__capturedEntryUrl = null;
+      window.fetch = function(url, ...args) {
+          if (typeof url === "string" && url.includes("pagefind-entry")) {
+              window.__capturedEntryUrl = url;
+          }
+          return origFetch.call(this, url, ...args);
+      };
+
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.options({
+          metaCacheTag: "my-build-id",
+          noWorker: true
+      });
+      await pagefind.init();
+
+      let search = await pagefind.search("world");
+
+      let data = await search.results[0].data();
+      document.querySelector('[data-url]').innerText = data.url;
+      document.querySelector('[data-cache-tag]').innerText = window.__capturedEntryUrl || "not captured";
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-url]");
+      toolproof.assert_eq(val.innerHTML, `/cat/`);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-cache-tag]");
+      toolproof.assert_eq(val.innerHTML.includes("ts=my-build-id"), true);
