@@ -234,7 +234,9 @@ By default, Pagefind will attempt to use a web worker for search operations when
 
 {{< tabs >}}
 {{< tab "UI (declarative)" "sync-cfg-declarative" >}}
-Not available as a declarative attribute. Use `configureInstance` instead.
+```html
+<pagefind-config no-worker></pagefind-config>
+```
 {{< /tab >}}
 {{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
 ```js
