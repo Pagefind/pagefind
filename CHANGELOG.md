@@ -9,6 +9,100 @@
 
 ## Unreleased
 
+Hey! This is a big one. Pagefind 1.5.0 has been fermenting for a while, and addresses a _lot_ of long-standing issues and feature requests. This release brings an entirely new search UI built on web components, major improvements to search relevance and ranking, diacritics support, automatic CJK segmentation, Web Worker search, dramatically smaller indexes, and a much faster indexing binary. Enormous thanks to everyone who contributed features and fixes, as well as to everyone who tested the beta releases and provided feedback ❤️ - @bglw
+
+If you only read this far, I should mention up front: The existing Default UI and Modular UI remain available and supported for now, so you can upgrade your sites to Pagefind v1.5.0 without migrating to the Component UI.
+
+### Pagefind Component UI
+
+Pagefind ships a brand new UI system built entirely on web components. The Component UI gives you searchboxes, modals, result lists, and filter controls as composable `<pagefind-*>` elements that you can mix, match, and style with CSS variables.
+
+The Component UI is available as vendored files in your `/pagefind/` output directory, or as [an npm package](https://www.npmjs.com/package/@pagefind/component-ui) to install and import. 
+
+The best way to get a feel for the new components is on the [📘 Pagefind Component UI](https://pagefind.app/docs/search-ui/#modal-search) page of the docs, where interactive examples of various components are shown.
+
+Extra goodies with the Component UI:
+
+* Greatly improved accessibility over the Default UI
+* Keyboard navigation through search results
+* Configurable keyboard shortcuts (thanks @miketheman !)
+* Full custom templates for rendering results and placeholders
+* Exported types for Component UI npm consumers (thanks @vanruesc !)
+* Support for multiple scoped Pagefind instances on one page
+* A range of CSS variables available for light-touch customization (thanks @miketheman for some of these!)
+* Improved RTL and locale-specific rendering
+
+### Search Relevance, and Searching Metadata
+
+Pagefind now searches metadata by default! Importantly, this means it now searches the _title_ metadata. Matches in titles are now taken into account, and search results are _very_ hard to shake from prime positions if all (or much) of the title matches the search query.
+
+You can configure the weight of any metadata field. See [📘 Configuring Metadata Weights](https://pagefind.app/docs/ranking/#configuring-metadata-weights) to change the title boost or apply custom weights to your own metadata fields.
+
+Beyond metadata searching, a _bunch_ of weird and wonderful ranking bugs were resolved:
+
+  - Metadata-only matches now return results. Previously, if a page matched the search query only in its metadata (e.g. the title) but not in the body content, it could be silently dropped. These pages now correctly appear in results.
+  - Word splitting and indexing was revisited to properly handle diacritics, stemming, and compound words together. This fixes a broad set of edge cases where compound word parts weren't indexed correctly.
+  - Loading index chunks now correctly uses stemmed terms. This was a discrepancy in how chunks were identified, and could cause some hard to pin down issues where the wrong chunk would be loaded for a search term, leaving you with no (or fewer) results.
+  - A couple of pathways left you with only the first matching chunk loaded, which would also give you fewer results. Words that straddle multiple chunks now behave better.
+  - Fancy-pants unicode characters in words could _really_ mess up the chunk loading, which has been fixed.
+
+### Diacritics Support
+
+We finally properly support matching across diacritics. You can now find your cafés without remembering how to type é.
+
+By default, exact diacritic matches are preferred. So if you're searching "cafe", pages with "cafe" will rank higher than pages with "café". Getting this relevance right by default was the final piece of the puzzle for shipping this, which is why it took a while to land. See [📘 Configuring Diacritic Similarity](https://pagefind.app/docs/ranking/#configuring-diacritic-similarity) to adjust how this plays out on your site.
+
+If you need strict matching, set `exactDiacritics: true` to disable normalization entirely — "cafe" will only match "cafe", and "café" will only match "café". [📘 Exact Diacritics](https://pagefind.app/docs/search-config/#exact-diacritics)
+
+### Multilingual Improvements
+
+Thanks browsers! Pagefind now taps into [Intl.Segmenter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter) to chop search queries in CJK (Chinese, Japanese, Korean) non-whitespace-delimited languages. This was already done during indexing by Pagefind, but users searching still had to delimit their queries. Now searching "这是一段简单的测试文本" searches for the words "这", "是", "一段", "简单", "的", "测试", and "文本", which is also how that sentence was indexed.
+
+We also updated the underlying stemming library (thanks @uded !) which brings stemming support for Polish and Estonian (and Esperanto, if anyone is out there indexing some `lang="eo"` pages). The Snowball upgrade also improves stemming quality across many already-supported languages.
+
+### Indexing Performance
+
+The indexing binary (the one you install through npx or your wrapper of choice) is now both smaller (so, faster to download) and faster to run, by quite a lot on both fronts. On some sites, indexing is more than twice as fast. Thanks to @zmre for much of this!
+
+### Search Performance
+
+Pagefind's search now runs in a Web Worker automatically. This doesn't make the search faster, per se, but it dramatically improves perceived performance on large websites by keeping the main thread responsive. If Web Workers are unavailable, it falls back to the main thread automatically.
+
+Plus: Some low-hanging fruit was picked off, and Pagefind's index chunks are now ~45% smaller thanks to delta-encoding page numbers and word locations.
+
+### New Search Options
+
+* `metaCacheTag` — Allows you to configure the cache-busting tag on the metadata file (which is fetched fresh on every page load). For offline/PWA scenarios where assets need to be served with service workers, this can now be overridden.
+* `plain_excerpt` — Search results and sub-results now include a `plain_excerpt` field containing the excerpt text without highlight mark tags, for those who want to handle highlighting themselves (or don't want it at all).
+* `matchedMetaFields` — Search results now include a `matchedMetaFields` field listing which metadata fields matched the search query.
+* `includeCharacters` is now available in the Node and Python wrapper APIs.
+
+### UI Translations
+
+* Added Greek (el) translations. (PR #1019 — thanks @Yoda-Soda !)
+* Improved Chinese Traditional (zh-TW) translations. (PR #990 —thanks @510208 !)
+* Improved German (de) translations. (PR #953 —thanks @randomguy-2650 !)
+* Added translations for new Component UI strings across all existing languages.
+
+### Other bits and bobs
+
+* Fixed relative image URLs (e.g. `./image.png`) breaking when displayed in search results. (PR #1087)
+* Fixed Python x86_64 macOS wheel being incorrectly tagged as `arm64`. (PR #950 — thanks @lioman !)
+* Fixed Python wheel tags being written in compressed form. (PR #989 — thanks @ichard26 !)
+* Excluded the vendor directory from the main `pagefind` PyPI package. (PR #991)
+* Migrated Python wrapper build tooling from Poetry to uv. (PR #934 — thanks @SKalt !)
+* Fixed subresult URLs ignoring page meta URL overrides. (PR #1076)
+* Fixed subresult highlight mark color. (PR #1024)
+* Index chunk fetches are now throttled to avoid overwhelming the network on large sites. (PR #1071)
+* Added Windows ARM64 (`aarch64-pc-windows-msvc`) as a supported platform. (PR #1079)
+* For crate consumers: Moved `actix-web` and related serving dependencies behind a `serve` feature flag (PR #1023)
+
+### Looking Forward
+
+The Component UI is the new recommended way to add search to your site, and future UI work will focus there. The Default UI and Modular UI are sticking around for now, but the Component UI is where new features will land first.
+
+Thanks again to everyone who contributed to this release!
+
 ## v1.5.0-beta.2 (April 3, 2026)
 
 Changes since v1.5.0-beta.1:
