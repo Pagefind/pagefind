@@ -21,6 +21,7 @@ jobs:
       run:
         shell: bash
     strategy:
+      fail-fast: false
       matrix:
         include:
           - build: windows
@@ -321,6 +322,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: test-and-build
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-pc-windows-msvc

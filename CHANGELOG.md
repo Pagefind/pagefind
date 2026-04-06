@@ -9,7 +9,7 @@
 
 ## Unreleased
 
-Hey! This is a big one. Pagefind 1.5.0 has been fermenting for a while, and addresses a _lot_ of long-standing issues and feature requests. This release brings an entirely new search UI built on web components, major improvements to search relevance and ranking, diacritics support, automatic CJK segmentation, Web Worker search, dramatically smaller indexes, and a much faster indexing binary. Enormous thanks to everyone who contributed features and fixes, as well as to everyone who tested the beta releases and provided feedback ❤️ - @bglw
+Hey! This is a big one. Pagefind 1.5.0 has been fermenting for a while, and addresses a _lot_ of long-standing issues and feature requests. This release brings an entirely new search UI built on web components, major improvements to search relevance and ranking, diacritics support, automatic CJK segmentation, Web Worker search, notably smaller indexes, and a much faster indexing binary. Enormous thanks to everyone who contributed features and fixes, as well as to everyone who tested the beta releases and provided feedback ❤️ - @bglw
 
 If you only read this far, I should mention up front: The existing Default UI and Modular UI remain available and supported for now, so you can upgrade your sites to Pagefind v1.5.0 without migrating to the Component UI.
 
@@ -40,7 +40,7 @@ You can configure the weight of any metadata field. See [📘 Configuring Metada
 
 Beyond metadata searching, a _bunch_ of weird and wonderful ranking bugs were resolved:
 
-  - Metadata-only matches now return results. Previously, if a page matched the search query only in its metadata (e.g. the title) but not in the body content, it could be silently dropped. These pages now correctly appear in results.
+  - Metadata-only matches now return results. Previously, if a page matched the search query only in its metadata (e.g. the title) but not in the body content, it would be missed. These pages now correctly appear in results.
   - Word splitting and indexing was revisited to properly handle diacritics, stemming, and compound words together. This fixes a broad set of edge cases where compound word parts weren't indexed correctly.
   - Loading index chunks now correctly uses stemmed terms. This was a discrepancy in how chunks were identified, and could cause some hard to pin down issues where the wrong chunk would be loaded for a search term, leaving you with no (or fewer) results.
   - A couple of pathways left you with only the first matching chunk loaded, which would also give you fewer results. Words that straddle multiple chunks now behave better.

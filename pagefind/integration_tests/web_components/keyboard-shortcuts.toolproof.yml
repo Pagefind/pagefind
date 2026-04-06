@@ -46,6 +46,7 @@ steps:
   - step: In my browser, I type "t"
   - step: In my browser, I evaluate {js}
     js: |-
+      await new Promise(r => setTimeout(r, 500));
       await toolproof.waitFor(() => {
         let anchors = document.querySelectorAll("pagefind-results .pf-result a");
         return anchors.length === 2;
