@@ -435,12 +435,14 @@ export class PagefindInstance {
       weighted_locations,
       this.excerptLength,
     );
-    fragment.excerpt = build_excerpt(
+    const excerpts = build_excerpt(
       fragment.raw_content,
       excerpt_start,
       this.excerptLength,
       fragment.locations,
     );
+    fragment.excerpt = excerpts.excerpt;
+    fragment.plain_excerpt = excerpts.plain_excerpt;
 
     fragment.sub_results = calculate_sub_results(fragment, this.excerptLength);
 

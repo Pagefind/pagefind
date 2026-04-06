@@ -40,6 +40,8 @@ export const calculate_excerpt_region = (
   return midpoint;
 };
 
+export type ExcerptResult = { excerpt: string; plain_excerpt: string };
+
 export const build_excerpt = (
   content: string,
   start: number,
@@ -47,7 +49,7 @@ export const build_excerpt = (
   locations: number[],
   not_before?: number,
   not_from?: number,
-): string => {
+): ExcerptResult => {
   let is_zws_delimited = content.includes("\u200B");
   let fragment_words: string[] = [];
   if (is_zws_delimited) {
@@ -55,13 +57,6 @@ export const build_excerpt = (
     fragment_words = content.split("\u200B");
   } else {
     fragment_words = content.split(/[\r\n\s]+/g);
-  }
-  for (let word of locations) {
-    if (fragment_words[word]?.startsWith(`<mark>`)) {
-      // It's possible to have a word come up as multiple search hits
-      continue;
-    }
-    fragment_words[word] = `<mark>${fragment_words[word]}</mark>`;
   }
 
   let endcap = not_from ?? fragment_words.length;
@@ -78,10 +73,20 @@ export const build_excerpt = (
     start = startcap;
   }
 
-  return fragment_words
-    .slice(start, start + length)
-    .join(is_zws_delimited ? "" : " ")
-    .trim();
+  const joiner = is_zws_delimited ? "" : " ";
+  const plain_excerpt = fragment_words.slice(start, start + length).join(joiner).trim();
+
+  for (let word of locations) {
+    if (fragment_words[word]?.startsWith(`<mark>`)) {
+      // It's possible to have a word come up as multiple search hits
+      continue;
+    }
+    fragment_words[word] = `<mark>${fragment_words[word]}</mark>`;
+  }
+
+  const excerpt = fragment_words.slice(start, start + length).join(joiner).trim();
+
+  return { excerpt, plain_excerpt };
 };
 
 export const extract_words = (

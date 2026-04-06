@@ -1,0 +1,15 @@
+name: Metadata > Search results return plain search excerpt without mark elements
+steps:
+  - ref: ./background.toolproof.yml
+  - step: In my browser, I evaluate {js}
+    js: >-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("feline");
+
+      let data = await search.results[0].data();
+
+      toolproof.assert_eq(data.plain_excerpt, `Cat Post. A post about the
+      'felines'. This post has some gnarly things to test the fragment
+      formatting.`);
+  - step: In my browser, the console should be empty

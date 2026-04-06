@@ -89,7 +89,8 @@ Which will return an object with the following structure:
 {
   /* ... other result keys ... */
   "url": "/url-of-the-page/",
-  "excerpt": "A small snippet of the <mark>static</mark> content, with the search term(s) highlighted in &lt;mark&gt; elements.",
+  "excerpt": "A small snippet of the <mark>static</mark> content, from the &lt;body&gt; of the page.",
+  "plain_excerpt": "A small snippet of the static content, from the &lt;body&gt; of the page.",
   "meta": {
     "title": "The title from the first h1 element on the page",
     "image": "/weka.png"
@@ -99,19 +100,21 @@ Which will return an object with the following structure:
         /* ... other sub_result keys ... */
         "title": "The title from the first h1 element on the page",
         "url": "/url-of-the-page/",
-        "excerpt": "A small snippet of the <mark>static</mark> content, with the search term(s) highlighted in &lt;mark&gt; elements",
+        "excerpt": "A small snippet of the <mark>static</mark> content, from the &lt;body&gt; of the page",
+        "plain_excerpt": "A small snippet of the static content, from the &lt;body&gt; of the page",
     },
     {
         /* ... other sub_result keys ... */
         "title": "Inner text of some heading",
         "url": "/url-of-the-page/#id-of-the-h2",
         "excerpt": "A snippet of the <mark>static</mark> content, scoped between this anchor and the next one",
+        "plain_excerpt": "A snippet of the static content, scoped between this anchor and the next one",
     }
   ]
 }
 ```
 
-> Note that `excerpt` will have HTML entities encoded before adding `<mark>` elements, so is safe to use as innerHTML. The `content` and `meta` keys are raw and unprocessed, so will need to be escaped by the user if necessary.
+> Note that `excerpt` and `plain_excerpt` will have HTML entities encoded before adding any elements, so both are safe to use as innerHTML. The `content` and `meta` keys are raw and unprocessed, so will need to be escaped by the user if necessary.
 
 Pagefind returns all matching results from the search call. To load a "page" of results, you can run something like the following, to slice the first five result objects and load their data:
 

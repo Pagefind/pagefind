@@ -20,6 +20,7 @@ export const calculate_sub_results = (
     weighted_locations: [],
     locations: [],
     excerpt: "",
+    plain_excerpt: "",
   };
 
   const add_result = (end_range?: number) => {
@@ -33,7 +34,7 @@ export const calculate_sub_results = (
       const excerpt_length = end_range
         ? Math.min(end_range - excerpt_start, desired_excerpt_length)
         : desired_excerpt_length;
-      current_anchor.excerpt = build_excerpt(
+      const excerpts = build_excerpt(
         fragment.raw_content ?? "",
         excerpt_start,
         excerpt_length,
@@ -41,6 +42,8 @@ export const calculate_sub_results = (
         current_anchor_position,
         end_range
       );
+      current_anchor.excerpt = excerpts.excerpt;
+      current_anchor.plain_excerpt = excerpts.plain_excerpt;
 
       results.push(current_anchor);
     }
@@ -91,6 +94,7 @@ export const calculate_sub_results = (
         weighted_locations: [word],
         locations: [word.location],
         excerpt: "",
+        plain_excerpt: "",
       };
     }
   }

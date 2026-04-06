@@ -271,6 +271,8 @@ declare global {
     raw_content?: string;
     /** The processed excerpt for this result, with matching terms wrapping in `<mark>` elements */
     excerpt: string;
+    /** The processed excerpt for this result, without any `<mark>` elements wrapping matching terms */
+    plain_excerpt: string;
     /**
      * What regions of the page matched this search query?
      *
@@ -324,6 +326,8 @@ declare global {
     weighted_locations: PagefindWordLocation[];
     /** The processed excerpt for this segment, with matching terms wrapping in `<mark>` elements */
     excerpt: string;
+    /** The processed excerpt for this segment, without any `<mark>` elements wrapping matching terms */
+    plain_excerpt: string;
     /**
      * Raw data about the anchor element associated with this sub result.
      *

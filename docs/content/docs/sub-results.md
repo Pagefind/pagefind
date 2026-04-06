@@ -49,19 +49,22 @@ Which will return an object with the following structure:
 {
   /* ... other result keys ... */
   "url": "/url-of-the-page/",
-  "excerpt": "A small snippet of the <mark>static</mark> content, with the search term(s) highlighted in &lt;mark&gt; elements.",
+  "excerpt": "A small snippet of the <mark>static</mark> content, from the &lt;body&gt; of the page.",
+  "plain_excerpt": "A small snippet of the static content, from the &lt;body&gt; of the page.",
 ~  "sub_results": [
 ~    {
 ~        /* ... other result keys ... */
 ~        "title": "The title from the first h1 element on the page",
 ~        "url": "/url-of-the-page/",
-~        "excerpt": "A small snippet of the <mark>static</mark> content, with the search term(s) highlighted in &lt;mark&gt; elements"
+~        "excerpt": "A small snippet of the <mark>static</mark> content, from the &lt;body&gt; of the page",
+~        "plain_excerpt": "A small snippet of the static content, from the &lt;body&gt; of the page"
 ~    },
 ~    {
 ~        /* ... other result keys ... */
 ~        "title": "Inner text of some heading",
 ~        "url": "/url-of-the-page/#id-of-the-h2",
 ~        "excerpt": "A snippet of the <mark>static</mark> content, scoped between this anchor and the next one",
+~        "plain_excerpt": "A snippet of the static content, scoped between this anchor and the next one",
 ~        "anchor": { /* ... anchor details ... */ }
 ~    }
 ~  ]

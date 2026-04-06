@@ -1,0 +1,20 @@
+name: Anchors > Pagefind returns plain excerpts for subresults
+steps:
+  - ref: ./background.toolproof.yml
+  - step: In my browser, I evaluate {js}
+    js: >-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("extracted");
+
+      let data = await search.results[0].data();
+
+      toolproof.assert_eq(data.sub_results[0].plain_excerpt, `PageTwo, from
+      Pagefind. Some text nested under the h1. Words in spans should be
+      extracted. Some text nested under the p with spans.`);
+
+      toolproof.assert_eq(data.sub_results[1].plain_excerpt, `should be
+      extracted. Some text nested under the h2. Text that is bold or italic
+      should be extracted Some text nested under the span. Text containing
+      nested IDs should extract`);
+  - step: In my browser, the console should be empty
