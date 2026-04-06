@@ -369,6 +369,40 @@ declare global {
     length_bonus: number;
   };
 
+  /**
+   * An independent Pagefind instance returned by createInstance().
+   * Each instance has its own configuration and search state.
+   * All instances share a single web worker and WASM module internally.
+   */
+  type PagefindInstance = {
+    /** Update options for this instance */
+    options: (opts: PagefindIndexOptions) => Promise<void>;
+    /** Wait for this instance to finish initializing (WASM load, etc.) */
+    init: () => Promise<void>;
+    /** Destroy this instance and terminate its worker */
+    destroy: () => Promise<void>;
+    /** Merge an additional index into this instance */
+    mergeIndex: (
+      indexPath: string,
+      options: PagefindIndexOptions,
+    ) => Promise<void>;
+    /** Search this instance's index */
+    search: (
+      term: string,
+      options?: PagefindSearchOptions,
+    ) => Promise<PagefindIndexesSearchResults>;
+    /** Debounced search — returns null if superseded by a newer call */
+    debouncedSearch: (
+      term: string,
+      options?: PagefindSearchOptions,
+      debounceTimeoutMs?: number,
+    ) => Promise<PagefindIndexesSearchResults | null>;
+    /** Preload index chunks for a search term without returning results */
+    preload: (term: string, options?: PagefindSearchOptions) => Promise<void>;
+    /** Retrieve all available filter values and counts */
+    filters: () => Promise<PagefindFilterCounts>;
+  };
+
   /** Raw data about elements with IDs that Pagefind encountered when indexing the page */
   type PagefindSearchAnchor = {
     /** What element type was this anchor? e.g. `h1`, `div` */

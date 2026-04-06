@@ -3,31 +3,30 @@ import { PagefindWrapper } from "./search_wrapper.js";
 let pagefind: PagefindWrapper | undefined = undefined;
 let initial_options: PagefindIndexOptions | undefined = undefined;
 
+const deriveBasePath = (explicit?: string): string | undefined => {
+  if (explicit) return explicit;
+  if (typeof import.meta.url !== "undefined") {
+    return import.meta.url.match(
+      /^(.*\/)pagefind.js.*$/,
+    )?.[1];
+  }
+};
+
+const detectLanguage = (): string => {
+  if (typeof document !== "undefined" && document?.querySelector) {
+    return (
+      document.querySelector("html")?.getAttribute("lang") || "unknown"
+    ).toLowerCase();
+  }
+  return "unknown";
+};
+
 const init_pagefind = () => {
   if (!pagefind) {
-    let basePath = initial_options?.basePath;
-
-    // Derive basePath if not explicitly provided
-    if (!basePath && typeof import.meta.url !== "undefined") {
-      let derivedBasePath = import.meta.url.match(
-        /^(.*\/)pagefind.js.*$/,
-      )?.[1];
-      if (derivedBasePath) {
-        basePath = derivedBasePath;
-      }
-    }
-
-    let language = "unknown";
-    if (typeof document !== "undefined" && document?.querySelector) {
-      const langCode =
-        document.querySelector("html")?.getAttribute("lang") || "unknown";
-      language = langCode.toLowerCase();
-    }
-
     pagefind = new PagefindWrapper({
       ...initial_options,
-      basePath,
-      language,
+      basePath: deriveBasePath(initial_options?.basePath),
+      language: detectLanguage(),
       primary: true,
     });
   }
@@ -77,4 +76,39 @@ export const preload = async (term: string, options: PagefindSearchOptions) => {
 export const filters = async () => {
   init_pagefind();
   return await pagefind!.filters();
+};
+
+/**
+ * Creates an independent Pagefind instance with its own configuration.
+ * Use this when you need multiple search instances on the same page
+ * with different options.
+ * All instances share a single web worker and WASM module internally.
+ */
+export const createInstance = (
+  instanceOptions?: PagefindIndexOptions,
+): PagefindInstance => {
+  const wrapper = new PagefindWrapper({
+    ...instanceOptions,
+    basePath: deriveBasePath(instanceOptions?.basePath),
+    language: detectLanguage(),
+    primary: true,
+  });
+
+  return {
+    options: (opts: PagefindIndexOptions) => wrapper.options(opts),
+    init: () => wrapper.waitForInit(),
+    destroy: () => wrapper.destroy(),
+    mergeIndex: (indexPath: string, options: PagefindIndexOptions) =>
+      wrapper.mergeIndex(indexPath, options),
+    search: (term: string, options: PagefindSearchOptions = {}) =>
+      wrapper.search(term, options),
+    debouncedSearch: (
+      term: string,
+      options?: PagefindSearchOptions,
+      debounceTimeoutMs: number = 300,
+    ) => wrapper.debouncedSearch(term, options, debounceTimeoutMs),
+    preload: (term: string, options: PagefindSearchOptions = {}) =>
+      wrapper.preload(term, options),
+    filters: () => wrapper.filters(),
+  };
 };

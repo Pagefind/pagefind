@@ -5,31 +5,110 @@ const hasWorkerSupport =
   typeof document !== "undefined" &&
   typeof Worker !== "undefined";
 
+// Shared worker state: one worker serves all PagefindWrapper instances.
+// Each wrapper gets a unique instanceId to namespace its messages.
+let sharedWorker: Worker | null = null;
+let sharedWorkerRefCount = 0;
+let sharedMessageHandlers: Map<
+  string,
+  { resolve: Function; reject: Function }
+> = new Map();
+
+let nextInstanceId = 0;
+const generateInstanceId = (): string => `pf_${nextInstanceId++}`;
+
+function initSharedWorker(basePath: string): boolean {
+  if (sharedWorker) return true;
+
+  try {
+    const workerUrl = `${basePath}pagefind-worker.js`;
+    sharedWorker = new Worker(workerUrl);
+
+    sharedWorker.addEventListener("error", (error) => {
+      console.warn(
+        "The Pagefind web worker encountered an error, falling back to main thread:",
+        error,
+      );
+      sharedWorker = null;
+
+      // Reject all pending messages across all instances
+      const pending = Array.from(sharedMessageHandlers.values());
+      sharedMessageHandlers.clear();
+      for (const { reject } of pending) {
+        reject(new Error("Worker failed, falling back to main thread"));
+      }
+    });
+
+    sharedWorker.addEventListener("message", (event) => {
+      const { id, result, error } = event.data;
+      const pending = sharedMessageHandlers.get(id);
+      if (pending) {
+        sharedMessageHandlers.delete(id);
+        if (error) {
+          pending.reject(new Error(error));
+        } else {
+          pending.resolve(result);
+        }
+      }
+    });
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function releaseSharedWorker(): void {
+  sharedWorkerRefCount--;
+  if (sharedWorkerRefCount <= 0 && sharedWorker) {
+    sharedWorker.terminate();
+    sharedWorker = null;
+    sharedWorkerRefCount = 0;
+
+    const pending = Array.from(sharedMessageHandlers.values());
+    sharedMessageHandlers.clear();
+    for (const { reject } of pending) {
+      reject(new Error("Pagefind worker terminated"));
+    }
+  }
+}
+
+let globalMessageId = 0;
+
+function sendWorkerMessage(
+  instanceId: string,
+  method: string,
+  args: any[],
+): Promise<any> {
+  if (!sharedWorker) {
+    return Promise.reject(new Error("Worker not available"));
+  }
+
+  return new Promise((resolve, reject) => {
+    const id = `msg_${globalMessageId++}`;
+    sharedMessageHandlers.set(id, { resolve, reject });
+    sharedWorker!.postMessage({ id, instanceId, method, args });
+  });
+}
+
 export class PagefindWrapper {
-  private worker: Worker | null = null;
-  private messageId = 0;
-  private pendingMessages: Map<
-    string,
-    { resolve: Function; reject: Function }
-  > = new Map();
+  private instanceId: string;
   private fallback: Pagefind | null = null;
   private basePath: string;
   private initOptions: PagefindIndexOptions;
   private cleanup: FinalizationRegistry<string> | undefined;
   private initPromise: Promise<void> | null = null;
   private initialized = false;
+  private useWorker = false;
 
   private initCleanup() {
     if (typeof FinalizationRegistry !== "undefined") {
       this.cleanup = new FinalizationRegistry((dataId: string) => {
-        // When result object is GC'd, tell worker to release its data function
-        if (this.worker) {
+        if (this.useWorker && sharedWorker) {
           try {
-            this.worker.postMessage({
-              id: `cleanup_${Date.now()}`,
-              method: "releaseData",
-              args: [dataId],
-            });
+            sendWorkerMessage(this.instanceId, "releaseData", [dataId]).catch(
+              () => {},
+            );
           } catch (e) {
             // If the worker is dead, that's the ultimate GC :-)
           }
@@ -39,6 +118,7 @@ export class PagefindWrapper {
   }
 
   constructor(options: PagefindIndexOptions = {}) {
+    this.instanceId = generateInstanceId();
     this.basePath = options.basePath || "/pagefind/";
     this.initOptions = options;
 
@@ -64,56 +144,36 @@ export class PagefindWrapper {
 
   private async init() {
     if (hasWorkerSupport && !(this.initOptions as any).noWorker) {
-      try {
-        const workerUrl = `${this.basePath}pagefind-worker.js`;
-        this.worker = new Worker(workerUrl);
+      const workerAvailable = initSharedWorker(this.basePath);
 
-        this.worker.addEventListener("error", (error) => {
+      if (workerAvailable) {
+        try {
+          sharedWorkerRefCount++;
+          this.useWorker = true;
+
+          await Promise.race([
+            sendWorkerMessage(this.instanceId, "init", [this.initOptions]),
+            new Promise((_, reject) =>
+              setTimeout(
+                () => reject(new Error("Worker initialization timeout")),
+                5000,
+              ),
+            ),
+          ]);
+          this.initialized = true;
+        } catch (error) {
           console.warn(
-            "The Pagefind web worker encountered an error, falling back to main thread:",
+            "Failed to initialize Pagefind in the web worker, falling back to main thread:",
             error,
           );
-          this.worker = null;
-
-          // Reject all pending messages
-          const pending = Array.from(this.pendingMessages.values());
-          this.pendingMessages.clear();
-          for (const { reject } of pending) {
-            reject(new Error("Worker failed, falling back to main thread"));
-          }
-
+          // Clean up the possibly-orphaned instance in the worker
+          sendWorkerMessage(this.instanceId, "destroy", []).catch(() => {});
+          this.useWorker = false;
+          sharedWorkerRefCount--;
           this.initFallback();
-        });
-
-        this.worker.addEventListener("message", (event) => {
-          const { id, result, error } = event.data;
-          const pending = this.pendingMessages.get(id);
-          if (pending) {
-            this.pendingMessages.delete(id);
-            if (error) {
-              pending.reject(new Error(error));
-            } else {
-              pending.resolve(result);
-            }
-          }
-        });
-
-        await Promise.race([
-          this.sendMessage("init", [this.initOptions]),
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Worker initialization timeout")),
-              5000,
-            ),
-          ),
-        ]);
-        this.initialized = true;
-      } catch (error) {
-        console.warn(
-          "Failed to initialize the Pagefind web worker, falling back to main thread:",
-          error,
-        );
-        this.worker = null;
+          this.initialized = true;
+        }
+      } else {
         this.initFallback();
         this.initialized = true;
       }
@@ -121,6 +181,10 @@ export class PagefindWrapper {
       this.initFallback();
       this.initialized = true;
     }
+  }
+
+  waitForInit(): Promise<void> {
+    return this.initPromise ?? Promise.resolve();
   }
 
   private initFallback() {
@@ -158,15 +222,11 @@ export class PagefindWrapper {
       throw new Error(`Method ${method} not found on fallback`);
     }
 
-    if (!this.worker) {
+    if (!this.useWorker || !sharedWorker) {
       throw new Error("Worker not initialized");
     }
 
-    return new Promise((resolve, reject) => {
-      const id = `msg_${this.messageId++}`;
-      this.pendingMessages.set(id, { resolve, reject });
-      this.worker!.postMessage({ id, method, args });
-    });
+    return sendWorkerMessage(this.instanceId, method, args);
   }
 
   async options(options: PagefindIndexOptions) {
@@ -249,18 +309,17 @@ export class PagefindWrapper {
   }
 
   async destroy() {
-    if (this.worker) {
+    if (this.useWorker) {
       try {
-        await this.sendMessage("destroy", []);
+        await sendWorkerMessage(this.instanceId, "destroy", []);
       } catch (e) {
         // May already be dead
       }
-      this.worker.terminate();
-      this.worker = null;
+      this.useWorker = false;
+      releaseSharedWorker();
     }
     if (this.fallback) {
       this.fallback = null;
     }
-    this.pendingMessages.clear();
   }
 }

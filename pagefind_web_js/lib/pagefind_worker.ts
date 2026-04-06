@@ -2,6 +2,7 @@ import { Pagefind } from "./coupled_search.js";
 
 interface WorkerMessage {
   id: string;
+  instanceId?: string;
   method: string;
   args: any[];
 }
@@ -13,51 +14,68 @@ interface WorkerResponse {
 }
 
 let dataCallbacks: Map<string, any> = new Map();
-let pagefindInstance: Pagefind | null = null;
+let instanceDataIds: Map<string, Set<string>> = new Map();
+let instances: Map<string, Pagefind> = new Map();
+
+// Defensive fallback if a message arrives without an instanceId
+const DEFAULT_INSTANCE = "default";
+
+const getInstance = (instanceId: string): Pagefind => {
+  const instance = instances.get(instanceId);
+  if (!instance) {
+    throw new Error(`Pagefind instance "${instanceId}" not initialized`);
+  }
+  return instance;
+};
+
+const registerDataCallback = (
+  instanceId: string,
+  dataId: string,
+  dataFn: any,
+): void => {
+  dataCallbacks.set(dataId, { getData: dataFn });
+  if (!instanceDataIds.has(instanceId)) {
+    instanceDataIds.set(instanceId, new Set());
+  }
+  instanceDataIds.get(instanceId)!.add(dataId);
+};
 
 const handleMessage = async (
   message: WorkerMessage,
 ): Promise<WorkerResponse> => {
   const { id, method, args } = message;
+  const instanceId = message.instanceId ?? DEFAULT_INSTANCE;
 
   try {
     switch (method) {
       case "init": {
         const [options] = args;
-        pagefindInstance = new Pagefind(options);
+        instances.set(instanceId, new Pagefind(options));
         return { id, result: true };
       }
 
       case "options": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const [options] = args;
         await pagefindInstance.options(options);
         return { id, result: true };
       }
 
       case "enterPlaygroundMode": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         await pagefindInstance.enterPlaygroundMode();
         return { id, result: true };
       }
 
       case "mergeIndex": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const [indexPath, options] = args;
         await pagefindInstance.mergeIndex(indexPath, options);
         return { id, result: true };
       }
 
       case "search": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const [term, options] = args;
         const results = await pagefindInstance.search(term, options);
 
@@ -68,9 +86,7 @@ const handleMessage = async (
             const dataFn = result.data;
             const dataId = `data_${id}_${i}`;
 
-            dataCallbacks.set(dataId, {
-              getData: dataFn,
-            } as any);
+            registerDataCallback(instanceId, dataId, dataFn);
 
             result.data = dataId as any;
           }
@@ -84,9 +100,7 @@ const handleMessage = async (
       }
 
       case "debouncedSearch": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const [term, options, debounceTimeoutMs] = args;
         const results = await pagefindInstance.debouncedSearch(
           term,
@@ -101,9 +115,7 @@ const handleMessage = async (
             const dataFn = result.data;
             const dataId = `data_${id}_${i}`;
 
-            dataCallbacks.set(dataId, {
-              getData: dataFn,
-            } as any);
+            registerDataCallback(instanceId, dataId, dataFn);
 
             result.data = dataId as any;
           }
@@ -117,41 +129,45 @@ const handleMessage = async (
       }
 
       case "preload": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const [term, options] = args;
         await pagefindInstance.preload(term, options);
         return { id, result: true };
       }
 
       case "filters": {
-        if (!pagefindInstance) {
-          throw new Error("Pagefind not initialized");
-        }
+        const pagefindInstance = getInstance(instanceId);
         const result = await pagefindInstance.filters();
         return { id, result };
       }
 
       case "getData": {
         const [dataId] = args;
-        const instance = dataCallbacks.get(dataId);
-        if (!instance || !(instance as any).getData) {
-          throw new Error(`Data function ${dataId} not found`);
+        const callback = dataCallbacks.get(dataId);
+        if (!callback?.getData) {
+          // Instance may have been destroyed while data() was in-flight
+          return { id, result: null };
         }
-        const data = await (instance as any).getData();
+        const data = await callback.getData();
         return { id, result: data };
       }
 
       case "releaseData": {
         const [dataId] = args;
         dataCallbacks.delete(dataId);
+        instanceDataIds.get(instanceId)?.delete(dataId);
         return { id, result: true };
       }
 
       case "destroy": {
-        dataCallbacks.clear();
-        pagefindInstance = null;
+        instances.delete(instanceId);
+        const dataIds = instanceDataIds.get(instanceId);
+        if (dataIds) {
+          for (const dataId of dataIds) {
+            dataCallbacks.delete(dataId);
+          }
+          instanceDataIds.delete(instanceId);
+        }
         return { id, result: true };
       }
 

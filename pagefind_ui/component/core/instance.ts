@@ -612,9 +612,9 @@ export class Instance {
   private async __doLoad__(): Promise<void> {
     if (this.__pagefind__) return;
 
-    let imported_pagefind: PagefindAPI;
+    let pagefindModule: any;
     try {
-      imported_pagefind = await import(
+      pagefindModule = await import(
         /* @vite-ignore */
         `${this.options.bundlePath}pagefind.js`
       );
@@ -655,7 +655,12 @@ export class Instance {
       return;
     }
 
-    await imported_pagefind.options(this.pagefindOptions || {});
+    // Each component instance gets its own isolated Pagefind backend,
+    // preventing config from bleeding between instances on the same page.
+    const imported_pagefind = pagefindModule.createInstance(
+      this.pagefindOptions || {},
+    ) as PagefindAPI;
+
     for (const index of this.options.mergeIndex) {
       if (!index.bundlePath) {
         throw new Error("mergeIndex requires a bundlePath parameter");

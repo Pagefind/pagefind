@@ -1,0 +1,60 @@
+name: Web Components Tests > Config does not bleed between instances
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Config Isolation Test</h1>
+      <script type="module">
+        // Test createInstance() isolation directly via the JS API.
+        // Two instances over the same index with different excerptLength values
+        // should produce different excerpt strings for the same result.
+        import * as pagefind from "/pagefind/pagefind.js";
+
+        const instanceA = pagefind.createInstance({ excerptLength: 5 });
+        const instanceB = pagefind.createInstance({ excerptLength: 30 });
+
+        const searchA = await instanceA.search("page");
+        const searchB = await instanceB.search("page");
+
+        const dataA = await searchA.results[0].data();
+        const dataB = await searchB.results[0].data();
+
+        // Store results on window for toolproof to read
+        window.__testResults = {
+          excerptA: dataA.excerpt,
+          excerptB: dataB.excerpt,
+          wordCountA: dataA.excerpt.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length,
+          wordCountB: dataB.excerpt.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length,
+        };
+      </script>
+      </body></html>
+  - step: I have a "public/long/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Long
+      Page</h1><p>This is a page with many words so that different excerpt
+      lengths will produce visibly different excerpts. The content here is
+      deliberately long enough that an excerpt of five words will be much
+      shorter than an excerpt of thirty words. We add extra filler text to
+      make absolutely sure the difference is clear and testable.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(() => window.__testResults, 10000);
+      let r = window.__testResults;
+
+      // Instance A (excerptLength: 5) should have ~5 words
+      toolproof.assert(r.wordCountA <= 6,
+        `Instance A excerpt should have ~5 words, got ${r.wordCountA}: "${r.excerptA}"`);
+
+      // Instance B (excerptLength: 30) should have ~30 words
+      toolproof.assert(r.wordCountB > 15,
+        `Instance B excerpt should have many more words, got ${r.wordCountB}: "${r.excerptB}"`);
+
+      // Instance B must have more words than Instance A
+      toolproof.assert(r.wordCountB > r.wordCountA,
+        `Excerpts should differ: A=${r.wordCountA} words, B=${r.wordCountB} words. Config may be bleeding between instances.`);
