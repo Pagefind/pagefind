@@ -8,9 +8,21 @@
     let data;
     let meta = [];
 
+    const resolveImageUrl = (src, pageUrl) => {
+        if (!src || /^[a-z][a-z0-9+.-]*:/i.test(src) || /^\/\//.test(src) || src.startsWith("/")) return src;
+        try {
+            return new URL(src, new URL(pageUrl || "/", "https://p")).pathname;
+        } catch {
+            return src;
+        }
+    };
+
     const load = async (r) => {
         data = await r.data();
         data = process_result?.(data) ?? data;
+        if (data.meta?.image) {
+            data = { ...data, meta: { ...data.meta, image: resolveImageUrl(data.meta.image, data.meta.url || data.url) } };
+        }
         meta = Object.entries(data.meta).filter(
             ([key]) => !skipMeta.includes(key),
         );

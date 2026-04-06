@@ -1,0 +1,49 @@
+name: Web Components Tests > Relative image URLs are resolved against the page URL
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-results show-images></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/blog/post/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Relative Image</h1><img
+      src="images/header.png"><p>A page with a relative image
+      URL.</p></body></html>
+  - step: I have a "public/about/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Absolute Image</h1><img
+      src="/images/hero.png"><p>A page with an absolute image
+      URL.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "image"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li a").length === 2);
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-results ul");
+      let items = Array.from(results.querySelectorAll("li"));
+      items.sort((a, b) => a.textContent.localeCompare(b.textContent));
+      return items.map(li => {
+        let title = li.querySelector("a").textContent;
+        let img = li.querySelector("img");
+        return title + ": " + (img ? img.getAttribute("src") : "no image");
+      }).join("\n");
+    snapshot_content: |-
+      ╎Absolute Image: /images/hero.png
+      ╎Relative Image: /blog/post/images/header.png

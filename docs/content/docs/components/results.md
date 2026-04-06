@@ -82,6 +82,18 @@ Templates receive this data structure:
 
 Each sub-result has: `title`, `url`, `excerpt`.
 
+### Template Filters
+
+The template engine provides [built-in filters](https://github.com/bglw/adequate-little-templates?tab=readme-ov-file#syntax). The Component UI registers the following additional filters:
+
+#### `resolveUrl(pageUrl)`
+
+Resolves a relative URL against a page URL. Absolute URLs are returned unchanged.
+
+```
+"images/hero.png" | resolveUrl("/blog/post/")  →  /blog/post/images/hero.png
+```
+
 ### Placeholder Template
 
 While results are loading, a skeleton placeholder is shown. You can customize it with a second template using `data-template="placeholder"`, as shown in the full example below. The placeholder template receives no data — it is static HTML.
@@ -96,7 +108,7 @@ Here's the built-in template. Copy and customize it:
     <li class="pf-result">
       <div class="pf-result-card">
         {{#if and(options.show_images, meta.image)}}
-        <img class="pf-result-image" src="{{ meta.image }}" alt="{{ meta.image_alt | default(meta.title) }}">
+        <img class="pf-result-image" src="{{ meta.image | resolveUrl(meta.url | default(url)) }}" alt="{{ meta.image_alt | default(meta.title) }}">
         {{/if}}
         <div class="pf-result-content">
           <p class="pf-result-title">

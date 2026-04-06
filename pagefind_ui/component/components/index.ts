@@ -1,5 +1,17 @@
 export { getInstanceManager, configureInstance } from "./instance-manager";
 
+import { registerFunction } from "adequate-little-templates";
+
+registerFunction("resolveUrl", (url, pageUrl) => {
+  const s = String(url ?? "");
+  if (!s || /^[a-z][a-z0-9+.-]*:/i.test(s) || /^\/\//.test(s) || s.startsWith("/")) return s;
+  try {
+    return new URL(s, new URL(String(pageUrl ?? "/"), "https://p")).pathname;
+  } catch {
+    return s;
+  }
+});
+
 import "./pagefind-config";
 import "./pagefind-input";
 import "./pagefind-summary";

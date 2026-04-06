@@ -45,7 +45,7 @@ const templateNodes = (templateResult: TemplateResult): Node[] => {
 const DEFAULT_RESULT_TEMPLATE = `<li class="pf-result">
   <div class="pf-result-card">
     {{#if and(options.show_images, meta.image)}}
-    <img class="pf-result-image" src="{{ meta.image }}" alt="{{ meta.image_alt | default(meta.title) }}">
+    <img class="pf-result-image" src="{{ meta.image | resolveUrl(meta.url | default(url)) }}" alt="{{ meta.image_alt | default(meta.title) }}">
     {{/if}}
     <div class="pf-result-content">
       <p class="pf-result-title">
