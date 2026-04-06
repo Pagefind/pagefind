@@ -163,6 +163,11 @@ pagefind-modal-trigger {
     box-sizing: border-box;
 }
 
+:is(*, #\#):is(*, #\#) :is([class^="pf-"], [class*=" pf-"]):not(svg, svg *)::before,
+:is(*, #\#):is(*, #\#) :is([class^="pf-"], [class*=" pf-"]):not(svg, svg *)::after {
+    box-sizing: border-box;
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) [class^="pf-"][hidden],
 :is(*, #\#):is(*, #\#):is(*, #\#) [class*=" pf-"][hidden] {
     display: none;
