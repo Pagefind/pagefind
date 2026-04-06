@@ -65,14 +65,19 @@ export function getTranslations(langCode?: string): TranslationStrings {
 export function interpolate(
   str: string | undefined,
   replacements: Record<string, string | number> = {},
+  locale?: string,
 ): string {
   if (!str) return "";
 
   let result = str;
   for (const [placeholder, value] of Object.entries(replacements)) {
+    const display =
+      typeof value === "number" && locale
+        ? new Intl.NumberFormat(locale).format(value)
+        : String(value);
     result = result.replace(
       new RegExp(`\\[${placeholder}\\]`, "g"),
-      String(value),
+      display,
     );
   }
   return result;

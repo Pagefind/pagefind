@@ -433,7 +433,7 @@ export class Instance {
     replacements: Record<string, string | number> = {},
   ): string {
     const str = this._userTranslations[key] ?? this._translations?.[key];
-    return interpolate(typeof str === "string" ? str : undefined, replacements);
+    return interpolate(typeof str === "string" ? str : undefined, replacements, this._translations?.language);
   }
 
   /**

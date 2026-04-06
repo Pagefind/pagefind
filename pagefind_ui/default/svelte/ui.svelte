@@ -343,14 +343,14 @@
                   .replace(/\[SEARCH_TERM\]/, search_term)
                   .replace(
                     /\[COUNT\]/,
-                    new Intl.NumberFormat(translations.language).format(1)
+                    new Intl.NumberFormat(translations.language || automatic_translations.language).format(1)
                   )}
               {:else}
                 {translate("many_results", automatic_translations, translations)
                   .replace(/\[SEARCH_TERM\]/, search_term)
                   .replace(
                     /\[COUNT\]/,
-                    new Intl.NumberFormat(translations.language).format(
+                    new Intl.NumberFormat(translations.language || automatic_translations.language).format(
                       searchResult.results.length
                     )
                   )}
