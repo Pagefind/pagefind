@@ -23,3 +23,7 @@ A [proposal exists](https://github.com/WebAssembly/content-security-policy/blob/
 [Open an issue](https://github.com/pagefind/pagefind/issues) if this is now the case!
 
 If you have any inline scripts initializing Pagefind you will also need `unsafe-inline`, but this could also be addressed by moving the Pagefind initialization into one of your existing JavaScript files.
+
+## Web Workers
+
+Pagefind runs search in a Web Worker by default. If your Content Security Policy restricts workers, you may need to add `worker-src 'self' blob:` to your CSP headers. Alternatively, you can disable the Web Worker by passing `noWorker: true` to your search configuration — see [Search API config](/docs/search-config/#no-worker) for details.

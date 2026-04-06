@@ -48,7 +48,7 @@ For example:
 <h1
     data-weight="10"
     data-date="2022-06-01"
-+    data-pagefind-sort="heading, weight[data-weight], date[data-weight], author:Freeform text, captured to the end">
++    data-pagefind-sort="heading, weight[data-weight], date[data-date], author:Freeform text, captured to the end">
         Hello World
 </h1>
 ```

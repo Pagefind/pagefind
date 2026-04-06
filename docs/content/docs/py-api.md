@@ -128,8 +128,9 @@ async def main():
 from pagefind.index import PagefindIndex, IndexConfig
 config = IndexConfig(
     root_selector="main",
-    exclude_selectors="nav",
+    exclude_selectors=["nav"],
     force_language="en",
+    include_characters="._",
     verbose=True,
     logfile="index.log",
     keep_index_url=True,

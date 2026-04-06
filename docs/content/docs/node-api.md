@@ -63,6 +63,7 @@ const { index } = await pagefind.createIndex({
     rootSelector: "html",
     excludeSelectors: [".my-code-blocks"],
     forceLanguage: "en",
+    includeCharacters: "._",
     keepIndexUrl: false,
     writePlayground: false,
     verbose: false,

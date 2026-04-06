@@ -110,7 +110,7 @@ Keeps `index.html` at the end of search result paths. By default, a file at `ani
 
 | CLI Flag           | ENV Variable     | Config Key       |
 |--------------------|------------------|------------------|
-| `--keep-index-url` | `KEEP_INDEX_URL` | `keep_index_url` |
+| `--keep-index-url` | `PAGEFIND_KEEP_INDEX_URL` | `keep_index_url` |
 
 ### Write playground
 Writes the Pagefind playground files to `/playground` within your bundle directory. For most sites, this will make the Pagefind playground available at `/pagefind/playground/`.
@@ -119,7 +119,7 @@ This defaults to false, so playground files are not written to your live site. P
 
 | CLI Flag             | ENV Variable       | Config Key         |
 |----------------------|--------------------|--------------------|
-| `--write-playground` | `WRITE_PLAYGROUND` | `write_playground` |
+| `--write-playground` | `PAGEFIND_WRITE_PLAYGROUND` | `write_playground` |
 
 ### Verbose
 Prints extra logging while indexing the site. Only affects the CLI, does not impact web-facing search.

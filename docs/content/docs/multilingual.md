@@ -41,7 +41,7 @@ If word stemming is unsupported, search results won't match across root words. I
 | French — `fr`     | ✅               | ✅             |
 | Galician — `gl`   | ✅               | ❌             |
 | German — `de`     | ✅               | ✅             |
-| Greek — `el`      | ❌               | ✅             |
+| Greek — `el`      | ✅               | ✅             |
 | Hebrew — `he`     | ✅               | ❌             |
 | Hindi — `hi`      | ✅               | ✅             |
 | Hungarian — `hu`  | ✅               | ✅             |
@@ -58,7 +58,8 @@ If word stemming is unsupported, search results won't match across root words. I
 | Norwegian (bokmål) — `nb`  | ✅      | ✅             |
 | Norwegian (nynorsk) — `nn` | ✅      | ✅             |
 | Persian — `fa`    | ✅               | ❌             |
-| Polish — `pl`     | ✅               | ❌             |
+| Estonian — `et`   | ❌               | ✅             |
+| Polish — `pl`     | ✅               | ✅             |
 | Portuguese — `pt` | ✅               | ✅             |
 | Romanian — `ro`   | ✅               | ✅             |
 | Russian — `ru`    | ✅               | ✅             |
@@ -77,7 +78,7 @@ If word stemming is unsupported, search results won't match across root words. I
 
 ## Specialized languages
 
-> This section currently applies to Chinese and Japanese languages. Specialized languages are only supported in Pagefind's extended release, which is the default when running `npx pagefind`.
+> This section currently applies to Chinese, Japanese, and Korean languages. Specialized languages are only supported in Pagefind's extended release, which is the default when running `npx pagefind`.
 
 Currently when indexing, Pagefind does not support stemming for specialized languages, but does support segmentation for words not separated by whitespace.
 

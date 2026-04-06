@@ -197,4 +197,4 @@ Matches pages that are authored by `Pagefind` with a tag of `Article`, or pages 
 
 ***
 
-To dive deeper into complex filtering, see the [compound_filtering](https://github.com/CloudCannon/pagefind/tree/main/pagefind/integration_tests/compound_filtering) test files in Pagefind's GitHub repository.
+To dive deeper into complex filtering, see the [compound_filtering](https://github.com/pagefind/pagefind/tree/main/pagefind/integration_tests/compound_filtering) test files in Pagefind's GitHub repository.
