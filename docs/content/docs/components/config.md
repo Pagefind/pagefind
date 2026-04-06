@@ -25,6 +25,8 @@ Declaratively configure a Pagefind instance. Optionally include this on the page
 | `instance` | string | `"default"` | Instance name to configure |
 | `preload` | boolean | `false` | Load Pagefind immediately instead of on first search |
 | `faceted` | boolean | `false` | Enable faceted search mode |
+| `highlight-param` | string | — | Add the search term as a query parameter under this key for use with the [highlight script](/docs/highlighting/) |
+| `exact-diacritics` | boolean | `false` | Treat diacritics as distinct characters instead of normalizing them |
 | `meta-cache-tag` | string | — | Replace the default cache-busting timestamp with a fixed string for offline/PWA support |
 | `no-worker` | boolean | `false` | Force Pagefind to run on the main thread instead of a web worker |
 

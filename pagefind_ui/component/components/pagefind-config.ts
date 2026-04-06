@@ -34,6 +34,15 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.metaCacheTag = metaCacheTag;
     }
 
+    const highlightParam = this.getAttribute("highlight-param");
+    if (highlightParam) {
+      instance.pagefindOptions.highlightParam = highlightParam;
+    }
+
+    if (this.hasAttribute("exact-diacritics")) {
+      instance.pagefindOptions.exactDiacritics = true;
+    }
+
     if (this.hasAttribute("no-worker")) {
       instance.pagefindOptions.noWorker = true;
     }

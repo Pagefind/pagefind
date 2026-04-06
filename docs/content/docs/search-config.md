@@ -138,7 +138,9 @@ If using the [Pagefind highlight script](/docs/highlighting/), make sure this is
 
 {{< tabs >}}
 {{< tab "UI (declarative)" "sync-cfg-declarative" >}}
-Not available as a declarative attribute. Use `configureInstance` instead.
+```html
+<pagefind-config highlight-param="highlight"></pagefind-config>
+```
 {{< /tab >}}
 {{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
 ```js
@@ -168,7 +170,9 @@ When `exactDiacritics` is set to `true`:
 
 {{< tabs >}}
 {{< tab "UI (declarative)" "sync-cfg-declarative" >}}
-Not available as a declarative attribute. Use `configureInstance` instead.
+```html
+<pagefind-config exact-diacritics></pagefind-config>
+```
 {{< /tab >}}
 {{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
 ```js
