@@ -15,7 +15,7 @@
         "total_one_result": "Ein Ergebnis",
         "total_many_results": "[COUNT] Ergebnisse",
         "alt_search": "Keine Ergebnisse für [SEARCH_TERM]. Stattdessen erscheinen Ergebnisse für [DIFFERENT_TERM].",
-        "search_suggestion": "Keine Ergebnisse für [SEARCH_TERM]. Probier eine der folgenden Suchen:",
+        "search_suggestion": "Keine Ergebnisse für [SEARCH_TERM]. Probier einen der folgenden Vorschlägen:",
         "searching": "[SEARCH_TERM] wird gesucht …",
         "results_label": "Suchergebnisse",
         "keyboard_navigate": "Navigieren",
