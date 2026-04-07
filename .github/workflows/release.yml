@@ -1,22 +1,72 @@
-# Based on: https://github.com/ClementTsang/bottom/blob/master/.github/workflows/deployment.yml
-
 name: Release
 
 on:
-  push:
-    tags:
-      - v*
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.5.1, 2.0.0-beta.1) — no v prefix"
+        required: true
+        type: string
+      crate:
+        description: "Publish to crates.io"
+        type: boolean
+        default: true
+      npm:
+        description: "Publish main packages to npm"
+        type: boolean
+        default: true
+      npm_ui:
+        description: "Publish UI packages to npm"
+        type: boolean
+        default: true
+      pypi:
+        description: "Publish to PyPI"
+        type: boolean
+        default: true
+      github_release:
+        description: "Create GitHub Release + deploy docs"
+        type: boolean
+        default: true
 permissions: {}
 
 env:
   CARGO_TERM_COLOR: always
   WASM_PACK_VERSION: "v0.14.0"
+  GIT_VERSION: ${{ inputs.version }}
 
 jobs:
-  test-and-build:
-    name: Build
-    runs-on: ${{matrix.os}}
+  # ───────────────────────────────────────────────────────────
+  #  Validate inputs
+  # ───────────────────────────────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check version format
+        run: |
+          if ! echo "$GIT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid version format: $GIT_VERSION (expected semver without v prefix)"
+            exit 1
+          fi
+      - name: Check at least one target selected
+        run: |
+          if [[ "${{ inputs.crate }}" != "true" \
+             && "${{ inputs.npm }}" != "true" \
+             && "${{ inputs.npm_ui }}" != "true" \
+             && "${{ inputs.pypi }}" != "true" \
+             && "${{ inputs.github_release }}" != "true" ]]; then
+            echo "::error::No publish targets selected"
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────────────────────
+  #  Build binaries
+  # ───────────────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.target }})
+    needs: validate
+    if: inputs.npm || inputs.pypi || inputs.github_release
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
@@ -26,44 +76,36 @@ jobs:
         include:
           - build: windows
             os: windows-latest
-            rust: stable
             target: x86_64-pc-windows-msvc
             cross: false
             run_tests: true
           - build: windows-arm64
             os: windows-11-arm
-            rust: stable
             target: aarch64-pc-windows-msvc
             cross: false
             run_tests: true
           - build: linux
             os: ubuntu-latest
-            rust: stable
             target: x86_64-unknown-linux-musl
             cross: false
             run_tests: true
-          - build: linux
+          - build: linux-arm64
             os: ubuntu-latest
-            rust: stable
             target: aarch64-unknown-linux-musl
             cross: false
             run_tests: false
           - build: macos
             os: macos-latest
-            rust: stable
             target: x86_64-apple-darwin
             cross: false
             run_tests: true
           - build: macos-m1
             os: macos-latest
-            rust: stable
             target: aarch64-apple-darwin
             cross: false
             run_tests: false
-
           - build: freebsd
             os: ubuntu-latest
-            rust: stable
             target: x86_64-unknown-freebsd
             cross: true
             run_tests: false
@@ -71,6 +113,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: main
           fetch-depth: 1
 
       - name: Cache
@@ -81,21 +124,11 @@ jobs:
             ~/.cargo/git
             ~/.rustup
             target
-          key: ${{ runner.os }}-${{ matrix.rust }}
+          key: ${{ runner.os }}-stable
 
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
-
-      # From https://github.com/Emoun/duplicate/blob/master/.github/workflows/rust.yml
-      - name: Get Version
-        run: echo GIT_VERSION="$(git describe --tags | sed 's/^v\(.*\)$/\1/')" >> $GITHUB_ENV
-      - name: Validate Version
-        run: |
-          if ! echo "$GIT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
-            echo "::error::Invalid version format: $GIT_VERSION"
-            exit 1
-          fi
 
       - name: Get Tag
         run: echo GIT_TAG="$(node ./.backstage/get_tag.cjs)" >> $GITHUB_ENV
@@ -152,9 +185,8 @@ jobs:
         run: |
           git config user.email "github@github.com"
           git config user.name "Github Actions"
-          git checkout -b main
           # Use throw-away branch so we don't push the changes to origin
-          git checkout -b deploy_branch
+          git checkout -B deploy_branch
       - name: Prepare Crates
         run: |
           # Update cargo version,
@@ -192,25 +224,25 @@ jobs:
         run: npm i && npm run build
 
       - name: Test Web
-        if: matrix.run_tests == true
+        if: matrix.run_tests
         working-directory: ./pagefind_web
         run: cargo test --release
 
       - name: Build
         working-directory: ./pagefind
-        if: matrix.build!= 'freebsd'
+        if: matrix.build != 'freebsd'
         run: cargo build --release --target ${{ matrix.target }} --features extended
       - name: Build FreeBSD Binary
         working-directory: ./pagefind
         if: matrix.build == 'freebsd'
         run: cross build --release --target ${{ matrix.target }} --features extended
       - name: Test Lib
-        if: matrix.run_tests == true
+        if: matrix.run_tests
         working-directory: ./pagefind
         run: cargo test --release --target ${{ matrix.target }} --features extended
 
       - name: Test CLI
-        if: matrix.run_tests == true
+        if: matrix.run_tests
         run: npx -y toolproof@0.18.0 -s -c 1 --timeout 45 --retry-count 2 --placeholders pagefind_mode="${{ matrix.target }}/release"
 
       - name: Cargo Publish Dry-Run
@@ -224,7 +256,7 @@ jobs:
 
       - name: Build Non-Extended
         working-directory: ./pagefind
-        if: matrix.build!= 'freebsd'
+        if: matrix.build != 'freebsd'
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Build Non-Extended (FreeBSD)
@@ -241,8 +273,6 @@ jobs:
           if [ "$RUNNER_OS" == "Windows" ]; then
             EXEC_NAME="pagefind.exe"
           fi
-
-          tar czf $ASSET_PATH -C target/${{ matrix.target }}/release $EXEC_NAME
 
           if command -v gtar &> /dev/null; then
             echo "Using gtar"
@@ -309,7 +339,7 @@ jobs:
             ${{ env.CHECKSUM_PATH }}
             ${{ env.EXTENDED_ASSET_PATH }}
             ${{ env.EXTENDED_CHECKSUM_PATH }}
-      - name: Upload build artifacts
+      - name: Upload checksum artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: release-checksums-${{ matrix.target }}
@@ -317,10 +347,14 @@ jobs:
             ${{ env.CHECKSUM_PATH }}
             ${{ env.EXTENDED_CHECKSUM_PATH }}
 
+  # ───────────────────────────────────────────────────────────
+  #  Prepare binary NPM packages
+  # ───────────────────────────────────────────────────────────
   prepare-binary-npm-packages:
     name: Prepare Binary NPM Packages
     runs-on: ubuntu-24.04
-    needs: test-and-build
+    needs: build
+    if: inputs.npm
     strategy:
       fail-fast: false
       matrix:
@@ -345,7 +379,6 @@ jobs:
             package: darwin-x64
             os: darwin
             cpu: x64
-
           - target: x86_64-unknown-freebsd
             package: freebsd-x64
             os: freebsd
@@ -357,6 +390,8 @@ jobs:
     steps:
       - name: Clone
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
@@ -364,9 +399,6 @@ jobs:
         with:
           name: release-${{ matrix.target }}
           path: build-artifacts
-
-      - name: Get Version
-        run: echo GIT_VERSION="$(git describe --tags | sed 's/^v\(.*\)$/\1/')" >> $GITHUB_ENV
 
       - name: Create Package
         run: |
@@ -391,27 +423,23 @@ jobs:
           name: prepared-${{ matrix.package }}
           path: ${{ matrix.package }}/*.tgz
 
-  prepare-npm-packages:
-    name: Prepare NPM Packages
+  # ───────────────────────────────────────────────────────────
+  #  Prepare UI packages
+  # ───────────────────────────────────────────────────────────
+  prepare-ui-packages:
+    name: Prepare UI Packages
     runs-on: ubuntu-24.04
-    needs: test-and-build
+    needs: validate
+    if: inputs.npm || inputs.npm_ui
     steps:
       - name: Clone
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 24
 
-      - name: Get Version
-        run: echo GIT_VERSION="$(git describe --tags | sed 's/^v\(.*\)$/\1/')" >> $GITHUB_ENV
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: wrappers/node/checksums
-          pattern: release-checksums-*
-          merge-multiple: true
-
-      # --- Build and pack UI packages ---
       - name: Build Default UI
         working-directory: ./pagefind_ui/default
         run: |
@@ -436,18 +464,6 @@ jobs:
           npm run build
           npm pack
 
-      # --- Prepare main wrapper package ---
-      - name: Version optional dependencies
-        run: |
-          node ./.backstage/version_main_package.cjs
-
-      - name: Prepare wrapper package
-        working-directory: ./wrappers/node
-        run: |
-          npm version $GIT_VERSION --no-git-tag-version
-          npm pack
-
-      # --- Upload all prepared packages ---
       - name: Upload Default UI
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
@@ -466,22 +482,61 @@ jobs:
           name: prepared-component-ui
           path: pagefind_ui/component/*.tgz
 
+  # ───────────────────────────────────────────────────────────
+  #  Prepare NPM wrapper package
+  # ───────────────────────────────────────────────────────────
+  prepare-wrapper-package:
+    name: Prepare Wrapper Package
+    runs-on: ubuntu-24.04
+    needs: build
+    if: inputs.npm
+    steps:
+      - name: Clone
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: wrappers/node/checksums
+          pattern: release-checksums-*
+          merge-multiple: true
+
+      - name: Version optional dependencies
+        run: |
+          node ./.backstage/version_main_package.cjs
+
+      - name: Prepare wrapper package
+        working-directory: ./wrappers/node
+        run: |
+          npm version $GIT_VERSION --no-git-tag-version
+          npm pack
+
       - name: Upload wrapper package
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: prepared-pagefind-wrapper
           path: wrappers/node/*.tgz
 
+  # ───────────────────────────────────────────────────────────
+  #  Prepare Python packages
+  # ───────────────────────────────────────────────────────────
   prepare-python-packages:
     name: Prepare Python Packages
     runs-on: ubuntu-latest
-    needs: test-and-build
+    needs: build
+    if: inputs.pypi
     defaults:
       run:
         shell: bash
     steps:
       - name: Clone
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
       - name: Download CLI binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -516,17 +571,14 @@ jobs:
         run: |
           export PAGEFIND_PYTHON_LOG_LEVEL=DEBUG
           python -m scripts.build.all_binary_only_wheels \
-            --tag "$REF_NAME" \
+            --tag "v$GIT_VERSION" \
             --bin-dir ./vendor
-        env:
-          REF_NAME: ${{ github.ref_name }}
+
       - name: package python api
         working-directory: ./wrappers/python
         run: |
           export PAGEFIND_PYTHON_LOG_LEVEL=DEBUG
-          python -m scripts.build.api_package --tag "$REF_NAME"
-        env:
-          REF_NAME: ${{ github.ref_name }}
+          python -m scripts.build.api_package --tag "v$GIT_VERSION"
 
       - name: Upload python packages
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -535,16 +587,25 @@ jobs:
           name: python-packages
           if-no-files-found: error
 
+  # ───────────────────────────────────────────────────────────
+  #  Publish
+  # ───────────────────────────────────────────────────────────
   publish:
     name: Publish
     runs-on: ubuntu-24.04
     environment: production
     needs:
       [
+        validate,
+        build,
         prepare-binary-npm-packages,
-        prepare-npm-packages,
+        prepare-ui-packages,
+        prepare-wrapper-package,
         prepare-python-packages,
       ]
+    # Run even when upstream jobs were skipped,
+    # but not when any job actually failed.
+    if: ${{ !cancelled() && !failure() }}
     permissions:
       id-token: write
       contents: write
@@ -553,7 +614,7 @@ jobs:
       run:
         working-directory: ./
     steps:
-      # --- Setup ---
+      # ── Setup ────────────────────────────────────────────
       - name: Get Token
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@d17e3a9a36850ea89f35db16c1067dd2b68ee343 # v4.0.1
@@ -564,13 +625,8 @@ jobs:
       - name: Clone
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          token: ${{ steps.get_workflow_token.outputs.token }}
-
-      - name: Swap to main
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
           ref: main
-          fetch-depth: 0 # Full fetch
+          fetch-depth: 0
           token: ${{ steps.get_workflow_token.outputs.token }}
 
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
@@ -578,28 +634,24 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      - name: Get Version
-        run: echo GIT_VERSION="$(git describe --tags | sed 's/^v\(.*\)$/\1/')" >> $GITHUB_ENV
       - name: Get Tag
         run: echo GIT_TAG="$(node ./.backstage/get_tag.cjs)" >> $GITHUB_ENV
 
-      # --- GitHub Release ---
+      # ── Changelog ────────────────────────────────────────
       - name: Build CHANGELOG
-        if: env.GIT_TAG == 'latest' || env.GIT_TAG == 'beta' || env.GIT_TAG == 'rc'
         run: |
           node ./.backstage/changelog.cjs write
           if ! git diff --quiet CHANGELOG.md; then
-            echo CHANGELOG_UPDATED=true >> $GITHUB_ENV
-            echo CHANGELOG=\"$(base64 -w 0 -i CHANGELOG.md)\" >> $GITHUB_ENV
-            echo SHA=\"$( git rev-parse main:CHANGELOG.md )\" >> $GITHUB_ENV
+            echo "CHANGELOG_UPDATED=true" >> $GITHUB_ENV
+            # Use heredoc for multiline-safe env var
+            echo "CHANGELOG<<CHANGELOG_EOF" >> $GITHUB_ENV
+            base64 -w 0 -i CHANGELOG.md >> $GITHUB_ENV
+            echo "" >> $GITHUB_ENV
+            echo "CHANGELOG_EOF" >> $GITHUB_ENV
+            echo "SHA=$(git rev-parse main:CHANGELOG.md)" >> $GITHUB_ENV
           else
             echo "CHANGELOG unchanged (already committed), skipping commit."
           fi
-      - name: Build CHANGELOG
-        if: env.GIT_TAG != 'latest' && env.GIT_TAG != 'beta' && env.GIT_TAG != 'rc'
-        run: |
-          echo "## Prerelease" > RELEASE.md
-          node ./.backstage/changelog.cjs write || true
 
       - name: Commit new CHANGELOG
         uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
@@ -616,13 +668,79 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
 
-      # --- NPM Packages ---
+      - name: Capture changelog commit SHA
+        if: env.CHANGELOG_UPDATED == 'true'
+        run: |
+          COMMIT_SHA=$(node -e "console.log(JSON.parse(process.env.PUSH_DATA).commit.sha)")
+          echo "CHANGELOG_COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+        env:
+          PUSH_DATA: ${{ steps.push_changes.outputs.data }}
+
+      # ── Tag ──────────────────────────────────────────────
+      - name: Create git tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v$GIT_VERSION$"; then
+            echo "Tag v$GIT_VERSION already exists, skipping."
+          else
+            git config user.email "github@github.com"
+            git config user.name "Github Actions"
+            # If we just committed a changelog, fetch to pick it up.
+            # Retry fetch to handle GitHub API propagation delay.
+            if [ "$CHANGELOG_UPDATED" = "true" ]; then
+              EXPECTED_SHA="$CHANGELOG_COMMIT_SHA"
+              SYNCED=false
+              for i in 1 2 3 4 5; do
+                git fetch origin main
+                FETCHED_SHA=$(git rev-parse origin/main)
+                if [ -z "$EXPECTED_SHA" ] || [ "$FETCHED_SHA" = "$EXPECTED_SHA" ]; then
+                  SYNCED=true
+                  break
+                fi
+                echo "Waiting for changelog commit to propagate (attempt $i)..."
+                sleep 2
+              done
+              if [ "$SYNCED" != "true" ]; then
+                echo "::error::Changelog commit did not propagate after 5 attempts. Expected $EXPECTED_SHA, got $FETCHED_SHA"
+                exit 1
+              fi
+            else
+              git fetch origin main
+            fi
+            git tag -a "v$GIT_VERSION" origin/main -m "v$GIT_VERSION"
+            git push origin "v$GIT_VERSION"
+          fi
+
+      # ── Draft GitHub Release ─────────────────────────────
+      - name: Download release artifacts
+        if: inputs.github_release
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: build-artifacts
+          pattern: release-*
+          merge-multiple: true
+
+      - name: Create Draft Release
+        id: draft_release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        if: inputs.github_release
+        with:
+          tag_name: v${{ inputs.version }}
+          token: ${{ steps.get_workflow_token.outputs.token }}
+          draft: true
+          prerelease: ${{ env.GIT_TAG != 'latest' }}
+          body_path: RELEASE.md
+          files: |
+            build-artifacts/*
+
+      # ── NPM ──────────────────────────────────────────────
       - name: Download all prepared NPM packages
+        if: inputs.npm
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: prepared-*
 
       - name: Publish binary NPM packages
+        if: inputs.npm
         run: |
           for pkg in windows-x64 windows-arm64 linux-x64 linux-arm64 darwin-x64 freebsd-x64 darwin-arm64; do
             echo "Publishing @pagefind/$pkg..."
@@ -634,6 +752,7 @@ jobs:
           done
 
       - name: Publish main NPM package
+        if: inputs.npm
         run: |
           echo "Publishing pagefind..."
           if npm view "pagefind@$GIT_VERSION" version >/dev/null 2>&1; then
@@ -642,7 +761,15 @@ jobs:
             npm publish ./prepared-pagefind-wrapper/*.tgz --provenance --tag $GIT_TAG
           fi
 
+      # ── NPM UI ───────────────────────────────────────────
+      - name: Download UI packages
+        if: ${{ !inputs.npm && inputs.npm_ui }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: prepared-*-ui
+
       - name: Publish UI NPM packages
+        if: inputs.npm || inputs.npm_ui
         run: |
           for artifact_name in default-ui modular-ui component-ui; do
             pkg="@pagefind/$artifact_name"
@@ -654,19 +781,34 @@ jobs:
             fi
           done
 
-      # --- Crate ---
+      # ── Crate ────────────────────────────────────────────
+      - name: Install Nightly Rust
+        if: inputs.crate
+        run: |
+          rustup toolchain install nightly --component rustfmt,clippy,rust-src
+          rustup default nightly
+
       - name: Install Rust
+        if: inputs.crate
         run: |
           rustup toolchain install stable --component rustfmt,clippy
           rustup default stable
 
-      - name: Prepare Git
+      - name: Install wasm-pack
+        if: inputs.crate
+        uses: jetli/wasm-pack-action@0d096b08b4e5a7de8c28de67e11e945404e9eefa # v0.4.0
+        with:
+          version: ${{env.WASM_PACK_VERSION}}
+
+      - name: Prepare Git (crate)
+        if: inputs.crate
         run: |
           git config user.email "github@github.com"
           git config user.name "Github Actions"
           # Use throw-away branch so we don't push the changes to origin
           git checkout -B deploy_branch
       - name: Prepare Crates
+        if: inputs.crate
         run: |
           # Update cargo version,
           node ./.backstage/version.cjs
@@ -678,11 +820,43 @@ jobs:
           # Commit changes so cargo doesn't complain about dirty repo
           git commit -m "Deploy changes."
 
+      - name: Build Coupled JS
+        if: inputs.crate
+        working-directory: ./pagefind_web_js
+        run: npm i && npm run build-coupled
+
+      - name: Build WASM
+        if: inputs.crate
+        working-directory: ./pagefind_web
+        run: ./local_build.sh
+
+      - name: Build UI
+        if: inputs.crate
+        working-directory: ./pagefind_ui/default
+        run: npm i && npm run build
+
+      - name: Build Modular UI
+        if: inputs.crate
+        working-directory: ./pagefind_ui/modular
+        run: npm i && npm run build
+
+      - name: Build Component UI
+        if: inputs.crate
+        working-directory: ./pagefind_ui/component
+        run: npm i && npm run build
+
+      - name: Build Playground
+        if: inputs.crate
+        working-directory: ./pagefind_playground
+        run: npm i && npm run build
+
       - name: Authenticate with crates.io
+        if: inputs.crate
         id: crates-io-auth
         uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe # v1.0.4
 
       - name: Publish Crate
+        if: inputs.crate
         working-directory: ./pagefind
         run: |
           if curl -sf -A "pagefind-release/1.0 (github.com/Pagefind/pagefind)" "https://crates.io/api/v1/crates/pagefind/$GIT_VERSION" | grep -q '"num"'; then
@@ -693,73 +867,38 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.crates-io-auth.outputs.token }}
 
-      # --- Python ---
+      # ── PyPI ─────────────────────────────────────────────
       - name: Download python packages
+        if: inputs.pypi
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: python-packages
           path: python-dist
 
       - name: Set up python 3.12
+        if: inputs.pypi
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
 
       - name: Publish to PyPI
+        if: inputs.pypi
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
           packages-dir: python-dist
           skip-existing: true
           verbose: true
 
-      # --- GitHub Release ---
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: build-artifacts
-          pattern: release-*
-          merge-multiple: true
-
-      - name: Release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
-        if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG == 'latest'
-        with:
-          token: ${{ steps.get_workflow_token.outputs.token }}
-          prerelease: false
-          body_path: RELEASE.md
-          discussion_category_name: Announcements
-          files: |
-            build-artifacts/*
-
-      - name: Prerelease
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
-        if: startsWith(github.ref, 'refs/tags/') && (env.GIT_TAG == 'beta' || env.GIT_TAG == 'rc')
-        with:
-          token: ${{ steps.get_workflow_token.outputs.token }}
-          prerelease: true
-          body_path: RELEASE.md
-          discussion_category_name: Announcements
-          files: |
-            build-artifacts/*
-
-      - name: Test Release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
-        if: startsWith(github.ref, 'refs/tags/') && env.GIT_TAG != 'latest' && env.GIT_TAG != 'beta' && env.GIT_TAG != 'rc'
-        with:
-          token: ${{ steps.get_workflow_token.outputs.token }}
-          repository: pagefind/pagefind-beta
-          prerelease: true
-          body_path: RELEASE.md
-          discussion_category_name: Announcements
-          files: |
-            build-artifacts/*
-
-      # --- Deploy Docs ---
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      # ── Deploy Docs ──────────────────────────────────────
+      - name: Download linux binary for docs
+        if: inputs.github_release
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-x86_64-unknown-linux-musl
           path: docs/pagefind-bin
 
       - name: Extract extended binary
+        if: inputs.github_release
         run: |
           cd docs/pagefind-bin
           tar xzf pagefind_extended-*.tar.gz
@@ -767,8 +906,24 @@ jobs:
           chmod +x pagefind
 
       - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+        if: inputs.github_release
+
       - name: Deploy Docs
-        run: flyctl deploy --config docs/fly.prod.toml --dockerfile docs/Dockerfile.prebuilt --build-arg PAGEFIND_VERSION="$REF_NAME"
+        if: inputs.github_release
+        run: flyctl deploy --config docs/fly.prod.toml --dockerfile docs/Dockerfile.prebuilt --build-arg PAGEFIND_VERSION="v$GIT_VERSION"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_PRODUCTION }}
-          REF_NAME: ${{ github.ref_name }}
+
+      # ── Publish Release ──────────────────────────────────
+      - name: Publish Release
+        if: inputs.github_release
+        uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
+        with:
+          route: PATCH /repos/{owner}/{repo}/releases/{release_id}
+          owner: pagefind
+          repo: pagefind
+          release_id: ${{ steps.draft_release.outputs.id }}
+          draft: false
+          discussion_category_name: Announcements
+        env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
