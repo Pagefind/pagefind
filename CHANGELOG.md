@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v1.5.1 (April 8, 2026)
+
 Crate release only. Fixes busted 1.5.0 deployment of the pagefind crate to crates.io.
 
 ## v1.5.0 (April 6, 2026)
