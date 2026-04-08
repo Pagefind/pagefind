@@ -16,9 +16,9 @@
   },
   "devDependencies": {
     "bcp-47": "^2.1.0",
-    "esbuild": "^0.18.20",
+    "esbuild": "^0.28.0",
     "esbuild-plugin-import-glob": "^0.1.1",
-    "esbuild-svelte": "^0.7.4",
+    "esbuild-svelte": "^0.9.4",
     "svelte": "^3.59.2",
     "typescript": "^6.0.2"
   },
