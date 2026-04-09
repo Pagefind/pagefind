@@ -1,6 +1,6 @@
 use hashbrown::HashMap;
 use rayon::prelude::*;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     fossick::{FossickedData, FossickedWord, MetaFossickedWord},
@@ -162,7 +162,7 @@ pub async fn build_indexes(
             for (word, positions) in page.word_data {
                 // Group positions by original_word for this page
                 let mut normalized_positions: Vec<FossickedWord> = Vec::new();
-                let mut variant_positions: HashMap<String, Vec<FossickedWord>> = HashMap::new();
+                let mut variant_positions: BTreeMap<String, Vec<FossickedWord>> = BTreeMap::new();
 
                 for fossicked in positions {
                     if fossicked.original_word.is_none() {
@@ -214,8 +214,8 @@ pub async fn build_indexes(
 
             for (word, meta_positions) in page.meta_word_data {
                 let mut normalized_meta_positions: Vec<MetaFossickedWord> = Vec::new();
-                let mut variant_meta_positions: HashMap<String, Vec<MetaFossickedWord>> =
-                    HashMap::new();
+                let mut variant_meta_positions: BTreeMap<String, Vec<MetaFossickedWord>> =
+                    BTreeMap::new();
 
                 for mut meta_fossicked in meta_positions {
                     meta_fossicked.field_id = field_id_map[meta_fossicked.field_id as usize];
