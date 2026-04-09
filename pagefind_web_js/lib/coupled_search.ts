@@ -349,7 +349,7 @@ export class PagefindInstance {
       if (!final_wasm) {
         throw new Error("No WASM after decompression");
       }
-      this.wasm = await this.backend(final_wasm);
+      this.wasm = await this.backend({ module_or_path: final_wasm });
     } catch (e) {
       console.error(`Failed to load the Pagefind WASM:\n${e?.toString()}`);
       throw new Error(`Failed to load the Pagefind WASM:\n${e?.toString()}`);
