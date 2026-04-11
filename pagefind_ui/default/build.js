@@ -10,20 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { version } = require("./package.json");
 
-const sveltefixPlugin = {
-  name: "fix_svelte_path",
-  setup(b) {
-    const require = createRequire(import.meta.url);
-    const svelteFileLocation = require.resolve("svelte");
-    const svelteFolderLocation = path.dirname(svelteFileLocation);
-    const nodeFolderLocation = path.dirname(svelteFolderLocation);
-
-    b.onResolve({ filter: /^svelte$|^svelte\// }, (args) => {
-      return { path: path.join(nodeFolderLocation, args.path, "index.mjs") };
-    });
-  },
-};
-
 const serve = async () => {
   const esbuildOptions = {
     outdir: path.join(__dirname, "_dev_files/pagefind"),
@@ -36,8 +22,7 @@ const serve = async () => {
     ],
     plugins: [
       ImportGlobPlugin.default(),
-      sveltePlugin({ compileOptions: { css: false } }),
-      sveltefixPlugin,
+      sveltePlugin({ compileOptions: { css: "external" } }),
     ],
     format: "esm",
     bundle: true,
@@ -55,8 +40,7 @@ const build = async () => {
     write: true,
     plugins: [
       ImportGlobPlugin.default(),
-      sveltePlugin({ compileOptions: { css: false } }),
-      sveltefixPlugin,
+      sveltePlugin({ compileOptions: { css: "external" } }),
     ],
     loader: {},
     define: {},
