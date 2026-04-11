@@ -15,7 +15,9 @@
 
 	@wantsMarkdown {
 		header Accept *text/markdown*
+		not path *.*
 		path_regexp mdpath ^(.+?)/?$
+		file {re.mdpath.1}/index.md
 	}
 	handle @wantsMarkdown {
 		rewrite * {re.mdpath.1}/index.md
