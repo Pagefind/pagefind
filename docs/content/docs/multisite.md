@@ -17,7 +17,7 @@ When configuring the Component UI, include a `mergeIndex` option with an array o
 ```js
 // Running on blog.example.com
 
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 +configureInstance("default", {
 +    mergeIndex: [{
@@ -33,7 +33,7 @@ Pagefind options can be passed to the additional indexes alongside the `bundlePa
 ```js
 // Running on blog.example.com
 
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 configureInstance("default", {
 +    // ... options for the blog.example.com index
@@ -80,7 +80,7 @@ When searching across multiple sites you may want to rank each index higher or l
 {{< diffcode >}}
 ```js
 // Component UI:
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 configureInstance("default", {
 +    indexWeight: 2,
@@ -106,7 +106,7 @@ When searching across multiple sites you may want to filter to each index, witho
 {{< diffcode >}}
 ```js
 // Component UI:
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 configureInstance("default", {
 +    mergeFilter: {
@@ -138,7 +138,7 @@ Pagefind will attempt to grab a matching language when merging an index, falling
 {{< diffcode >}}
 ```js
 // Component UI:
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 configureInstance("default", {
     mergeIndex: [{
