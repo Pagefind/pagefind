@@ -9,8 +9,8 @@
 <link rel="icon" type="image/png" sizes="16x16" href="{{ "/meta/favicon-16x16.png" | relURL }}">
 <link rel="apple-touch-icon" href="{{ "/meta/apple-touch-icon.png" | relURL }}">
 
-{{ with resources.Get "css/main.css" }}
-<link rel="stylesheet" href="{{ .RelPermalink }}">
+{{ with resources.Get "css/main.css" | fingerprint }}
+<link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}">
 {{ end }}
 
 {{ template "_internal/opengraph.html" . }}

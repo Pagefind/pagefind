@@ -1,0 +1,31 @@
+name: Deploy Docs (Production)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-docs:
+    name: Deploy Docs
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-docs-production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Fetch pagefind binary from latest release
+        run: |
+          mkdir -p docs/pagefind-bin
+          gh release download --repo Pagefind/pagefind --pattern 'pagefind_extended-*-x86_64-unknown-linux-musl.tar.gz' --dir docs/pagefind-bin
+          tar xzf docs/pagefind-bin/pagefind_extended-*.tar.gz -C docs/pagefind-bin
+          mv docs/pagefind-bin/pagefind_extended docs/pagefind-bin/pagefind
+          chmod +x docs/pagefind-bin/pagefind
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+
+      - name: Deploy Docs
+        run: flyctl deploy --config docs/fly.prod.toml --dockerfile docs/Dockerfile.prebuilt
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_PRODUCTION }}
