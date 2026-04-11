@@ -23,6 +23,25 @@
 		file_server
 	}
 
+	# Hashed pagefind index files — immutable
+	@pagefindHashed path *.pf_fragment *.pf_index *.pagefind
+	header @pagefindHashed Cache-Control "public, max-age=31536000, immutable"
+
+	# Fingerprinted Hugo assets (contain hash in filename)
+	@fingerprinted path_regexp fingerprinted \.([0-9a-f]{20,})\.
+	header @fingerprinted Cache-Control "public, max-age=31536000, immutable"
+
+	# Static assets without hashes — cache briefly, revalidate
+	@staticUnhashed {
+		path *.css *.js *.svg *.png *.ico *.woff2
+		not path_regexp \.([0-9a-f]{20,})\.
+	}
+	header @staticUnhashed Cache-Control "public, max-age=3600, must-revalidate"
+
+	# HTML — always revalidate
+	@html path *.html */
+	header @html Cache-Control "public, max-age=0, must-revalidate"
+
 	file_server
 
 	encode zstd gzip
