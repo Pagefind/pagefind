@@ -12,7 +12,7 @@ To enable this feature, first configure Pagefind to insert a query parameter on 
 {{< tabs >}}
 {{< tab "Component UI" "sync-cfg-programmatic" >}}
 ```javascript
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 +configureInstance("default", {
 +    highlightParam: "highlight"

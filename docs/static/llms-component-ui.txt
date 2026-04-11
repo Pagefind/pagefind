@@ -626,7 +626,7 @@ Combine with `preload` to show all results on page load.
 **Important:** `configureInstance` must run **before** any components with the same instance name connect to the DOM. If a component connects first, it creates the instance with defaults and the later `configureInstance` call is silently ignored. Place the script before your component elements, or use a `<pagefind-config>` element instead.
 
 ```javascript
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 configureInstance("default", {
   bundlePath: "/pagefind/",

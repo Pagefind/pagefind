@@ -100,8 +100,8 @@ Configure a specific instance:
 For complex configuration, use JavaScript instead of the `<pagefind-config>` element:
 
 ```html
-<script type="module">
-  import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+<script>
+  const { configureInstance } = window.PagefindComponents;
 
   configureInstance("default", {
     bundlePath: "/pagefind/",

@@ -20,7 +20,7 @@ Ranking parameters are configured within the `ranking` option passed to Pagefind
 Ranking parameters can be passed to the Component UI via `configureInstance`:
 
 ```javascript
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 +configureInstance("default", {
 +    ranking: {

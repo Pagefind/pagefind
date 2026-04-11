@@ -27,7 +27,7 @@ Options can be passed through to Pagefind via `configureInstance`. Import the fu
 // If installed via a package manager:
 import { configureInstance } from '@pagefind/component-ui';
 // If loaded via script tag:
-import { configureInstance } from '/pagefind/pagefind-component-ui.js';
+const { configureInstance } = window.PagefindComponents;
 
 +configureInstance("default", {
 +    baseUrl: "/",
