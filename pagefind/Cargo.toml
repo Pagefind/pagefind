@@ -94,6 +94,9 @@ rayon = "1.10"
 rust-patch = "0.1.3"
 typed-builder = "0.23.2"
 
+[target.'cfg(all(target_env = "musl", target_pointer_width = "64"))'.dependencies]
+tikv-jemallocator = { version = "0.6", features = ["background_threads"] }
+
 [features]
 default = ["serve"]
 extended = ["dep:charabia"]
