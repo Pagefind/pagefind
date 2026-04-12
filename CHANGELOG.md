@@ -9,6 +9,10 @@
 
 ## Unreleased
 
+* `v1.5.0` was meant to 2x indexing performance, which it does on macOS and Windows. On Linux, with the published musl build, it actually _halves_ the indexing performance. This release subs in jemalloc on Linux musl builds to fix the musl allocator thrashing, and performance now achieves the 2x `v1.4.0` claim.
+* Further improved deterministic index filenames between indexes (PR #1104 — thanks @gissimo !).
+* Cleaned up a wasm-bindgen deprecation warning popping up in the browser console.
+
 ## v1.5.1 (April 8, 2026)
 
 Crate release only. Fixes busted 1.5.0 deployment of the pagefind crate to crates.io.
