@@ -153,13 +153,13 @@ jobs:
 
       - name: Upload Testing Binary
         if: matrix.build!= 'freebsd'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pagefind-${{ matrix.target }}
           path: target/release/pagefind${{ startsWith(matrix.build, 'windows') && '.exe' || '' }}
       
       - name: Upload Testing Binary (FreeBSD)
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: matrix.build == 'freebsd'
         with:
           name: pagefind-${{ matrix.target }}
@@ -239,7 +239,7 @@ jobs:
           name: pagefind-x86_64-unknown-linux-musl
           path: docs/pagefind-bin
       - run: chmod +x docs/pagefind-bin/pagefind
-      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
       - run: flyctl deploy --config docs/fly.toml --dockerfile docs/Dockerfile.prebuilt
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_STAGING }}
