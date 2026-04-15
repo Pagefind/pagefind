@@ -331,7 +331,7 @@ jobs:
           echo "EXTENDED_CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_ENV
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ matrix.target }}
           path: |
@@ -340,7 +340,7 @@ jobs:
             ${{ env.EXTENDED_ASSET_PATH }}
             ${{ env.EXTENDED_CHECKSUM_PATH }}
       - name: Upload checksum artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-checksums-${{ matrix.target }}
           path: |
@@ -418,7 +418,7 @@ jobs:
           npm pack
 
       - name: Upload prepared package
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-${{ matrix.package }}
           path: ${{ matrix.package }}/*.tgz
@@ -465,19 +465,19 @@ jobs:
           npm pack
 
       - name: Upload Default UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-default-ui
           path: pagefind_ui/default/*.tgz
 
       - name: Upload Modular UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-modular-ui
           path: pagefind_ui/modular/*.tgz
 
       - name: Upload Component UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-component-ui
           path: pagefind_ui/component/*.tgz
@@ -516,7 +516,7 @@ jobs:
           npm pack
 
       - name: Upload wrapper package
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-pagefind-wrapper
           path: wrappers/node/*.tgz
@@ -581,7 +581,7 @@ jobs:
           python -m scripts.build.api_package --tag "v$GIT_VERSION"
 
       - name: Upload python packages
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: wrappers/python/dist
           name: python-packages
@@ -905,7 +905,7 @@ jobs:
           mv pagefind_extended pagefind
           chmod +x pagefind
 
-      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
         if: inputs.github_release
 
       - name: Deploy Docs
