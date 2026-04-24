@@ -1,0 +1,32 @@
+{
+  "thanks_to": "SajjadArifGul <sajjadarifgul@gmail.com>",
+  "comments": "",
+  "direction": "rtl",
+  "strings": {
+    "placeholder": "تلاش کریں",
+    "clear_search": "صاف کریں",
+    "load_more": "مزید نتائج لوڈ کریں",
+    "search_label": "اس سائٹ پر تلاش کریں",
+    "filters_label": "فلٹرز",
+    "zero_results": "[SEARCH_TERM] کے لیے کوئی نتیجہ نہیں ملا",
+    "many_results": "[SEARCH_TERM] کے لیے [COUNT] نتائج",
+    "one_result": "[SEARCH_TERM] کے لیے [COUNT] نتیجہ",
+    "total_zero_results": "کوئی نتائج نہیں ملے",
+    "total_one_result": "[COUNT] نتیجہ",
+    "total_many_results": "[COUNT] نتائج",
+    "alt_search": "[SEARCH_TERM] کے لیے کوئی نتائج نہیں ملے۔ اس کی بجائے [DIFFERENT_TERM] کے نتائج دکھا رہے ہیں",
+    "search_suggestion": "[SEARCH_TERM] کے لیے کوئی نتائج نہیں ملے۔ مندرجہ ذیل تلاشوں میں سے کوئی ایک آزمائیں:",
+    "searching": "[SEARCH_TERM] کو تلاش کیا جا رہا ہے...",
+    "results_label": "تلاش کے نتائج",
+    "keyboard_navigate": "جائزہ لیں",
+    "keyboard_select": "منتخب کریں",
+    "keyboard_clear": "صاف کریں",
+    "keyboard_close": "بند کریں",
+    "keyboard_search": "تلاش کریں",
+    "error_search": "تلاش ناکام ہو گئی",
+    "filter_selected_one": "[COUNT] منتخب کیا گیا",
+    "filter_selected_many": "[COUNT] منتخب کیے گئے",
+    "input_hint": "آپ کے ٹائپ کرتے ہی نتائج ظاہر ہوں گے",
+    "loading": "لوڈ ہو رہا ہے"
+  }
+}
