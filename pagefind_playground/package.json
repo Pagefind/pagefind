@@ -9,9 +9,9 @@
   },
   "dependencies": {
     "@tsconfig/svelte": "^5.0.8",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.7.0",
     "esbuild": "^0.28.0",
-    "esbuild-svelte": "^0.9.4",
+    "esbuild-svelte": "^0.9.5",
     "svelte": "^5.55.7",
 
     "typescript": "^6.0.3"
