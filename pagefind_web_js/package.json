@@ -13,7 +13,7 @@
   "devDependencies": {
     "@types/mark.js": "^8.11.12",
     "@types/node": "^22.19.15",
-    "ava": "^7.0.0",
+    "ava": "^8.0.0",
     "esbuild": "^0.28.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
