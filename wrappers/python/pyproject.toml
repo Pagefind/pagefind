@@ -29,9 +29,9 @@ extended = ["pagefind_bin_extended>=1,<2"]
 
 [dependency-groups]
 dev = [
-    "ruff==0.15.12",
+    "ruff==0.15.13",
     "mypy>=1.10.1,<2",
-    "wheel>=0.43.0,<0.47",
+    "wheel>=0.43.0,<0.48",
     "cogapp>=3.4.1,<4",
     "twine>=5.1.1,<6",
     "docutils>=0.21.2,<0.23",
