@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = "0.2.121"
 bit-set = "0.10"
 pagefind_stem = "1.0.0"
-minicbor = "2.1.1"
+minicbor = "2.2.2"
 pagefind_microjson = "0.1.4"
 write-json = "0.1.4"
 
