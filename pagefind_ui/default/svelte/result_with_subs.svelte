@@ -123,7 +123,7 @@
   .pagefind-ui__result-nested {
     display: flex;
     flex-direction: column;
-    padding-left: calc(20px * var(--pagefind-ui-scale));
+    padding-inline-start: calc(20px * var(--pagefind-ui-scale));
   }
   .pagefind-ui__result-nested:first-of-type {
     padding-top: calc(10px * var(--pagefind-ui-scale));

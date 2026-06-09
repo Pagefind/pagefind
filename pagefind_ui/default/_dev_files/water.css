@@ -162,16 +162,16 @@ q::after {
 }
 
 blockquote {
-    border-left: 4px solid #0096bfab;
-    border-left: 4px solid var(--focus);
+    border-inline-start: 4px solid #0096bfab;
+    border-inline-start: 4px solid var(--focus);
     margin: 1.5em 0;
     padding: 0.5em 1em;
     font-style: italic;
 }
 
 q {
-    border-left: 4px solid #0096bfab;
-    border-left: 4px solid var(--focus);
+    border-inline-start: 4px solid #0096bfab;
+    border-inline-start: 4px solid var(--focus);
     margin: 1.5em 0;
     padding: 0.5em 1em;
     font-style: italic;
@@ -300,28 +300,28 @@ button {
     background-color: #d0cfcf;
     background-color: var(--button-base);
     padding-right: 30px;
-    padding-left: 30px;
+    padding-inline-start: 30px;
 }
 
 input[type='submit'] {
     background-color: #d0cfcf;
     background-color: var(--button-base);
     padding-right: 30px;
-    padding-left: 30px;
+    padding-inline-start: 30px;
 }
 
 input[type='reset'] {
     background-color: #d0cfcf;
     background-color: var(--button-base);
     padding-right: 30px;
-    padding-left: 30px;
+    padding-inline-start: 30px;
 }
 
 input[type='button'] {
     background-color: #d0cfcf;
     background-color: var(--button-base);
     padding-right: 30px;
-    padding-left: 30px;
+    padding-inline-start: 30px;
 }
 
 button:hover {
