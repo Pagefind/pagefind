@@ -1325,8 +1325,8 @@ pagefind-modal-trigger {
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox.open .pf-searchbox-input {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
     border-bottom-color: var(--pf-border);
 }
 
