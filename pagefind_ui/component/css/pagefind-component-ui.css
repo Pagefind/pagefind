@@ -1133,7 +1133,7 @@ pagefind-modal-trigger {
 @media (max-width: 640px) {
     :is(*, #\#):is(*, #\#):is(*, #\#) dialog.pf-modal[open] {
         top: 0;
-        left: 0;
+        inset-inline-start: 0;
         width: 100vw;
         height: 100dvh;
         max-width: none;
@@ -1335,7 +1335,7 @@ pagefind-modal-trigger {
     flex-direction: column;
     position: absolute;
     top: 100%;
-    left: 0;
+    inset-inline-start: 0;
     right: 0;
     background: var(--pf-background);
     border: 1px solid var(--pf-border);
@@ -1493,7 +1493,7 @@ pagefind-modal-trigger {
         width: max(180px, calc(100vw - 32px));
         max-width: calc(100vw - 32px);
         inset-inline-start: unset;
-        left: 50%;
+        inset-inline-start: 50%;
         transform: translateX(-50%);
         max-height: min(var(--pf-dropdown-max-height), 50vh);
     }

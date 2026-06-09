@@ -138,7 +138,7 @@
         position: absolute;
         content: "";
         top: 50%;
-        left: calc(8px * var(--pagefind-ui-scale));
+        inset-inline-start: calc(8px * var(--pagefind-ui-scale));
         width: 0px;
         height: 0px;
         border: solid 1px #fff;

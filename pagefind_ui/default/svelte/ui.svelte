@@ -420,7 +420,7 @@
     width: calc(18px * var(--pagefind-ui-scale));
     height: calc(18px * var(--pagefind-ui-scale));
     top: calc(23px * var(--pagefind-ui-scale));
-    left: calc(20px * var(--pagefind-ui-scale));
+    inset-inline-start: calc(20px * var(--pagefind-ui-scale));
     content: "";
     position: absolute;
     display: block;
