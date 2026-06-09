@@ -246,7 +246,7 @@
   const updateForButtonWidth = () => {
     const width = clear_el.offsetWidth;
     if (width != clear_width) {
-      input_el.style.paddingRight = `${width + 2}px`;
+      input_el.style.paddingInlineEnd = `${width + 2}px`;
     }
   };
 
