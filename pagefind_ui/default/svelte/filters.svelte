@@ -115,7 +115,7 @@
         width: calc(8px * var(--pagefind-ui-scale));
         height: calc(8px * var(--pagefind-ui-scale));
         border: solid calc(2px * var(--pagefind-ui-scale)) currentColor;
-        border-right: 0;
+        border-inline-end: 0;
         border-top: 0;
         transform: translateY(-70%) rotateZ(-45deg);
     }
@@ -150,7 +150,7 @@
             skewX(-5deg) rotateZ(-45deg);
         transform-origin: top left;
         border-top: 0;
-        border-right: 0;
+        border-inline-end: 0;
         pointer-events: none;
     }
     .pagefind-ui__filter-value.pagefind-ui__filter-value--checked::before {

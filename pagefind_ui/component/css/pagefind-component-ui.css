@@ -1148,20 +1148,20 @@ pagefind-modal-trigger {
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-header {
         padding-top: max(16px, env(safe-area-inset-top));
         padding-inline-start: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 
     :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-body,
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-body {
         padding-inline-start: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 
     :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-footer,
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-footer {
         padding-bottom: max(12px, env(safe-area-inset-bottom));
         padding-inline-start: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 }
 
