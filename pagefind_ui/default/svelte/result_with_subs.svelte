@@ -136,7 +136,7 @@
     content: "⤷ ";
     position: absolute;
     top: 0;
-    right: calc(100% + 0.1em);
+    inset-inline-end: calc(100% + 0.1em);
   }
   .pagefind-ui__result-thumb {
     width: min(30%, calc((30% - (100px * var(--pagefind-ui-scale))) * 100000));

@@ -110,7 +110,7 @@
     .pagefind-ui__filter-name::after {
         position: absolute;
         content: "";
-        right: calc(6px * var(--pagefind-ui-scale));
+        inset-inline-end: calc(6px * var(--pagefind-ui-scale));
         top: 50%;
         width: calc(8px * var(--pagefind-ui-scale));
         height: calc(8px * var(--pagefind-ui-scale));

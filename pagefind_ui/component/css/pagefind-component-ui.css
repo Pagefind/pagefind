@@ -1336,7 +1336,7 @@ pagefind-modal-trigger {
     position: absolute;
     top: 100%;
     inset-inline-start: 0;
-    right: 0;
+    inset-inline-end: 0;
     background: var(--pf-background);
     border: 1px solid var(--pf-border);
     border-top: none;
