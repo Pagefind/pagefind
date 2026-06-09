@@ -148,7 +148,7 @@
                 calc(0.8px * var(--pagefind-ui-scale))
             )
             skewX(-5deg) rotateZ(-45deg);
-        transform-origin: top left;
+        transform-origin: top left; /* TODO: must be `top right` in RTL */
         border-top: 0;
         border-inline-end: 0;
         pointer-events: none;
