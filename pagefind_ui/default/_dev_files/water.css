@@ -666,13 +666,13 @@ table {
 }
 
 table caption {
-    text-align: left;
+    text-align: start;
 }
 
 td,
 th {
     padding: 6px;
-    text-align: left;
+    text-align: start;
     vertical-align: top;
     word-wrap: break-word;
 }
