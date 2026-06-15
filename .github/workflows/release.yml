@@ -111,13 +111,13 @@ jobs:
             run_tests: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
           fetch-depth: 1
 
       - name: Cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.cargo/registry
@@ -126,7 +126,7 @@ jobs:
             target
           key: ${{ runner.os }}-stable
 
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
 
@@ -331,7 +331,7 @@ jobs:
           echo "EXTENDED_CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_ENV
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ matrix.target }}
           path: |
@@ -340,7 +340,7 @@ jobs:
             ${{ env.EXTENDED_ASSET_PATH }}
             ${{ env.EXTENDED_CHECKSUM_PATH }}
       - name: Upload checksum artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-checksums-${{ matrix.target }}
           path: |
@@ -389,10 +389,10 @@ jobs:
             cpu: arm64
     steps:
       - name: Clone
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -418,7 +418,7 @@ jobs:
           npm pack
 
       - name: Upload prepared package
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-${{ matrix.package }}
           path: ${{ matrix.package }}/*.tgz
@@ -433,10 +433,10 @@ jobs:
     if: inputs.npm || inputs.npm_ui
     steps:
       - name: Clone
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
 
@@ -465,19 +465,19 @@ jobs:
           npm pack
 
       - name: Upload Default UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-default-ui
           path: pagefind_ui/default/*.tgz
 
       - name: Upload Modular UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-modular-ui
           path: pagefind_ui/modular/*.tgz
 
       - name: Upload Component UI
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-component-ui
           path: pagefind_ui/component/*.tgz
@@ -492,10 +492,10 @@ jobs:
     if: inputs.npm
     steps:
       - name: Clone
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
 
@@ -516,7 +516,7 @@ jobs:
           npm pack
 
       - name: Upload wrapper package
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: prepared-pagefind-wrapper
           path: wrappers/node/*.tgz
@@ -534,7 +534,7 @@ jobs:
         shell: bash
     steps:
       - name: Clone
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
       - name: Download CLI binaries
@@ -552,7 +552,7 @@ jobs:
         run: ./wrappers/python/scripts/ci/github/setup_uv.sh
 
       - name: cache venv
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: wrappers/python/.venv
           key: ${{ runner.os }}-uv-3.12-${{ hashFiles('**/uv.lock') }}
@@ -581,7 +581,7 @@ jobs:
           python -m scripts.build.api_package --tag "v$GIT_VERSION"
 
       - name: Upload python packages
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: wrappers/python/dist
           name: python-packages
@@ -623,13 +623,13 @@ jobs:
           application_private_key: ${{ secrets.PF_BOT_PEM }}
 
       - name: Clone
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
           fetch-depth: 0
           token: ${{ steps.get_workflow_token.outputs.token }}
 
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
@@ -721,7 +721,7 @@ jobs:
 
       - name: Create Draft Release
         id: draft_release
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         if: inputs.github_release
         with:
           tag_name: v${{ inputs.version }}
@@ -905,7 +905,7 @@ jobs:
           mv pagefind_extended pagefind
           chmod +x pagefind
 
-      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
         if: inputs.github_release
 
       - name: Deploy Docs
