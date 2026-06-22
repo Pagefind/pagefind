@@ -24,7 +24,7 @@ const isBrowser = () =>
 const needsWordSegmentation = (lang: string | null): boolean => {
   if (!lang) return false;
   const primaryLang = lang.split("-")[0].toLowerCase();
-  return ["zh", "ja", "th"].includes(primaryLang);
+  return ["zh", "ja", "th", "ko"].includes(primaryLang);
 };
 
 export class PagefindInstance {

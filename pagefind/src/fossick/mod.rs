@@ -367,7 +367,8 @@ impl Fossicker {
         let segment_chunks = data.digest.split_whitespace();
 
         #[cfg(feature = "extended")]
-        let should_segment = matches!(data.language.split('-').next().unwrap(), "zh" | "ja" | "th");
+        let should_segment =
+            matches!(data.language.split('-').next().unwrap(), "zh" | "ja" | "th" | "ko");
 
         #[cfg(feature = "extended")]
         let coarse_segments = segment_chunks.map(|seg| {
