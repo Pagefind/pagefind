@@ -1133,7 +1133,7 @@ pagefind-modal-trigger {
 @media (max-width: 640px) {
     :is(*, #\#):is(*, #\#):is(*, #\#) dialog.pf-modal[open] {
         top: 0;
-        left: 0;
+        inset-inline-start: 0;
         width: 100vw;
         height: 100dvh;
         max-width: none;
@@ -1147,21 +1147,21 @@ pagefind-modal-trigger {
     :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-header,
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-header {
         padding-top: max(16px, env(safe-area-inset-top));
-        padding-left: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-start: max(16px, env(safe-area-inset-left));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 
     :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-body,
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-body {
-        padding-left: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-start: max(16px, env(safe-area-inset-left));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 
     :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-footer,
     :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-footer {
         padding-bottom: max(12px, env(safe-area-inset-bottom));
-        padding-left: max(16px, env(safe-area-inset-left));
-        padding-right: max(16px, env(safe-area-inset-right));
+        padding-inline-start: max(16px, env(safe-area-inset-left));
+        padding-inline-end: max(16px, env(safe-area-inset-right));
     }
 }
 
@@ -1325,8 +1325,8 @@ pagefind-modal-trigger {
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox.open .pf-searchbox-input {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
     border-bottom-color: var(--pf-border);
 }
 
@@ -1335,8 +1335,8 @@ pagefind-modal-trigger {
     flex-direction: column;
     position: absolute;
     top: 100%;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     background: var(--pf-background);
     border: 1px solid var(--pf-border);
     border-top: none;
@@ -1493,7 +1493,7 @@ pagefind-modal-trigger {
         width: max(180px, calc(100vw - 32px));
         max-width: calc(100vw - 32px);
         inset-inline-start: unset;
-        left: 50%;
+        inset-inline-start: 50%;
         transform: translateX(-50%);
         max-height: min(var(--pf-dropdown-max-height), 50vh);
     }
