@@ -12,7 +12,7 @@
     "@types/node": "^25.9.4",
     "esbuild": "^0.28.1",
     "esbuild-svelte": "^0.9.5",
-    "svelte": "^5.56.3",
+    "svelte": "^5.56.4",
 
     "typescript": "^6.0.3"
   }
