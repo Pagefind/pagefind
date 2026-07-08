@@ -69,7 +69,7 @@ minicbor = { version = "2.1.1", features = ["alloc", "derive"] }
 base64 = "0.22"
 lol_html = "2.7"
 html-escape = "0.2.11"
-bit-set = "0.10"
+bit-set = "0.11"
 flate2 = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 minifier = "0.3.6"
