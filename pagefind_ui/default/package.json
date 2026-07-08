@@ -15,7 +15,7 @@
     "url": "git+https://github.com/Pagefind/pagefind.git"
   },
   "devDependencies": {
-    "bcp-47": "^2.1.0",
+    "bcp-47": "^2.1.1",
     "esbuild": "^0.28.1",
     "esbuild-plugin-import-glob": "^0.1.1",
     "esbuild-svelte": "^0.9.5",
