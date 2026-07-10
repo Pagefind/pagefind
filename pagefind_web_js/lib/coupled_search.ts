@@ -952,8 +952,7 @@ export class Pagefind {
     const filters = this.mergeFilters(search.map((s) => s.filters));
     const totalFilters = this.mergeFilters(search.map((s) => s.totalFilters));
     const results = search
-      .map((s) => s.results)
-      .flat()
+      .flatMap((s) => s.results)
       .sort((a, b) => b.score - a.score);
     const timings = search.map((s) => s.timings);
     const unfilteredResultCount = search.reduce(
