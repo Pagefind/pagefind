@@ -721,7 +721,7 @@ jobs:
 
       - name: Create Draft Release
         id: draft_release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         if: inputs.github_release
         with:
           tag_name: v${{ inputs.version }}
@@ -883,7 +883,7 @@ jobs:
 
       - name: Publish to PyPI
         if: inputs.pypi
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
         with:
           packages-dir: python-dist
           skip-existing: true
