@@ -7,7 +7,7 @@ use crate::{SearchOptions, PAGEFIND_VERSION};
 use flate2::write::GzEncoder; // TODO: Replace flate2 with async-compression since we
 use flate2::Compression; //   // require that crate for the input compression anyway.
 use futures::future::join_all;
-use hashbrown::HashMap;
+use std::collections::BTreeMap;
 use include_dir::{include_dir, Dir};
 use minifier::js::minify;
 use tokio::fs::{create_dir_all, File};
@@ -135,7 +135,7 @@ async fn write_common(
 
     let entry_meta = entry::PagefindEntryMeta {
         version: PAGEFIND_VERSION,
-        languages: HashMap::from_iter(language_indexes.into_iter().map(|i| {
+        languages: BTreeMap::from_iter(language_indexes.into_iter().map(|i| {
             (
                 i.language,
                 entry::PagefindEntryLanguage {
