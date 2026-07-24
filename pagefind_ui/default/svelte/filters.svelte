@@ -110,12 +110,12 @@
     .pagefind-ui__filter-name::after {
         position: absolute;
         content: "";
-        right: calc(6px * var(--pagefind-ui-scale));
+        inset-inline-end: calc(6px * var(--pagefind-ui-scale));
         top: 50%;
         width: calc(8px * var(--pagefind-ui-scale));
         height: calc(8px * var(--pagefind-ui-scale));
         border: solid calc(2px * var(--pagefind-ui-scale)) currentColor;
-        border-right: 0;
+        border-inline-end: 0;
         border-top: 0;
         transform: translateY(-70%) rotateZ(-45deg);
     }
@@ -138,7 +138,7 @@
         position: absolute;
         content: "";
         top: 50%;
-        left: calc(8px * var(--pagefind-ui-scale));
+        inset-inline-start: calc(8px * var(--pagefind-ui-scale));
         width: 0px;
         height: 0px;
         border: solid 1px #fff;
@@ -148,9 +148,9 @@
                 calc(0.8px * var(--pagefind-ui-scale))
             )
             skewX(-5deg) rotateZ(-45deg);
-        transform-origin: top left;
+        transform-origin: top left; /* TODO: must be `top right` in RTL */
         border-top: 0;
-        border-right: 0;
+        border-inline-end: 0;
         pointer-events: none;
     }
     .pagefind-ui__filter-value.pagefind-ui__filter-value--checked::before {

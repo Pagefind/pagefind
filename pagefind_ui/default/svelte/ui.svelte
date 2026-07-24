@@ -246,7 +246,7 @@
   const updateForButtonWidth = () => {
     const width = clear_el.offsetWidth;
     if (width != clear_width) {
-      input_el.style.paddingRight = `${width + 2}px`;
+      input_el.style.paddingInlineEnd = `${width + 2}px`;
     }
   };
 
@@ -420,7 +420,7 @@
     width: calc(18px * var(--pagefind-ui-scale));
     height: calc(18px * var(--pagefind-ui-scale));
     top: calc(23px * var(--pagefind-ui-scale));
-    left: calc(20px * var(--pagefind-ui-scale));
+    inset-inline-start: calc(20px * var(--pagefind-ui-scale));
     content: "";
     position: absolute;
     display: block;
@@ -454,7 +454,7 @@
   .pagefind-ui__search-clear {
     position: absolute;
     top: calc(3px * var(--pagefind-ui-scale));
-    right: calc(3px * var(--pagefind-ui-scale));
+    inset-inline-end: calc(3px * var(--pagefind-ui-scale));
     height: calc(58px * var(--pagefind-ui-scale));
     padding: 0 calc(15px * var(--pagefind-ui-scale)) 0
       calc(2px * var(--pagefind-ui-scale));
