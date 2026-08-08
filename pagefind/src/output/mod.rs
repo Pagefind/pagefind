@@ -441,6 +441,13 @@ async fn write(
             if let Ok(contents) = gz.finish() {
                 if let Some(mut file) = file {
                     file.write_all(&contents).await.unwrap();
+                    // `write_all` resolving only means the bytes are in tokio's
+                    // buffer; the blocking-pool write to disk may still be in
+                    // flight. Flush before the file drops, or a service-mode
+                    // consumer can receive the WriteFiles acknowledgement and
+                    // close the process while a file is half written, shipping
+                    // a truncated asset.
+                    file.flush().await.unwrap();
                 } else {
                     return Some(SyntheticFile { filename, contents });
                 }
@@ -452,6 +459,7 @@ async fn write(
                 for chunk in content_chunks {
                     file.write_all(chunk).await.unwrap();
                 }
+                file.flush().await.unwrap();
                 None
             } else {
                 return Some(SyntheticFile {
