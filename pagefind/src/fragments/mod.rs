@@ -7,6 +7,8 @@ pub struct PageAnchorData {
     pub element: String,
     pub id: String,
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
     pub location: u32,
 }
 

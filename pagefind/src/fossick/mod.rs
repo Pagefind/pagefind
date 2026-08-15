@@ -321,15 +321,7 @@ impl Fossicker {
                     filters: data.filters,
                     meta: data.meta,
                     word_count,
-                    anchors: anchors
-                        .into_iter()
-                        .map(|(element, id, text, location)| PageAnchorData {
-                            element,
-                            id,
-                            location,
-                            text,
-                        })
-                        .collect(),
+                    anchors,
                 },
             },
             word_data,
@@ -344,7 +336,7 @@ impl Fossicker {
     ) -> (
         String,
         HashMap<String, Vec<FossickedWord>>,
-        Vec<(String, String, String, u32)>,
+        Vec<PageAnchorData>,
         usize,
     ) {
         let mut map: HashMap<String, Vec<FossickedWord>> = HashMap::new();
@@ -410,14 +402,16 @@ impl Fossicker {
                             .get(anchor_id)
                             .map(|t| normalize_content(t))
                             .unwrap_or_default();
+                        let title = data.anchor_titles.get(anchor_id).cloned();
 
                         if let Some((_, element_id)) = anchor_id.split_once(':') {
-                            anchors.push((
-                                element_name.to_string(),
-                                element_id.to_string(),
-                                normalize_content(&element_text),
-                                total_word_index as u32,
-                            ));
+                            anchors.push(PageAnchorData {
+                                element: element_name.to_string(),
+                                id: element_id.to_string(),
+                                text: normalize_content(&element_text),
+                                location: total_word_index as u32,
+                                title,
+                            });
                         }
                     }
                     return;

@@ -8,7 +8,9 @@ export const calculate_sub_results = (
 
   const anchors = fragment.anchors
     .filter(
-      (a) => /h\d/i.test(a.element) && a.text?.length && /\S/.test(a.text)
+      (a) =>
+        (a.title?.length && /\S/.test(a.title)) ||
+        (/h\d/i.test(a.element) && a.text?.length && /\S/.test(a.text))
     )
     .sort((a, b) => a.location - b.location);
   const results: PagefindSubResult[] = [];
@@ -88,7 +90,7 @@ export const calculate_sub_results = (
 
       current_anchor_position = next_anchor.location;
       current_anchor = {
-        title: next_anchor.text!,
+        title: next_anchor.title || next_anchor.text!,
         url: anchored_url,
         anchor: next_anchor,
         weighted_locations: [word],

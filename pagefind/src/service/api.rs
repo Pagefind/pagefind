@@ -147,6 +147,7 @@ impl PagefindIndex {
             sort: sort.unwrap_or_default(),
             meta: meta.unwrap_or_default(),
             anchor_content: BTreeMap::new(),
+            anchor_titles: BTreeMap::new(),
             has_custom_body: false,
             force_inclusion: true,
             has_html_element: true,
