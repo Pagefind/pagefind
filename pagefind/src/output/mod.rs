@@ -122,16 +122,18 @@ async fn write_common(
     let js_version = format!("const pagefind_version = \"{PAGEFIND_VERSION}\";");
     let mut js = vec![];
     minify(&format!("{js_version}\n{WEB_JS}\n{SEARCH_JS}"))
+        .expect("Minifying Pagefind JS failed")
         .write(&mut js)
-        .expect("Minifying Pagefind JS failed");
+        .expect("Writing minified Pagefind JS failed");
 
     let mut worker_js = vec![];
     minify(&format!(
         "{js_version}\n{WEB_JS}\n{}",
         String::from_utf8_lossy(WORKER_JS)
     ))
+    .expect("Minifying Pagefind Worker JS failed")
     .write(&mut worker_js)
-    .expect("Minifying Pagefind Worker JS failed");
+    .expect("Writing minified Pagefind Worker JS failed");
 
     let entry_meta = entry::PagefindEntryMeta {
         version: PAGEFIND_VERSION,
