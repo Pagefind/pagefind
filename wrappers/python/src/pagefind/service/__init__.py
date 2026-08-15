@@ -164,7 +164,8 @@ class PagefindService(AbstractAsyncContextManager["PagefindService"]):
             if message_id is None:
                 # If the backend service failed to parse the message, it won't return the ID
                 # However it does return the message itself, so we can retrieve the ID we sent
-                if (original := resp["payload"].get("original_message")) is not None:
+                err = cast(InternalResponseError, resp["payload"])
+                if (original := err.get("original_message")) is not None:
                     if (sent := json.loads(original)) is not None:
                         message_id = sent.get("message_id")
             if message_id is not None:
