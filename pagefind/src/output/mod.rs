@@ -7,7 +7,7 @@ use crate::{SearchOptions, PAGEFIND_VERSION};
 use flate2::write::GzEncoder; // TODO: Replace flate2 with async-compression since we
 use flate2::Compression; //   // require that crate for the input compression anyway.
 use futures::future::join_all;
-use hashbrown::HashMap;
+use std::collections::BTreeMap;
 use include_dir::{include_dir, Dir};
 use minifier::js::minify;
 use tokio::fs::{create_dir_all, File};
@@ -122,20 +122,22 @@ async fn write_common(
     let js_version = format!("const pagefind_version = \"{PAGEFIND_VERSION}\";");
     let mut js = vec![];
     minify(&format!("{js_version}\n{WEB_JS}\n{SEARCH_JS}"))
+        .expect("Minifying Pagefind JS failed")
         .write(&mut js)
-        .expect("Minifying Pagefind JS failed");
+        .expect("Writing minified Pagefind JS failed");
 
     let mut worker_js = vec![];
     minify(&format!(
         "{js_version}\n{WEB_JS}\n{}",
         String::from_utf8_lossy(WORKER_JS)
     ))
+    .expect("Minifying Pagefind Worker JS failed")
     .write(&mut worker_js)
-    .expect("Minifying Pagefind Worker JS failed");
+    .expect("Writing minified Pagefind Worker JS failed");
 
     let entry_meta = entry::PagefindEntryMeta {
         version: PAGEFIND_VERSION,
-        languages: HashMap::from_iter(language_indexes.into_iter().map(|i| {
+        languages: BTreeMap::from_iter(language_indexes.into_iter().map(|i| {
             (
                 i.language,
                 entry::PagefindEntryLanguage {
@@ -441,6 +443,13 @@ async fn write(
             if let Ok(contents) = gz.finish() {
                 if let Some(mut file) = file {
                     file.write_all(&contents).await.unwrap();
+                    // `write_all` resolving only means the bytes are in tokio's
+                    // buffer; the blocking-pool write to disk may still be in
+                    // flight. Flush before the file drops, or a service-mode
+                    // consumer can receive the WriteFiles acknowledgement and
+                    // close the process while a file is half written, shipping
+                    // a truncated asset.
+                    file.flush().await.unwrap();
                 } else {
                     return Some(SyntheticFile { filename, contents });
                 }
@@ -452,6 +461,7 @@ async fn write(
                 for chunk in content_chunks {
                     file.write_all(chunk).await.unwrap();
                 }
+                file.flush().await.unwrap();
                 None
             } else {
                 return Some(SyntheticFile {
