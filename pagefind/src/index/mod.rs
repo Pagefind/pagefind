@@ -91,7 +91,7 @@ pub async fn build_indexes(
     sorts.dedup();
 
     // Determine the best sorting parser that fits all available values for each given key
-    let mut sort_types: HashMap<String, SortType> = HashMap::new();
+    let mut sort_types: BTreeMap<String, SortType> = BTreeMap::new();
     for sort in sorts.iter() {
         let mut sort_values = pages.iter().flat_map(|page| page.sort.get(sort));
         sort_types.insert(
@@ -402,18 +402,21 @@ pub async fn build_indexes(
             word_count: *word_count as u32,
         }));
 
-    // TODO: Change filter indexes to BTree to give them a stable hash.
     // Encode filter indexes in parallel
-    // Convert hashbrown HashMap to Vec for rayon compatibility
-    let filter_map_vec: Vec<_> = filter_map.into_iter().collect();
+    // Accumulate into HashMap for O(1) inserts, then sort once before encoding
+    // to produce a stable hash without paying BTreeMap's per-insert overhead.
+    let mut filter_map_vec: Vec<_> = filter_map.into_iter().collect();
+    filter_map_vec.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
     let encoded_filters: Vec<(String, Vec<u8>, String)> = filter_map_vec
         .into_par_iter()
         .map(|(filter, values)| {
+            let mut sorted_values: Vec<_> = values.into_iter().collect();
+            sorted_values.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
             let mut filter_index: Vec<u8> = Vec::new();
             let _ = minicbor::encode::<FilterIndex, &mut Vec<u8>>(
                 FilterIndex {
                     filter: filter.clone(),
-                    values: values
+                    values: sorted_values
                         .into_iter()
                         .map(|(value, pages)| PackedValue { value, pages })
                         .collect(),
@@ -586,7 +589,8 @@ fn positions_to_packed_page(mut positions: Vec<FossickedWord>, page_number: usiz
 }
 
 fn chunk_index(word_map: HashMap<String, PackedWord>, chunk_size: usize) -> Vec<Vec<PackedWord>> {
-    // TODO: Use ye olde BTree
+    // Accumulate into HashMap for O(1) inserts, then sort once before encoding
+    // to produce a stable hash without paying BTreeMap's per-insert overhead.
     let mut words = word_map
         .into_iter()
         .map(|(_, w)| w)
