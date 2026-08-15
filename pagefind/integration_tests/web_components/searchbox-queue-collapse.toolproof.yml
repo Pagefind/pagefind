@@ -52,23 +52,29 @@ steps:
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I evaluate {js}
     js: |-
+      await toolproof.waitFor(
+        () => {
+          let options = document.querySelectorAll('.pf-searchbox-results [role="option"]');
+          return options[1]?.hasAttribute("data-pf-selected");
+        },
+        "Second option should be selected"
+      );
       let options = document.querySelectorAll('.pf-searchbox-results [role="option"]');
-      toolproof.assert(options[1].hasAttribute("data-pf-selected"), "Second option should be selected");
       window.__selectedId = options[1].id;
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I press the "ArrowDown" key
   - step: In my browser, I evaluate {js}
     js: |-
+      let searchbox = document.querySelector("pagefind-searchbox");
+      await toolproof.waitFor(
+        () => searchbox.pendingNavigation === 3,
+        "Three arrow presses should be queued"
+      );
       let selected = document.querySelector('.pf-searchbox-results [data-pf-selected]');
       toolproof.assert(
         selected && selected.id === window.__selectedId,
         "Selection should still be on result 1 (blocked)"
-      );
-      let searchbox = document.querySelector("pagefind-searchbox");
-      toolproof.assert(
-        searchbox.pendingNavigation === 3,
-        `Expected pendingNavigation=3, got ${searchbox.pendingNavigation}`
       );
   # Resolve gate — queue collapses through loaded results to land on result 4
   - step: In my browser, I evaluate {js}

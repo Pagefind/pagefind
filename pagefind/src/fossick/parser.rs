@@ -142,8 +142,7 @@ impl<'a> DomParser<'a> {
         let mut anchor_counter = 0;
 
         let rewriter = HtmlRewriter::new(
-            Settings {
-                element_content_handlers: vec![
+            vec![
                     enclose! { (data) element!("html", move |el| {
                         let mut data = data.borrow_mut();
                         data.has_html_element = true;
@@ -546,10 +545,11 @@ impl<'a> DomParser<'a> {
                         }
                         Ok(())
                     })},
-                ],
-                strict: false,
-                ..Settings::default()
-            },
+            ]
+            .into_iter()
+            .fold(Settings::new().with_strict(false), |settings, handler| {
+                settings.append_element_content_handler(handler)
+            }),
             EmptySink::default(),
         );
 
