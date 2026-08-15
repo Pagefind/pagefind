@@ -1,0 +1,84 @@
+name: Web Components Tests > Searchbox ignores keys belonging to an IME composition
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>First Result</h1></body></html>
+  - step: I have a "public/two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Second Result</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "Result"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let box = await toolproof.querySelector("pagefind-searchbox");
+      await toolproof.waitFor(() => box.querySelectorAll('[role="option"]').length > 0);
+  # An IME is now composing: the keys below are the user choosing characters,
+  # not the user choosing a result.
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let box = await toolproof.querySelector("pagefind-searchbox");
+      let input = box.querySelector("input");
+      window.__path = window.location.pathname;
+      window.__offset = box.activeOptionOffset;
+      input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "ArrowDown", bubbles: true, cancelable: true, isComposing: true,
+      }));
+      toolproof.assert(
+        box.activeOptionOffset === window.__offset,
+        "Walking IME candidates should not move the result selection",
+      );
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let box = await toolproof.querySelector("pagefind-searchbox");
+      let input = box.querySelector("input");
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "Enter", bubbles: true, cancelable: true, isComposing: true,
+      }));
+      toolproof.assert(
+        window.location.pathname === window.__path,
+        "Committing an IME conversion should not navigate to a result",
+      );
+  # WebKit fires compositionend *before* the keydown that ended the
+  # composition, so that Enter arrives with isComposing already false.
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let box = await toolproof.querySelector("pagefind-searchbox");
+      let input = box.querySelector("input");
+      input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "Result" }));
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "Enter", bubbles: true, cancelable: true, isComposing: false,
+      }));
+      toolproof.assert(
+        window.location.pathname === window.__path,
+        "An Enter arriving right after compositionend should not navigate",
+      );
+  # Composition is over, so ordinary keyboard navigation must work as before.
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let box = await toolproof.querySelector("pagefind-searchbox");
+      let input = box.querySelector("input");
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+      let before = box.activeOptionOffset;
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "ArrowDown", bubbles: true, cancelable: true,
+      }));
+      toolproof.assert(
+        box.activeOptionOffset !== before,
+        "ArrowDown outside a composition should still move the selection",
+      );

@@ -1,5 +1,6 @@
 import { PagefindElement } from "./base-element";
 import { Instance } from "../core/instance";
+import { trackComposition } from "../core/composition";
 import { compile, type Template } from "adequate-little-templates";
 import {
   type KeyBinding,
@@ -500,7 +501,16 @@ export class PagefindSearchbox extends PagefindElement {
       this.instance?.triggerSearch(value);
     });
 
+    const isComposingKey = trackComposition(this.inputEl);
+
     this.inputEl.addEventListener("keydown", (e) => {
+      // Keys that drive an IME belong to the IME. Acting on them navigates the
+      // user to a result, or moves the selection under them, while they are
+      // still choosing characters.
+      if (isComposingKey(e)) {
+        return;
+      }
+
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
