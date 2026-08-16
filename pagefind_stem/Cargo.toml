@@ -5,7 +5,7 @@ version = "1.0.0"
 # and I don't want to have to edit snowball's rust files
 edition = "2015"
 description = "Snowball stemming algorithms repackaged for Rust, with languages behind feature flags."
-license = "MIT"
+license = "MIT AND BSD-3-Clause"
 
 [dependencies]
 

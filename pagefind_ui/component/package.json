@@ -27,12 +27,12 @@
   },
   "dependencies": {
     "adequate-little-templates": "^1.0.2",
-    "bcp-47": "^2.1.0"
+    "bcp-47": "^2.1.1"
   },
   "devDependencies": {
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "esbuild-plugin-import-glob": "^0.1.1",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "files": [
     "./npm_dist",

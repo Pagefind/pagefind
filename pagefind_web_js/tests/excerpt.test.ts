@@ -53,24 +53,24 @@ test('better word excerpt', t => {
 test('build standard excerpt', t => {
     const excerpt = build_excerpt("Donec id elit non mi porta gravida at eget metus.", 1, 5, [2]);
 
-	t.is(excerpt, "id <mark>elit</mark> non mi porta");
+	t.is(excerpt.excerpt, "id <mark>elit</mark> non mi porta");
 });
 
 test('build end excerpt', t => {
     const excerpt = build_excerpt("Donec id elit non mi porta gravida at eget metus.", 8, 5, [9]);
 
-	t.is(excerpt, "porta gravida at eget <mark>metus.</mark>");
+	t.is(excerpt.excerpt, "porta gravida at eget <mark>metus.</mark>");
 });
 
 test('build endcapped excerpt', t => {
     const excerpt = build_excerpt("Nullam id dolor id nibh ultricies vehicula ut id elit. Donec sed odio dui.", 6, 6, [7], undefined, 10);
 
-	t.is(excerpt, "nibh ultricies vehicula <mark>ut</mark> id elit.");
+	t.is(excerpt.excerpt, "nibh ultricies vehicula <mark>ut</mark> id elit.");
 });
 
 test('build narrowcapped excerpt', t => {
     const excerpt = build_excerpt("Nullam id dolor id nibh ultricies vehicula ut id elit. Donec sed odio dui.", 6, 6, [7], 6, 10);
 
-	t.is(excerpt, "vehicula <mark>ut</mark> id elit.");
+	t.is(excerpt.excerpt, "vehicula <mark>ut</mark> id elit.");
 });
 

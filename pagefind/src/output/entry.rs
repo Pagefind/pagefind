@@ -1,11 +1,11 @@
-use hashbrown::HashMap;
+use std::collections::BTreeMap;
 
 use serde::Serialize;
 
 #[derive(Serialize, Debug)]
 pub struct PagefindEntryMeta {
     pub version: &'static str,
-    pub languages: HashMap<String, PagefindEntryLanguage>,
+    pub languages: BTreeMap<String, PagefindEntryLanguage>,
     pub include_characters: Vec<char>,
 }
 
