@@ -28,7 +28,24 @@ The `<pagefind-searchbox>` component hides sub results by default. To show them,
 ```
 {{< /diffcode >}}
 
-Sub results split the page on headings (`h1` → `h6`) that have `id` attributes that can be linked to. Sections with the most hits will be given priority.
+Sub results split the page on headings (`h1` → `h6`) that have `id` attributes that can be linked to, or elements with both an `id` and a `data-pagefind-title` attribute. Sections with the most hits will be given priority.
+
+## Defining a sub result explicitly
+
+If an element other than a heading should define a sub result, give it an `id` and a `data-pagefind-title` attribute:
+
+{{< diffcode >}}
+```html
+<section
+    id="installation"
+    data-pagefind-title="Installation">
+    <h2>Installation</h2>
+    <p>Install the package with ...</p>
+</section>
+```
+{{< /diffcode >}}
+
+The attribute value is used as the sub-result title, and the element's `id` is used as the URL fragment. This is useful when an existing HTML structure places the linkable ID on a container around its heading.
 
 ## Retrieving sub results using the JavaScript API
 
@@ -72,7 +89,7 @@ Which will return an object with the following structure:
 ```
 {{< /diffcode >}}
 
-These results are split on headings (`h1` → `h6`) that have `id` attributes that can be linked to.
+These results are split on headings (`h1` → `h6`) that have `id` attributes that can be linked to, and explicitly titled elements marked with `data-pagefind-title`.
 
 If there are matches for the search term on the page _before_ the first heading with an ID, the first sub result in this list will be the URL and title of the page itself, and will not contain an `anchor` key. All other sub results will have a URL linking directly to that heading, and will have an `anchor` key with details about the element.
 

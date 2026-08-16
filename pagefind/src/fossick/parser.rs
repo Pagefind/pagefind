@@ -58,6 +58,7 @@ struct DomParserData {
     meta: BTreeMap<String, String>,
     default_meta: BTreeMap<String, String>,
     anchor_content: BTreeMap<String, String>,
+    anchor_titles: BTreeMap<String, String>,
     language: Option<String>,
     has_html_element: bool,
     has_old_bundle_reference: bool,
@@ -109,6 +110,7 @@ pub struct DomParserResult {
     pub sort: BTreeMap<String, String>,
     pub meta: BTreeMap<String, String>,
     pub anchor_content: BTreeMap<String, String>,
+    pub anchor_titles: BTreeMap<String, String>,
     pub has_custom_body: bool,
     pub force_inclusion: bool, // Include this page even if there is no body
     pub has_html_element: bool,
@@ -166,6 +168,7 @@ impl<'a> DomParser<'a> {
                         let weight = el.get_attribute("data-pagefind-weight").map(|attr| attr.to_string());
                         let filter = el.get_attribute("data-pagefind-filter").map(|attr| parse_attr_string(attr, el));
                         let element_id = el.get_attribute("id").map(|e| ALL_SPACES.replace_all(&e, "").to_string());
+                        let pagefind_title = el.get_attribute("data-pagefind-title").map(|title| normalize_content(&title)).filter(|title| !title.is_empty());
                         let meta = el.get_attribute("data-pagefind-meta").map(|attr| parse_attr_string(attr, el));
                         let default_meta = el.get_attribute("data-pagefind-default-meta").map(|attr| parse_attr_string(attr, el));
                         let sort = el.get_attribute("data-pagefind-sort").map(|attr| parse_attr_string(attr, el));
@@ -194,6 +197,10 @@ impl<'a> DomParser<'a> {
                                     anchor_counter += 1;
                                 }
                             }
+                        }
+
+                        if let (Some(anchor_id), Some(title)) = (&anchor_id, pagefind_title) {
+                            data.borrow_mut().anchor_titles.insert(anchor_id.clone(), title);
                         }
 
                         if status != NodeStatus::Excluded {
@@ -623,6 +630,7 @@ impl<'a> DomParser<'a> {
             sort: data.sort,
             meta: data.default_meta,
             anchor_content: data.anchor_content,
+            anchor_titles: data.anchor_titles,
             has_custom_body: node.status == NodeStatus::ParentOfBody,
             force_inclusion: false,
             has_html_element: data.has_html_element,
@@ -752,6 +760,20 @@ mod tests {
             data.digest,
             "Sentence one. ___PAGEFIND_ANCHOR___br:0:break ___PAGEFIND_ANCHOR___p:1:pid Sentence two."
         )
+    }
+
+    #[test]
+    fn explicit_anchor_titles() {
+        let data = test_parse(vec![
+            "<section id='usage' data-pagefind-title='Installation &amp; Usage'>",
+            "<h2>Installation and usage</h2>",
+            "</section>",
+        ]);
+
+        assert_eq!(
+            data.anchor_titles.get("0:usage"),
+            Some(&"Installation & Usage".to_owned())
+        );
     }
 
     #[test]

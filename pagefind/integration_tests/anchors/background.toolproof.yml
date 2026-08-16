@@ -45,6 +45,11 @@ steps:
 
           <div id="double_div">Divs containing <div>💀 he he he 💀</div> divs should only take from the top level</div>
           <p>Some text nested under the divs</p>
+
+          <section id="explicit_section" data-pagefind-title="Installation &amp; Usage">
+              <h2>Installation and usage</h2>
+              <p>Platypus content nested under an explicitly titled section</p>
+          </section>
       </div></body></html>
   - step: I have a "public/repr/index.html" file with the content {html}
     html: |-

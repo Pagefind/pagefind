@@ -413,6 +413,8 @@ declare global {
     element: string;
     /** The raw id="..." attribute contents of the element */
     id: string;
+    /** An explicit sub-result title supplied by a data-pagefind-title attribute */
+    title?: string;
     /**
      * The text content of this element.
      *

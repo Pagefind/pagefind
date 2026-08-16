@@ -1,0 +1,22 @@
+name: Anchors > Pagefind returns subresults for explicitly titled elements
+steps:
+  - ref: ./background.toolproof.yml
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("platypus");
+      let searchdata = await search.results[0].data();
+      document.querySelector('[data-search]').innerHTML = `
+          <ul>
+              ${searchdata.sub_results.map(r => `<li>${r.url}: ${r.title} / '${r.excerpt}'</li>`).join('')}
+          </ul>
+      `;
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: >-
+      let val = await toolproof.querySelector("[data-search]>ul>li");
+
+      toolproof.assert_eq(val.innerHTML, `/dog/#explicit_section: Installation &amp;
+      Usage / 'Installation and usage. <mark>Platypus</mark> content nested
+      under an explicitly titled section.'`);
