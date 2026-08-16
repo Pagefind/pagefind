@@ -23,33 +23,52 @@ steps:
   - step: In my browser, I load "/"
   - step: In my browser, I click the selector "pagefind-searchbox input"
   - step: In my browser, I type "Result"
+  # Wait for both results to load, not just for options to exist: moving the
+  # selection onto an unloaded result queues a load instead of moving.
   - step: In my browser, I evaluate {js}
     js: |-
-      let box = await toolproof.querySelector("pagefind-searchbox");
-      await toolproof.waitFor(() => box.querySelectorAll('[role="option"]').length > 0);
+      await toolproof.waitFor(() => document.querySelectorAll("a.pf-searchbox-result").length === 2, "Both results should load");
+      await toolproof.waitFor(() => document.querySelector("a.pf-searchbox-result[data-pf-selected]") !== null, "First result should be selected");
   # An IME is now composing: the keys below are the user choosing characters,
-  # not the user choosing a result.
+  # not the user choosing a result. `defaultPrevented` is the direct reading of
+  # whether the searchbox acted, since every branch it would take calls
+  # preventDefault() first.
   - step: In my browser, I evaluate {js}
     js: |-
       let box = await toolproof.querySelector("pagefind-searchbox");
       let input = box.querySelector("input");
       window.__path = window.location.pathname;
-      window.__offset = box.activeOptionOffset;
+      window.__index = box.activeIndex;
       input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
-      input.dispatchEvent(new KeyboardEvent("keydown", {
+      let arrow = new KeyboardEvent("keydown", {
         key: "ArrowDown", bubbles: true, cancelable: true, isComposing: true,
-      }));
+      });
+      input.dispatchEvent(arrow);
       toolproof.assert(
-        box.activeOptionOffset === window.__offset,
-        "Walking IME candidates should not move the result selection",
+        !arrow.defaultPrevented,
+        "Walking IME candidates should not be taken by the searchbox",
+      );
+      toolproof.assert(
+        box.activeIndex === window.__index,
+        `Walking IME candidates should not move the result selection, moved to ${box.activeIndex}`,
       );
   - step: In my browser, I evaluate {js}
     js: |-
       let box = await toolproof.querySelector("pagefind-searchbox");
       let input = box.querySelector("input");
-      input.dispatchEvent(new KeyboardEvent("keydown", {
+      let container = await toolproof.querySelector(".pf-searchbox");
+      let enter = new KeyboardEvent("keydown", {
         key: "Enter", bubbles: true, cancelable: true, isComposing: true,
-      }));
+      });
+      input.dispatchEvent(enter);
+      toolproof.assert(
+        !enter.defaultPrevented,
+        "Committing an IME conversion should not be taken by the searchbox",
+      );
+      toolproof.assert(
+        container.classList.contains("open"),
+        "Committing an IME conversion should not activate a result",
+      );
       toolproof.assert(
         window.location.pathname === window.__path,
         "Committing an IME conversion should not navigate to a result",
@@ -60,25 +79,35 @@ steps:
     js: |-
       let box = await toolproof.querySelector("pagefind-searchbox");
       let input = box.querySelector("input");
+      let container = await toolproof.querySelector(".pf-searchbox");
       input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "Result" }));
-      input.dispatchEvent(new KeyboardEvent("keydown", {
+      let enter = new KeyboardEvent("keydown", {
         key: "Enter", bubbles: true, cancelable: true, isComposing: false,
-      }));
+      });
+      input.dispatchEvent(enter);
+      toolproof.assert(
+        !enter.defaultPrevented,
+        "An Enter arriving right after compositionend should not be taken by the searchbox",
+      );
+      toolproof.assert(
+        container.classList.contains("open"),
+        "An Enter arriving right after compositionend should not activate a result",
+      );
       toolproof.assert(
         window.location.pathname === window.__path,
         "An Enter arriving right after compositionend should not navigate",
       );
   # Composition is over, so ordinary keyboard navigation must work as before.
+  # The keyup is what a real keystroke would deliver, and it closes the window
+  # held open for WebKit's event ordering.
   - step: In my browser, I evaluate {js}
     js: |-
-      let box = await toolproof.querySelector("pagefind-searchbox");
-      let input = box.querySelector("input");
+      let input = await toolproof.querySelector("pagefind-searchbox input");
       input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
-      let before = box.activeOptionOffset;
-      input.dispatchEvent(new KeyboardEvent("keydown", {
-        key: "ArrowDown", bubbles: true, cancelable: true,
-      }));
-      toolproof.assert(
-        box.activeOptionOffset !== before,
+  - step: In my browser, I press the "ArrowDown" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(
+        () => document.querySelectorAll("a.pf-searchbox-result")[1]?.hasAttribute("data-pf-selected"),
         "ArrowDown outside a composition should still move the selection",
       );
