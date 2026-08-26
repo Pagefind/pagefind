@@ -87,7 +87,7 @@ twelf = { version = "0.15", default-features = false, features = [
 ] }
 portpicker = { version = "0.1", optional = true }
 actix-web = { version = "4", optional = true }
-actix-files = { version = "0.6", optional = true }
+actix-files = { version = "0.7", optional = true }
 lexical-core = "1.0.0"
 path-slash = "0.2"
 rayon = "1.10"
