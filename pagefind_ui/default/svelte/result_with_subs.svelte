@@ -123,7 +123,7 @@
   .pagefind-ui__result-nested {
     display: flex;
     flex-direction: column;
-    padding-left: calc(20px * var(--pagefind-ui-scale));
+    padding-inline-start: calc(20px * var(--pagefind-ui-scale));
   }
   .pagefind-ui__result-nested:first-of-type {
     padding-top: calc(10px * var(--pagefind-ui-scale));
@@ -136,7 +136,7 @@
     content: "⤷ ";
     position: absolute;
     top: 0;
-    right: calc(100% + 0.1em);
+    inset-inline-end: calc(100% + 0.1em);
   }
   .pagefind-ui__result-thumb {
     width: min(30%, calc((30% - (100px * var(--pagefind-ui-scale))) * 100000));
@@ -148,7 +148,7 @@
   .pagefind-ui__result-image {
     display: block;
     position: absolute;
-    left: 50%;
+    inset-inline-start: 50%;
     transform: translateX(-50%);
     font-size: 0;
     width: auto;
