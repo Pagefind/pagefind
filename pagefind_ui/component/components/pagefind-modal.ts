@@ -1,5 +1,6 @@
 import { PagefindElement } from "./base-element";
 import { Instance, PagefindComponent } from "../core/instance";
+import { trackComposition } from "../core/composition";
 
 interface ModalTrigger extends PagefindComponent {
   buttonEl?: HTMLButtonElement;
@@ -90,12 +91,20 @@ export class PagefindModal extends PagefindElement {
     };
     this.dialogEl.addEventListener("close", this._closeHandler);
 
+    const isComposingKey = trackComposition(this.dialogEl);
+
     this.dialogEl.addEventListener(
       "keydown",
       (e) => {
         if (e.key === "Escape") {
+          // Still cancelled, so the dialog's own close-watcher does not fire,
+          // but Escape during an IME composition cancels the conversion rather
+          // than dismissing the whole modal the user is typing into.
           e.preventDefault();
           e.stopPropagation();
+          if (isComposingKey(e)) {
+            return;
+          }
           this.close();
         }
       },
