@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use lol_html::html_content::Element;
-use lol_html::{element, text, HtmlRewriter, Settings};
+use lol_html::{element, text, HtmlRewriter, Selector, Settings};
 use regex::Regex;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -138,7 +138,18 @@ impl<'a> DomParser<'a> {
         custom_exclusions.extend(REMOVE_SELECTORS.iter().map(|s| s.to_string()));
         let custom_exclusions = custom_exclusions
             .iter()
-            .map(|e| format!("{} {}", options.root_selector, e))
+            .filter_map(|e| {
+                let selector = format!("{} {}", options.root_selector, e);
+                match selector.parse::<Selector>() {
+                    Ok(_) => Some(selector),
+                    Err(error) => {
+                        options.logger.warn(format!(
+                            "Ignoring the exclude selector {e:?}, which Pagefind can't parse: {error}. Indexing will continue without it."
+                        ));
+                        None
+                    }
+                }
+            })
             .collect::<Vec<_>>()
             .join(", ");
         let mut anchor_counter = 0;
@@ -733,6 +744,41 @@ mod tests {
         input.insert(0, "<html><body>");
         input.push("</body></html>");
         test_raw_parse(input)
+    }
+
+    fn test_parse_with_exclusions(
+        mut input: Vec<&'static str>,
+        exclusions: &[&'static str],
+    ) -> DomParserResult {
+        use clap::CommandFactory;
+        let mut args = vec!["pagefind", "--source", "not_important"];
+        for exclusion in exclusions {
+            args.push("--exclude-selectors");
+            args.push(exclusion);
+        }
+        let config_args = vec![twelf::Layer::Clap(
+            crate::PagefindInboundConfig::command().get_matches_from(args),
+        )];
+        let config =
+            SearchOptions::load(crate::PagefindInboundConfig::with_layers(&config_args).unwrap())
+                .unwrap();
+        let mut rewriter = DomParser::new(&config);
+        input.insert(0, "<html><body>");
+        input.push("</body></html>");
+        for line in input {
+            let _ = rewriter.write(line.as_bytes());
+        }
+        rewriter.wrap()
+    }
+
+    #[test]
+    fn unsupported_exclude_selector_does_not_halt_indexing() {
+        let data = test_parse_with_exclusions(
+            vec!["<p>Kept</p>", "<div class='ad'>Dropped</div>"],
+            &[":not(.a b)", ".ad"],
+        );
+
+        assert_eq!(data.digest, "Kept.");
     }
 
     #[test]
