@@ -63,6 +63,9 @@ struct DomParserData {
     has_html_element: bool,
     has_old_bundle_reference: bool,
     has_default_ui_reference: bool,
+    // Set when an --exclude-selectors match fires, and taken by the handler that
+    // builds the node for that same element.
+    exclude_element: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -134,17 +137,28 @@ impl<'a> DomParser<'a> {
     pub fn new(options: &'a SearchOptions) -> Self {
         let data = Rc::new(RefCell::new(DomParserData::default()));
         let root = format!("{}, {} *", options.root_selector, options.root_selector);
-        let mut custom_exclusions = options.exclude_selectors.clone();
-        custom_exclusions.extend(REMOVE_SELECTORS.iter().map(|s| s.to_string()));
-        let custom_exclusions = custom_exclusions
-            .iter()
-            .map(|e| format!("{} {}", options.root_selector, e))
-            .collect::<Vec<_>>()
-            .join(", ");
+        let scope_to_root = |selectors: &mut dyn Iterator<Item = &str>| {
+            selectors
+                .map(|e| format!("{} {}", options.root_selector, e))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        let user_exclusions =
+            scope_to_root(&mut options.exclude_selectors.iter().map(String::as_str));
+        let auto_exclusions = scope_to_root(&mut REMOVE_SELECTORS.iter().copied());
         let mut anchor_counter = 0;
 
+        // Registered ahead of the handler below so that the element's own status
+        // is known before any of its metadata is read.
+        let user_exclusion_handler = (!user_exclusions.is_empty()).then(|| {
+            enclose! { (data) element!(user_exclusions, move |_el| {
+                data.borrow_mut().exclude_element = true;
+                Ok(())
+            })}
+        });
+
         let rewriter = HtmlRewriter::new(
-            vec![
+            user_exclusion_handler.into_iter().chain(vec![
                     enclose! { (data) element!("html", move |el| {
                         let mut data = data.borrow_mut();
                         data.has_html_element = true;
@@ -154,6 +168,7 @@ impl<'a> DomParser<'a> {
                         Ok(())
                     })},
                     enclose! { (data) element!(root, move |el| {
+                        let excluded_by_selector = std::mem::take(&mut data.borrow_mut().exclude_element);
                         let explicit_ignore_flag = el.get_attribute("data-pagefind-ignore").map(|attr| {
                             match attr.to_ascii_lowercase().as_str() {
                                 "" | "index" | "true" => NodeStatus::Ignored,
@@ -175,7 +190,9 @@ impl<'a> DomParser<'a> {
                         let index_attrs: Option<Vec<String>> = el.get_attribute("data-pagefind-index-attrs").map(|attr| attr.split(',').map(|a| a.trim().to_string()).collect());
                         let tag_name = el.tag_name();
 
-                        let status = if treat_as_body {
+                        let status = if excluded_by_selector {
+                            NodeStatus::Excluded
+                        } else if treat_as_body {
                             NodeStatus::Body
                         } else if let Some(explicit_ignore_flag) = explicit_ignore_flag {
                             explicit_ignore_flag
@@ -495,8 +512,9 @@ impl<'a> DomParser<'a> {
                         }
                         Ok(())
                     })},
-                    // If we hit a selector that should be excluded, mark whatever the current node is as such
-                    enclose! { (data) element!(custom_exclusions, move |_el| {
+                    // Elements we always skip stay "ignored" rather than "excluded",
+                    // so that metadata tagged inside a <head> or a <nav> still counts.
+                    enclose! { (data) element!(auto_exclusions, move |_el| {
                         let data = data.borrow_mut();
                         let mut node = data.current_node.borrow_mut();
                         node.status = NodeStatus::Ignored;
@@ -552,8 +570,7 @@ impl<'a> DomParser<'a> {
                         }
                         Ok(())
                     })},
-            ]
-            .into_iter()
+            ])
             .fold(Settings::new().with_strict(false), |settings, handler| {
                 settings.append_element_content_handler(handler)
             }),
@@ -711,13 +728,18 @@ mod tests {
     }
 
     fn test_raw_parse(input: Vec<&'static str>) -> DomParserResult {
+        test_raw_parse_with_args(vec![], input)
+    }
+
+    fn test_raw_parse_with_args(
+        extra_args: Vec<&'static str>,
+        input: Vec<&'static str>,
+    ) -> DomParserResult {
         use clap::CommandFactory;
+        let mut args = vec!["pagefind", "--source", "not_important"];
+        args.extend(extra_args);
         let config_args = vec![twelf::Layer::Clap(
-            crate::PagefindInboundConfig::command().get_matches_from(vec![
-                "pagefind",
-                "--source",
-                "not_important",
-            ]),
+            crate::PagefindInboundConfig::command().get_matches_from(args),
         )];
         let config =
             SearchOptions::load(crate::PagefindInboundConfig::with_layers(&config_args).unwrap())
@@ -818,6 +840,45 @@ mod tests {
         ]);
 
         assert_eq!(data.digest, "Elements like: forms. As well as *crickets*.");
+    }
+
+    #[test]
+    fn excluded_selectors_are_excluded_entirely() {
+        let data = test_raw_parse_with_args(
+            vec!["--exclude-selectors", "img.emoji, .promo"],
+            vec![
+                "<html><body>",
+                "<h1>Kitty blog</h1>",
+                "<img class='emoji' alt='thumbs up' src='/emoji/+1.png'>",
+                "<div class='promo' data-pagefind-meta='deal:half price'></div>",
+                "<div class='promo' data-pagefind-filter='color:red'>Buy now</div>",
+                "<img alt='a kitty' src='/kitty.jpg'>",
+                "</body></html>",
+            ],
+        );
+
+        assert_eq!(
+            data.digest,
+            "___PAGEFIND_AUTO_WEIGHT___7 Kitty blog. ___END_PAGEFIND_WEIGHT___"
+        );
+        assert_eq!(data.meta.get("deal"), None);
+        assert_eq!(data.filters.get("color"), None);
+        assert_eq!(data.meta.get("image"), Some(&"/kitty.jpg".to_owned()));
+        assert_eq!(data.meta.get("image_alt"), Some(&"a kitty".to_owned()));
+    }
+
+    #[test]
+    fn automatically_removed_elements_still_supply_metadata() {
+        let data = test_raw_parse(vec![
+            "<html><head><title>Kitty blog</title></head><body>",
+            "<nav data-pagefind-meta='section:navigation'>Home</nav>",
+            "<p>Meow</p>",
+            "</body></html>",
+        ]);
+
+        assert_eq!(data.digest, "Meow.");
+        assert_eq!(data.meta.get("section"), Some(&"navigation".to_owned()));
+        assert_eq!(data.meta.get("title"), Some(&"Kitty blog".to_owned()));
     }
 
     #[test]

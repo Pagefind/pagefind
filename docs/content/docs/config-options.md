@@ -63,7 +63,7 @@ exclude_selectors:
   - "[id^='prefix-']"
 ```
 
-All children will also be ignored, so using a `#my_navigation *` selector is not required — in other words, the semantics are the same as the [data-pagefind-ignore](/docs/indexing/#removing-individual-elements-from-the-index) attribute.
+All children will also be excluded, so using a `#my_navigation *` selector is not required. In other words, the semantics are the same as the [data-pagefind-ignore="all"](/docs/indexing/#removing-individual-elements-from-the-index) attribute: matched elements are skipped for metadata and filters as well as for content.
 
 Note that currently Pagefind only supports lists of options via configuration files. If using the `--exclude-selectors` CLI flag or the `PAGEFIND_EXCLUDE_SELECTORS` environment variable, only one selector may be supplied. The selector may be a comma-separated CSS selector though, so the above example can be passed as `--exclude-selectors "#my_navigation, blockquote > span, [id^='prefix-']"`.
 
