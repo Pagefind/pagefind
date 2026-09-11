@@ -7,6 +7,7 @@ use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use pagefind_stem::{Algorithm, Stemmer};
 use path_slash::PathExt as _;
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::io::BufRead;
@@ -589,6 +590,20 @@ impl Fossicker {
 
 }
 
+/// The URL spec's path percent-encode set, minus `/` so that the separators
+/// between the path segments survive. `%` is deliberately left alone, so a file
+/// that is already named in encoded form keeps the URL it has today.
+const PATH_ENCODE_SET: &AsciiSet = &CONTROLS
+    .add(b' ')
+    .add(b'"')
+    .add(b'#')
+    .add(b'<')
+    .add(b'>')
+    .add(b'?')
+    .add(b'`')
+    .add(b'{')
+    .add(b'}');
+
 fn strip_index_html(url: &str) -> &str {
     if url.ends_with("/index.html") {
         &url[..url.len() - 10]
@@ -621,7 +636,7 @@ fn build_url(page_url: &Path, relative_to: Option<&Path>, options: &SearchOption
         url.to_slash_lossy().to_owned().to_string()
     };
 
-    format!("/{}", final_url)
+    format!("/{}", utf8_percent_encode(&final_url, PATH_ENCODE_SET))
 }
 
 fn normalize_content(content: &str) -> String {
@@ -1245,6 +1260,29 @@ mod tests {
         let p: PathBuf = cwd.join::<PathBuf>("hello/world/index.html".into());
         let root: PathBuf = cwd.join::<PathBuf>("hello".into());
         assert_eq!(&build_url(&p, Some(&root), &opts), "/world/");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn building_urls_with_characters_that_need_encoding() {
+        std::env::set_var("PAGEFIND_SITE", "hello/world");
+        let config =
+            PagefindInboundConfig::with_layers(&[Layer::Env(Some("PAGEFIND_".into()))]).unwrap();
+        let opts = SearchOptions::load(config).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/Müsli.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%C3%BCsli.html");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/Müsli/index.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%C3%BCsli/");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/a b/c#d?e.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/a%20b/c%23d%3Fe.html");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/M%C3%BCsli.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%C3%BCsli.html");
     }
 
     #[cfg(target_os = "windows")]
