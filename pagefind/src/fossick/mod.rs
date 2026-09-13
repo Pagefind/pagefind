@@ -621,7 +621,13 @@ fn build_url(page_url: &Path, relative_to: Option<&Path>, options: &SearchOption
         url.to_slash_lossy().to_owned().to_string()
     };
 
-    format!("/{}", final_url)
+    format!(
+        "/{}",
+        final_url
+            .replace('%', "%25")
+            .replace('#', "%23")
+            .replace('?', "%3F")
+    )
 }
 
 fn normalize_content(content: &str) -> String {
@@ -1245,6 +1251,9 @@ mod tests {
         let p: PathBuf = cwd.join::<PathBuf>("hello/world/index.html".into());
         let root: PathBuf = cwd.join::<PathBuf>("hello".into());
         assert_eq!(&build_url(&p, Some(&root), &opts), "/world/");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/100%/C#/why?.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/100%25/C%23/why%3F.html");
     }
 
     #[cfg(target_os = "windows")]
