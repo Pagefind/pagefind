@@ -42,6 +42,7 @@ export class PagefindInstance {
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
   exactDiacritics: boolean;
+  backtrackFloor: number | null;
   metaCacheTag: string | null;
 
   loaded_chunks: Record<string, Promise<void>>;
@@ -100,6 +101,7 @@ export class PagefindInstance {
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
     this.exactDiacritics = opts.exactDiacritics ?? false;
+    this.backtrackFloor = opts.backtrackFloor ?? null;
     this.metaCacheTag = opts.metaCacheTag ?? null;
 
     this.loaded_chunks = {};
@@ -174,6 +176,7 @@ export class PagefindInstance {
       "highlightParam",
       "ranking",
       "exactDiacritics",
+      "backtrackFloor",
       "metaCacheTag",
     ];
     for (const [k, v] of Object.entries(options)) {
@@ -195,6 +198,8 @@ export class PagefindInstance {
           this.highlightParam = v;
         if (k === "exactDiacritics" && typeof v === "boolean")
           this.exactDiacritics = v;
+        if (k === "backtrackFloor" && typeof v === "number")
+          this.backtrackFloor = v;
         if (k === "metaCacheTag" && typeof v === "string")
           this.metaCacheTag = v;
       } else if (!["basePath"].includes(k)) {
@@ -724,6 +729,9 @@ export class PagefindInstance {
       sort_list,
       exact_search,
       this.exactDiacritics,
+      // Languages that aren't whitespace delimited are segmented into very short
+      // words, where a single character may be a whole word and more suitable for backtracking
+      this.backtrackFloor ?? (needsWordSegmentation(trueLanguage) ? 1 : 3),
     ) as string;
     log(`Got the raw search result: ${result}`);
 

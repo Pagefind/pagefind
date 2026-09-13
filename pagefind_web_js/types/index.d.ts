@@ -46,6 +46,17 @@ declare global {
      */
     exactDiacritics?: boolean;
     /**
+     * The shortest word, in characters, that Pagefind may fall back to when a search term
+     * has no matches of its own. At a value of 3, a search for "aubergine" may backtrack
+     * to "aub", but never to "a".
+     *
+     * Defaults to 3 in most languages.
+     * Defaults to 1 in languages that aren't whitespace delimited (Chinese, Japanese, Thai).
+     *
+     * Set to 0 to allow any prefix, matching Pagefind's behaviour before v1.6.
+     */
+    backtrackFloor?: number;
+    /**
      * Force Pagefind to run on the main thread instead of using a web worker.
      *
      * By default, Pagefind will use a web worker for search operations when available,
