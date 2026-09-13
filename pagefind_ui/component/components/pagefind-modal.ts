@@ -103,8 +103,24 @@ export class PagefindModal extends PagefindElement {
     );
 
     this.dialogEl.addEventListener("click", (e) => {
-      if (e.target === this.dialogEl) {
+      const target = e.target as Element;
+      if (target === this.dialogEl) {
         this.close();
+        return;
+      }
+
+      const link = target.closest("pagefind-results a") as HTMLAnchorElement;
+      if (!link) return;
+      this.close();
+
+      const anchor = link.hash && document.getElementById(link.hash.slice(1));
+      if (anchor) {
+        // Closing hands focus back to the trigger, which would scroll away
+        // from the fragment the browser is navigating to
+        requestAnimationFrame(() => {
+          anchor.tabIndex = -1;
+          anchor.focus();
+        });
       }
     });
   }
