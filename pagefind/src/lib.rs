@@ -100,10 +100,10 @@ impl SearchState {
                 plural!(errors.len())
             ));
             for err in errors.iter().take(5) {
-                log.v_warn(format!("  - {}", err));
+                log.warn(format!("  - {}", err));
             }
             if errors.len() > 5 {
-                log.v_warn(format!("  ... and {} more", errors.len() - 5));
+                log.warn(format!("  ... and {} more", errors.len() - 5));
             }
         }
 
@@ -152,7 +152,8 @@ impl SearchState {
                 log.warn(format!(
                     "{} page{} found without an <html> element. \n\
                     Pages without an outer <html> element will not be processed by default. \n\
-                    If adding this element is not possible, use the root selector config to target a different root element.",
+                    If adding this element is not possible, use the root selector config to target a different root element. \n\
+                    Run Pagefind with --verbose for more information.",
                     pages_without_html.len(),
                     plural!(pages_without_html.len())
                 ));

@@ -1,0 +1,18 @@
+name: Log level > html element logs
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - step: I have a "public/redirect/index.html" file with the content {html}
+    html: >-
+      <!doctype html><title>Redirecting to: /</title><meta http-equiv="refresh"
+      content="0;url=/"><body><a href="/">Redirecting</a></body>
+
+  - macro: I run Pagefind
+  - "stderr should contain '1 page found without an <html> element'"
+  - "stderr should not contain 'has no <html> element'"
+
+  - macro: I run Pagefind with "--verbose"
+  - "stderr should contain '1 page found without an <html> element'"
+  - "stderr should contain 'has no <html> element'"
