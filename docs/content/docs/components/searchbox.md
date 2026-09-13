@@ -44,7 +44,7 @@ By default, the searchbox listens for `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) 
 <pagefind-searchbox hide-shortcut></pagefind-searchbox>
 ```
 
-The `shortcut` attribute accepts the same syntax as [`<pagefind-modal-trigger>`](/docs/components/modal-trigger/#customizing-the-shortcut).
+The `shortcut` attribute accepts the same syntax as [`<pagefind-modal-trigger>`](/docs/components/modal-trigger/#customizing-the-shortcut). The shortcut hint is automatically hidden on touch-only devices.
 
 ## Keyboard Navigation
 

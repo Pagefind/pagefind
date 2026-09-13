@@ -1,0 +1,41 @@
+name: Web Components Tests > Shortcut badge is hidden on touch-only devices
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal></pagefind-modal>
+      <pagefind-searchbox></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let badge = await toolproof.querySelector("pagefind-modal-trigger .pf-trigger-shortcut");
+      let input = await toolproof.querySelector("pagefind-searchbox input");
+      // Headless Chrome always reports (hover: hover), so enable the
+      // touch-device block to see what a phone would render.
+      for (const sheet of document.styleSheets) {
+        for (const rule of sheet.cssRules) {
+          if (rule.media?.mediaText === "(hover: none)") rule.media.mediaText = "all";
+        }
+      }
+      let display = window.getComputedStyle(badge).display;
+      toolproof.assert(
+        display === "none",
+        `Expected .pf-trigger-shortcut to be hidden on touch-only devices, got display: ${display}`
+      );
+      let padding = window.getComputedStyle(input).paddingInlineEnd;
+      toolproof.assert(
+        padding === "12px",
+        `Expected the searchbox input to reclaim the hidden badge's space, got padding-inline-end: ${padding}`
+      );
