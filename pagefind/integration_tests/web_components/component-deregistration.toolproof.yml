@@ -1,0 +1,72 @@
+name: Web Components Tests > Components unregister when removed from the DOM
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <div id="app">
+        <pagefind-modal-trigger></pagefind-modal-trigger>
+        <pagefind-modal>
+          <pagefind-modal-header>
+            <pagefind-input></pagefind-input>
+          </pagefind-modal-header>
+          <pagefind-modal-body>
+            <pagefind-summary></pagefind-summary>
+            <pagefind-results></pagefind-results>
+          </pagefind-modal-body>
+        </pagefind-modal>
+      </div>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let app = await toolproof.querySelector("#app");
+      let instance = window.PagefindComponents.getInstanceManager().getInstance("default");
+      await toolproof.waitFor(() => document.querySelector("pagefind-modal dialog"));
+      let registered = instance.components.length;
+      app.innerHTML = `
+        <pagefind-modal-trigger></pagefind-modal-trigger>
+        <pagefind-modal>
+          <pagefind-modal-header>
+            <pagefind-input></pagefind-input>
+          </pagefind-modal-header>
+          <pagefind-modal-body>
+            <pagefind-summary></pagefind-summary>
+            <pagefind-results></pagefind-results>
+          </pagefind-modal-body>
+        </pagefind-modal>`;
+      await toolproof.waitFor(() => document.querySelector("pagefind-modal dialog"));
+      toolproof.assert(
+        instance.components.length === registered,
+        `Registry should still hold ${registered} components after the swap, got ${instance.components.length}`
+      );
+      toolproof.assert(
+        instance.getUtilities("modal").length === 1,
+        `One modal should be registered, got ${instance.getUtilities("modal").length}`
+      );
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+  - step: In my browser, I click the selector "pagefind-modal input"
+  - step: In my browser, I type "world"
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-modal pagefind-summary");
+      await toolproof.waitFor(() => summary.textContent.includes("1"));
+      return summary.textContent.trim();
+    snapshot_content: |-
+      ╎1 result for world
