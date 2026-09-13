@@ -1,5 +1,6 @@
 import { PagefindElement } from "./base-element";
 import { Instance } from "../core/instance";
+import { trackComposition } from "../core/composition";
 import type { PagefindError } from "../types";
 
 const asyncSleep = (ms = 100): Promise<void> =>
@@ -124,7 +125,15 @@ export class PagefindInput extends PagefindElement {
       }
     });
 
+    const isComposingKey = trackComposition(this.inputEl);
+
     this.inputEl.addEventListener("keydown", (e) => {
+      // Escape cancels an in-progress IME conversion; clearing the query on it
+      // would throw away everything the user had typed so far.
+      if (isComposingKey(e)) {
+        return;
+      }
+
       if (e.key === "Escape") {
         ++this.searchID;
         if (this.inputEl) this.inputEl.value = "";
