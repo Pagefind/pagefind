@@ -2,7 +2,8 @@ import { build_excerpt, calculate_excerpt_region } from "./excerpt";
 
 export const calculate_sub_results = (
   fragment: PagefindSearchFragment,
-  desired_excerpt_length: number
+  desired_excerpt_length: number,
+  ellipsis: string
 ): PagefindSubResult[] => {
   const effective_url = fragment.meta?.url || fragment.url;
 
@@ -42,7 +43,8 @@ export const calculate_sub_results = (
         excerpt_length,
         current_anchor.locations,
         current_anchor_position,
-        end_range
+        end_range,
+        ellipsis
       );
       current_anchor.excerpt = excerpts.excerpt;
       current_anchor.plain_excerpt = excerpts.plain_excerpt;

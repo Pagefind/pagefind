@@ -24,6 +24,11 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.excerptLength = parseInt(excerptLength, 10);
     }
 
+    const excerptEllipsis = this.getAttribute("excerpt-ellipsis");
+    if (excerptEllipsis) {
+      instance.pagefindOptions.excerptEllipsis = excerptEllipsis;
+    }
+
     const lang = this.getAttribute("lang");
     if (lang) {
       instance.setLanguage(lang);

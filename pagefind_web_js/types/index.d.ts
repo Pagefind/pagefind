@@ -9,6 +9,8 @@ declare global {
     baseUrl?: string;
     /** The maximum length of excerpts that Pagefind should generate for search results. Default to 30 */
     excerptLength?: number;
+    /** If set, Pagefind will wrap excerpts with this string on any end that was truncated. Defaults to none */
+    excerptEllipsis?: string;
     /**
      * Multiply all rankings for this index by the given weight.
      *

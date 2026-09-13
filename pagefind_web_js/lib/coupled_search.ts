@@ -37,6 +37,7 @@ export class PagefindInstance {
   primary: boolean;
   indexWeight: number;
   excerptLength: number;
+  excerptEllipsis: string;
   mergeFilter: Object;
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
@@ -94,6 +95,7 @@ export class PagefindInstance {
     this.primary = primary;
     this.indexWeight = opts.indexWeight ?? 1;
     this.excerptLength = opts.excerptLength ?? 30;
+    this.excerptEllipsis = opts.excerptEllipsis ?? "";
     this.mergeFilter = opts.mergeFilter ?? {};
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
@@ -163,6 +165,7 @@ export class PagefindInstance {
       "baseUrl",
       "indexWeight",
       "excerptLength",
+      "excerptEllipsis",
       "mergeFilter",
       "highlightParam",
       "ranking",
@@ -181,6 +184,8 @@ export class PagefindInstance {
         if (k === "indexWeight" && typeof v === "number") this.indexWeight = v;
         if (k === "excerptLength" && typeof v === "number")
           this.excerptLength = v;
+        if (k === "excerptEllipsis" && typeof v === "string")
+          this.excerptEllipsis = v;
         if (k === "mergeFilter" && typeof v === "object") this.mergeFilter = v;
         if (k === "highlightParam" && typeof v === "string")
           this.highlightParam = v;
@@ -440,11 +445,18 @@ export class PagefindInstance {
       excerpt_start,
       this.excerptLength,
       fragment.locations,
+      undefined,
+      undefined,
+      this.excerptEllipsis,
     );
     fragment.excerpt = excerpts.excerpt;
     fragment.plain_excerpt = excerpts.plain_excerpt;
 
-    fragment.sub_results = calculate_sub_results(fragment, this.excerptLength);
+    fragment.sub_results = calculate_sub_results(
+      fragment,
+      this.excerptLength,
+      this.excerptEllipsis,
+    );
 
     return fragment;
   }
