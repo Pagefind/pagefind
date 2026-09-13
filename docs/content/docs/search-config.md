@@ -130,6 +130,32 @@ await pagefind.options({
 {{< /tab >}}
 {{< /tabs >}}
 
+### Excerpt ellipsis
+
+If set, Pagefind will add this string to either end of an excerpt that was truncated. Excerpts that run to the start or the end of the page are left alone. Defaults to none.
+
+{{< tabs >}}
+{{< tab "UI (declarative)" "sync-cfg-declarative" >}}
+```html
+<pagefind-config excerpt-ellipsis="…"></pagefind-config>
+```
+{{< /tab >}}
+{{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
+```js
+configureInstance("default", {
++    excerptEllipsis: "…"
+});
+```
+{{< /tab >}}
+{{< tab "Search API" "sync-cfg-searchapi" >}}
+```js
+await pagefind.options({
++    excerptEllipsis: "…"
+});
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Highlight query parameter
 
 If set, Pagefind will add the search term as a query parameter under the same name.
