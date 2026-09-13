@@ -1,3 +1,6 @@
+// Whitespace for JS, to align with Rust's split_whitespace
+const word_separators = /[^\S\uFEFF]+/g;
+
 export const calculate_excerpt_region = (
   word_positions: PagefindWordLocation[],
   excerpt_length: number,
@@ -56,7 +59,7 @@ export const build_excerpt = (
     // If segmentation was run on the backend, count words by ZWS boundaries
     fragment_words = content.split("\u200B");
   } else {
-    fragment_words = content.split(/[\r\n\s]+/g);
+    fragment_words = content.split(word_separators);
   }
 
   let endcap = not_from ?? fragment_words.length;
@@ -99,7 +102,7 @@ export const extract_words = (
     // If segmentation was run on the backend, count words by ZWS boundaries
     fragment_words = content.split("\u200B");
   } else {
-    fragment_words = content.split(/[\r\n\s]+/g);
+    fragment_words = content.split(word_separators);
   }
 
   return locations.map((l) => fragment_words[l]);
