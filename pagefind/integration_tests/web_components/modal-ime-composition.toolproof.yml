@@ -1,0 +1,63 @@
+name: Web Components Tests > Escape during an IME composition does not close the modal or clear the query
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal>
+        <pagefind-modal-header>
+          <pagefind-input></pagefind-input>
+        </pagefind-modal-header>
+        <pagefind-modal-body>
+          <pagefind-summary></pagefind-summary>
+          <pagefind-results></pagefind-results>
+        </pagefind-modal-body>
+        <pagefind-modal-footer></pagefind-modal-footer>
+      </pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+  - step: In my browser, I type "world"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-modal input");
+      await toolproof.waitFor(() => input.value === "world", "Input should have query text");
+  # Escape during a composition cancels the conversion. Closing the modal, or
+  # clearing the query, would discard everything typed so far.
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      let input = await toolproof.querySelector("pagefind-modal input");
+      input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "Escape", bubbles: true, cancelable: true, isComposing: true,
+      }));
+      toolproof.assert(dialog.open === true, "Modal should stay open during a composition");
+      toolproof.assert(input.value === "world", "Query should not be cleared during a composition");
+  # Composition over: Escape must close the modal exactly as before.
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let input = await toolproof.querySelector("pagefind-modal input");
+      input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "world" }));
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape", bubbles: true }));
+  - step: In my browser, I press the "Escape" key
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === false, "Modal should close on Escape once composition has ended");
