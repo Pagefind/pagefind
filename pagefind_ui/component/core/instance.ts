@@ -231,6 +231,21 @@ export class Instance {
     this.reconcileAria();
   }
 
+  unregisterComponent(component: PagefindComponent): void {
+    this.components = this.components.filter((c) => c !== component);
+    const type = component.componentType;
+    if (type && this.componentsByType[type]) {
+      this.componentsByType[type] = this.componentsByType[type].filter(
+        (c) => c !== component,
+      );
+    }
+    (Object.keys(this.__hooks__) as InstanceEvent[]).forEach((event) => {
+      this.__hooks__[event] = this.__hooks__[event].filter(
+        (h) => typeof h === "function" || h.owner !== component,
+      );
+    });
+  }
+
   getInputs(requiredCapability: string | null = null): PagefindComponent[] {
     const components = this.componentsByType["input"] || [];
     if (!requiredCapability) return components;

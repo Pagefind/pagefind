@@ -36,6 +36,7 @@ export class PagefindElement extends HTMLElement {
     if (this.cleanup && typeof this.cleanup === "function") {
       this.cleanup();
     }
+    this.instance?.unregisterComponent(this);
     this._initialized = false;
   }
 
