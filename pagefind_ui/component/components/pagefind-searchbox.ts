@@ -275,6 +275,11 @@ export class PagefindSearchbox extends PagefindElement {
     );
   }
 
+  set placeholder(value: string) {
+    this._userPlaceholder = value;
+    if (this.inputEl) this.inputEl.placeholder = this.placeholder;
+  }
+
   private readAttributes(): void {
     if (this.hasAttribute("placeholder")) {
       this._userPlaceholder = this.getAttribute("placeholder");
