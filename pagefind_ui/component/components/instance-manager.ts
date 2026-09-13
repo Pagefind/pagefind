@@ -81,10 +81,9 @@ export function configureInstance(
   const manager = getInstanceManager();
 
   if (manager.hasInstance(name)) {
-    console.warn(
-      `[Pagefind Component UI]: Instance "${name}" already exists, configuration ignored`,
-    );
-    return manager.getInstance(name);
+    const instance = manager.getInstance(name);
+    instance.applyOptions(options);
+    return instance;
   }
 
   return manager.getInstance(name, options);
