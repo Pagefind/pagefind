@@ -1,0 +1,23 @@
+name: The backtrack floor counts Hangul syllables, not jamo
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ko/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ko">
+      <body>
+          <p>이 책 은 좋다</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ko/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      // Index keys are stored decomposed, so 책 is three jamo scalars but one character.
+      // Backing a search off to a single syllable is as unhelpful here as "a" is in English
+      let search = await pagefind.search("책상");
+      return search.results.length;
+    expected: 0

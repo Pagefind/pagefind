@@ -11,6 +11,15 @@ use pagefind_stem::Stemmer;
 
 use crate::SearchIndex;
 
+/// Counts the characters in a word, treating the conjoining jamo of a Hangul syllable as
+/// the single character they render as. Index keys are stored decomposed with combining
+/// marks removed, so this matches a grapheme count for every script Pagefind indexes.
+fn word_length(word: &str) -> usize {
+    word.chars()
+        .filter(|c| !matches!(*c as u32, 0x1160..=0x11FF | 0xD7B0..=0xD7FF))
+        .count()
+}
+
 pub struct PageSearchResult {
     pub page: String,
     pub page_index: usize,
@@ -823,7 +832,7 @@ impl SearchIndex {
                 });
                 extensions.push((key, results));
             } else if term.starts_with(key)
-                && key.chars().count() >= backtrack_floor
+                && word_length(key) >= backtrack_floor
                 && key.len() > longest_prefix.map(String::len).unwrap_or_default()
             {
                 longest_prefix = Some(key);
