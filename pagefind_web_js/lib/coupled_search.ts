@@ -129,7 +129,11 @@ export class PagefindInstance {
 
   private async performFetch(queued: { resolve: (response: Response) => void; reject: (error: any) => void; input: RequestInfo | URL }) {
     try {
-      queued.resolve(await fetch(queued.input));
+      const response = await fetch(queued.input);
+      if (!response.ok) {
+        throw new Error(`${response.status} fetching ${queued.input}`);
+      }
+      queued.resolve(response);
     } catch (error) {
       queued.reject(error);
     } finally {
@@ -371,29 +375,41 @@ export class PagefindInstance {
       this.raw_ptr = this.backend[method](ptr, chunk);
     } catch (e) {
       console.error(`Failed to load the index chunk ${url}:\n${e?.toString()}`);
+      throw e;
     }
+  }
+
+  // Failed loads are evicted from the cache so that a later search retries them
+  private cachedLoad<T>(
+    cache: Record<string, Promise<T>>,
+    hash: string,
+    load: () => Promise<T>,
+  ): Promise<T> {
+    if (!cache[hash]) {
+      cache[hash] = load().catch((e) => {
+        delete cache[hash];
+        throw e;
+      });
+    }
+    return cache[hash];
   }
 
   async loadChunk(hash: string) {
-    if (!this.loaded_chunks[hash]) {
-      const url = `${this.basePath}index/${hash}.pf_index`;
-      this.loaded_chunks[hash] = this._loadGenericChunk(
-        url,
+    await this.cachedLoad(this.loaded_chunks, hash, () =>
+      this._loadGenericChunk(
+        `${this.basePath}index/${hash}.pf_index`,
         "load_index_chunk",
-      );
-    }
-    return await this.loaded_chunks[hash];
+      ),
+    ).catch(() => {});
   }
 
   async loadFilterChunk(hash: string) {
-    if (!this.loaded_filters[hash]) {
-      const url = `${this.basePath}filter/${hash}.pf_filter`;
-      this.loaded_filters[hash] = this._loadGenericChunk(
-        url,
+    await this.cachedLoad(this.loaded_filters, hash, () =>
+      this._loadGenericChunk(
+        `${this.basePath}filter/${hash}.pf_filter`,
         "load_filter_chunk",
-      );
-    }
-    return await this.loaded_filters[hash];
+      ),
+    ).catch(() => {});
   }
 
   async _loadFragment(hash: string) {
@@ -413,12 +429,9 @@ export class PagefindInstance {
     weighted_locations: PagefindWordLocation[] = [],
     search_term: string,
   ) {
-    if (!this.loaded_fragments[hash]) {
-      this.loaded_fragments[hash] = this._loadFragment(hash);
-    }
-    let fragment = (await this.loaded_fragments[
-      hash
-    ]) as PagefindSearchFragment & {
+    let fragment = (await this.cachedLoad(this.loaded_fragments, hash, () =>
+      this._loadFragment(hash),
+    )) as PagefindSearchFragment & {
       raw_content: string;
       raw_url: string;
     };
