@@ -24,6 +24,7 @@ export class PagefindElement extends HTMLElement {
     const instanceName = this.getAttribute("instance") || "default";
     const manager = getInstanceManager();
     this.instance = manager.getInstance(instanceName);
+    this.instance.ensureLanguage();
 
     this.init();
 

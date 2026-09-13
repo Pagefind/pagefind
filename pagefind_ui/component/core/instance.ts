@@ -209,11 +209,7 @@ export class Instance {
       this.componentsByType[type] = [];
     }
 
-    // Auto-detect the language of this html page
-    // on first component registration
-    if (!this._languageSet) {
-      this.setLanguage();
-    }
+    this.ensureLanguage();
 
     if (this.components.includes(component)) {
       // Update capabilities but don't re-add
@@ -430,6 +426,15 @@ export class Instance {
    */
   get direction(): TextDirection {
     return this._direction;
+  }
+
+  /**
+   * Auto-detect the language of this html page, unless one has already been set.
+   */
+  ensureLanguage(): void {
+    if (!this._languageSet) {
+      this.setLanguage();
+    }
   }
 
   /**
