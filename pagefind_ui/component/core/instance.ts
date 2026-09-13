@@ -114,6 +114,20 @@ export class Instance {
     this._announcer = new Announcer(this.generateId.bind(this));
   }
 
+  applyOptions(opts: InstanceOptions): void {
+    if (this.__pagefind__) {
+      console.warn(
+        `[Pagefind Component UI]: Instance "${this.name}" has already loaded, configuration ignored`,
+      );
+      return;
+    }
+
+    const { bundlePath, mergeIndex, ...pagefindOpts } = opts;
+    if (bundlePath !== undefined) this.options.bundlePath = bundlePath;
+    if (mergeIndex !== undefined) this.options.mergeIndex = mergeIndex;
+    this.pagefindOptions = { ...this.pagefindOptions, ...pagefindOpts };
+  }
+
   generateId(prefix: string, length = 2): string {
     const idChars = "abcdef";
     const randomSeg = (len = 3): string => {
