@@ -75,6 +75,7 @@ export class Instance {
 
   searchTerm: string = "";
   searchFilters: FilterSelection = {};
+  searchSort: Record<string, string> = {};
   searchResult: PagefindSearchResult = { results: [] };
   availableFilters: FilterCounts | null = null;
   totalFilters: FilterCounts | null = null;
@@ -563,7 +564,10 @@ export class Instance {
     if (!this.__pagefind__) return;
 
     const searchTerm = term && term.length ? term : null;
-    const results = await this.__pagefind__.search(searchTerm, { filters });
+    const results = await this.__pagefind__.search(searchTerm, {
+      filters,
+      sort: this.searchSort,
+    });
     if (results && this.__searchID__ === thisSearch) {
       if (results.filters && Object.keys(results.filters)?.length) {
         this.availableFilters = results.filters;

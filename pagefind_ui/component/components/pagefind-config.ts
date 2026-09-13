@@ -39,6 +39,12 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.highlightParam = highlightParam;
     }
 
+    const sort = this.getAttribute("sort");
+    if (sort) {
+      const [key, direction = "asc"] = sort.split(":");
+      instance.searchSort = { [key]: direction };
+    }
+
     if (this.hasAttribute("exact-diacritics")) {
       instance.pagefindOptions.exactDiacritics = true;
     }

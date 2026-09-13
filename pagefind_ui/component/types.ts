@@ -118,7 +118,7 @@ export interface PagefindAPI {
   options: (opts: Record<string, unknown>) => Promise<void>;
   search: (
     term: string | null,
-    options?: { filters?: FilterSelection },
+    options?: { filters?: FilterSelection; sort?: Record<string, string> },
   ) => Promise<PagefindSearchResult>;
   filters: () => Promise<FilterCounts>;
   mergeIndex: (url: string, options?: Record<string, unknown>) => Promise<void>;
