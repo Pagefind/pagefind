@@ -74,6 +74,12 @@ test('build narrowcapped excerpt', t => {
 	t.is(excerpt.excerpt, "vehicula <mark>ut</mark> id elit.");
 });
 
+test('build excerpt from content containing a byte order mark', t => {
+    const excerpt = build_excerpt("\uFEFFDonec id elit non mi porta gravida at eget metus.", 1, 5, [2]);
+
+	t.is(excerpt.excerpt, "id <mark>elit</mark> non mi porta");
+});
+
 test('build excerpt with ellipsis', t => {
     const excerpt = build_excerpt("Nullam id dolor id nibh ultricies vehicula ut id elit. Donec sed odio dui.", 6, 6, [7], undefined, undefined, "…");
 
