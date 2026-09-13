@@ -561,36 +561,43 @@ impl SearchIndex {
 
         let mut pages: Vec<PageSearchResult> = vec![];
 
+        // Group the matching words by page up front
+        let mut words_by_page: HashMap<usize, Vec<usize>> = HashMap::new();
+        for (word_index, w) in words.iter().enumerate() {
+            let page = w.word.page as usize;
+            if results.contains(page) {
+                words_by_page.entry(page).or_default().push(word_index);
+            }
+        }
+        let no_words: Vec<usize> = Vec::new();
+
         for (page_index, page) in results
             .iter()
             .flat_map(|p| self.pages.get(p).map(|page| (p, page)))
         {
-            let mut word_locations: Vec<_> = words
+            // Indices into `words`, in their original order, for this page only.
+            let page_words = words_by_page.get(&page_index).unwrap_or(&no_words);
+
+            let mut word_locations: Vec<_> = page_words
                 .iter()
-                .filter_map(|w| {
-                    if w.word.page as usize == page_index {
-                        Some(
-                            w.word
-                                .locs
-                                .iter()
-                                .map(|(weight, location)| VerboseWordLocation {
-                                    word_str: w.word_str,
-                                    weight: *weight,
-                                    word_location: *location,
-                                    length_bonus: w.length_bonus,
-                                    query_term_index: w.query_term_index,
-                                }),
-                        )
-                    } else {
-                        None
-                    }
+                .map(|&word_index| &words[word_index])
+                .flat_map(|w| {
+                    w.word
+                        .locs
+                        .iter()
+                        .map(|(weight, location)| VerboseWordLocation {
+                            word_str: w.word_str,
+                            weight: *weight,
+                            word_location: *location,
+                            length_bonus: w.length_bonus,
+                            query_term_index: w.query_term_index,
+                        })
                 })
-                .flatten()
                 .collect();
 
             let mut meta_field_matches: HashMap<u16, HashMap<usize, (&str, f32)>> = HashMap::new();
-            for w in words.iter() {
-                if w.word.page as usize == page_index && !w.word.meta_locs.is_empty() {
+            for w in page_words.iter().map(|&word_index| &words[word_index]) {
+                if !w.word.meta_locs.is_empty() {
                     let idf = calculate_idf(total_pages, combined_page_counts[w.query_term_index]);
                     for &(field_id, _position) in &w.word.meta_locs {
                         meta_field_matches
@@ -685,9 +692,10 @@ impl SearchIndex {
                 weighted_words
                     .into_iter()
                     .map(|(word_str, weighted_term_frequency)| {
-                        let matched_word = words
+                        let matched_word = page_words
                             .iter()
-                            .find(|w| w.word_str == word_str && w.word.page as usize == page_index)
+                            .map(|&word_index| &words[word_index])
+                            .find(|w| w.word_str == word_str)
                             .expect("word should be in the initial set");
 
                         let pages_containing_original_query_term =
