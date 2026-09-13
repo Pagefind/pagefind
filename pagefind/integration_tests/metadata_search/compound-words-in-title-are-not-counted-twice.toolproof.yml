@@ -1,0 +1,43 @@
+name: Metadata Search > Compound words in a title are not counted twice
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body></body></html>
+  - step: I have a "public/filtering/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>Filtering</title>
+      </head>
+      <body>
+          <p>A guide to adding filtering to a data table.</p>
+      </body>
+      </html>
+  - step: I have a "public/filter-metadata-service/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <title>FilterMetadataService</title>
+      </head>
+      <body>
+          <p>A reference for the public API surface of this class.</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  # The compound title is indexed as both "filtermetadataservic" and "filter",
+  # which must count as one match of the query term, not two
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("filtering");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /filtering/
+      - /filter-metadata-service/
