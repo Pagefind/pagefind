@@ -37,6 +37,11 @@ export class PagefindModalTrigger extends PagefindElement {
     );
   }
 
+  set placeholder(value: string) {
+    this._userPlaceholder = value;
+    if (this._initialized) this.render();
+  }
+
   init(): void {
     this.readAttributes();
     this.render();

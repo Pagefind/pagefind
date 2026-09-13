@@ -29,6 +29,7 @@ Declaratively configure a Pagefind instance. Optionally include this on the page
 | `exact-diacritics` | boolean | `false` | Treat diacritics as distinct characters instead of normalizing them |
 | `meta-cache-tag` | string | — | Replace the default cache-busting timestamp with a fixed string for offline/PWA support |
 | `no-worker` | boolean | `false` | Force Pagefind to run on the main thread instead of a web worker |
+| `sort` | string | — | Order results by a [sort key](/docs/sorts/) rather than by relevance, as `key:asc` or `key:desc` |
 
 ### Bundle Path Detection
 
@@ -81,6 +82,16 @@ When `faceted` is enabled:
 - Results update immediately when filters are changed
 
 Combine with `preload` to show all results immediately on page load. Without `preload`, results appear after the first user interaction (e.g., opening a filter dropdown).
+
+### Sorted Results
+
+Return results in a fixed order using a sort key from `data-pagefind-sort`:
+
+```html
+<pagefind-config sort="date:desc"></pagefind-config>
+```
+
+Sorting replaces relevancy ordering entirely, and pages that aren't tagged with the given sort key are excluded from the results.
 
 ### Named Instance
 

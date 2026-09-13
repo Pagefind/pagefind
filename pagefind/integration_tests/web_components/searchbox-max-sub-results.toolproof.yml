@@ -1,0 +1,39 @@
+name: Web Components Tests > Searchbox max-sub-results limits sub-results
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-searchbox show-sub-results max-sub-results="4"></pagefind-searchbox>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/guide/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <h1>Complete Guide</h1>
+      <h2 id="first">First Topic</h2>
+      <p>Content about the first topic.</p>
+      <h2 id="second">Second Topic</h2>
+      <p>Content about the second topic.</p>
+      <h2 id="third">Third Topic</h2>
+      <p>Content about the third topic.</p>
+      <h2 id="fourth">Fourth Topic</h2>
+      <p>Content about the fourth topic.</p>
+      </body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-searchbox input"
+  - step: In my browser, I type "topic"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector(".pf-searchbox-results");
+      await toolproof.waitFor(() => results.querySelectorAll(".pf-searchbox-subresult").length > 0);
+      let subResults = results.querySelectorAll(".pf-searchbox-subresult");
+      toolproof.assert(subResults.length === 4, `Expected 4 sub-results, got ${subResults.length}`);

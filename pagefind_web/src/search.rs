@@ -588,7 +588,7 @@ impl SearchIndex {
                 .flatten()
                 .collect();
 
-            let mut meta_field_matches: HashMap<u16, HashMap<&str, f32>> = HashMap::new();
+            let mut meta_field_matches: HashMap<u16, HashMap<usize, (&str, f32)>> = HashMap::new();
             for w in words.iter() {
                 if w.word.page as usize == page_index && !w.word.meta_locs.is_empty() {
                     let idf = calculate_idf(total_pages, combined_page_counts[w.query_term_index]);
@@ -596,7 +596,8 @@ impl SearchIndex {
                         meta_field_matches
                             .entry(field_id)
                             .or_default()
-                            .insert(w.word_str, idf);
+                            .entry(w.query_term_index)
+                            .or_insert((w.word_str, idf));
                     }
                 }
             }
@@ -737,7 +738,7 @@ impl SearchIndex {
                         .get(field_name)
                         .copied()
                         .unwrap_or(1.0);
-                    let matched_idf: f32 = word_idfs.values().sum();
+                    let matched_idf: f32 = word_idfs.values().map(|(_, idf)| idf).sum();
                     let coverage = matched_idf / query_total_idf;
                     let coverage_boost = if query_total_idf > 0.0 {
                         // Squared coverage to penalize partial meta matches.
@@ -763,7 +764,10 @@ impl SearchIndex {
                         scores.push(VerboseMetaScore {
                             field_name: field_name.clone(),
                             field_weight,
-                            matched_terms: word_idfs.keys().map(|s| s.to_string()).collect(),
+                            matched_terms: word_idfs
+                                .values()
+                                .map(|(term, _)| term.to_string())
+                                .collect(),
                             matched_idf,
                             query_total_idf,
                             coverage,

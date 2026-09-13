@@ -1,5 +1,6 @@
 import { PagefindElement } from "./base-element";
 import { Instance, PagefindComponent } from "../core/instance";
+import { trackComposition } from "../core/composition";
 
 interface ModalTrigger extends PagefindComponent {
   buttonEl?: HTMLButtonElement;
@@ -90,12 +91,20 @@ export class PagefindModal extends PagefindElement {
     };
     this.dialogEl.addEventListener("close", this._closeHandler);
 
+    const isComposingKey = trackComposition(this.dialogEl);
+
     this.dialogEl.addEventListener(
       "keydown",
       (e) => {
         if (e.key === "Escape") {
+          // Still cancelled, so the dialog's own close-watcher does not fire,
+          // but Escape during an IME composition cancels the conversion rather
+          // than dismissing the whole modal the user is typing into.
           e.preventDefault();
           e.stopPropagation();
+          if (isComposingKey(e)) {
+            return;
+          }
           this.close();
         }
       },
@@ -103,8 +112,24 @@ export class PagefindModal extends PagefindElement {
     );
 
     this.dialogEl.addEventListener("click", (e) => {
-      if (e.target === this.dialogEl) {
+      const target = e.target as Element;
+      if (target === this.dialogEl) {
         this.close();
+        return;
+      }
+
+      const link = target.closest("pagefind-results a") as HTMLAnchorElement;
+      if (!link) return;
+      this.close();
+
+      const anchor = link.hash && document.getElementById(link.hash.slice(1));
+      if (anchor) {
+        // Closing hands focus back to the trigger, which would scroll away
+        // from the fragment the browser is navigating to
+        requestAnimationFrame(() => {
+          anchor.tabIndex = -1;
+          anchor.focus();
+        });
       }
     });
   }

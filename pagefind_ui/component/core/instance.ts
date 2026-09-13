@@ -75,6 +75,7 @@ export class Instance {
 
   searchTerm: string = "";
   searchFilters: FilterSelection = {};
+  searchSort: Record<string, string> = {};
   searchResult: PagefindSearchResult = { results: [] };
   availableFilters: FilterCounts | null = null;
   totalFilters: FilterCounts | null = null;
@@ -112,6 +113,20 @@ export class Instance {
     this.pagefindOptions = pagefindOpts;
 
     this._announcer = new Announcer(this.generateId.bind(this));
+  }
+
+  applyOptions(opts: InstanceOptions): void {
+    if (this.__pagefind__) {
+      console.warn(
+        `[Pagefind Component UI]: Instance "${this.name}" has already loaded, configuration ignored`,
+      );
+      return;
+    }
+
+    const { bundlePath, mergeIndex, ...pagefindOpts } = opts;
+    if (bundlePath !== undefined) this.options.bundlePath = bundlePath;
+    if (mergeIndex !== undefined) this.options.mergeIndex = mergeIndex;
+    this.pagefindOptions = { ...this.pagefindOptions, ...pagefindOpts };
   }
 
   generateId(prefix: string, length = 2): string {
@@ -214,6 +229,21 @@ export class Instance {
     this.components.push(component);
 
     this.reconcileAria();
+  }
+
+  unregisterComponent(component: PagefindComponent): void {
+    this.components = this.components.filter((c) => c !== component);
+    const type = component.componentType;
+    if (type && this.componentsByType[type]) {
+      this.componentsByType[type] = this.componentsByType[type].filter(
+        (c) => c !== component,
+      );
+    }
+    (Object.keys(this.__hooks__) as InstanceEvent[]).forEach((event) => {
+      this.__hooks__[event] = this.__hooks__[event].filter(
+        (h) => typeof h === "function" || h.owner !== component,
+      );
+    });
   }
 
   getInputs(requiredCapability: string | null = null): PagefindComponent[] {
@@ -563,7 +593,10 @@ export class Instance {
     if (!this.__pagefind__) return;
 
     const searchTerm = term && term.length ? term : null;
-    const results = await this.__pagefind__.search(searchTerm, { filters });
+    const results = await this.__pagefind__.search(searchTerm, {
+      filters,
+      sort: this.searchSort,
+    });
     if (results && this.__searchID__ === thisSearch) {
       if (results.filters && Object.keys(results.filters)?.length) {
         this.availableFilters = results.filters;

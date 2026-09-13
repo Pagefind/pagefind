@@ -59,4 +59,4 @@ Supported syntax:
 - **Keys:** Any single character (e.g. `k`, `/`) or key name
 - **Case-insensitive:** Keys are normalized to lowercase
 
-The shortcut display auto-detects the platform to show the correct modifier key (⌘ on Mac, Ctrl on other platforms).
+The shortcut display auto-detects the platform to show the correct modifier key (⌘ on Mac, Ctrl on other platforms), and is automatically hidden on touch-only devices.

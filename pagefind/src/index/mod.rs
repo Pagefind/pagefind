@@ -605,8 +605,10 @@ fn chunk_index(word_map: HashMap<String, PackedWord>, chunk_size: usize) -> Vec<
         index_chunk_size += word
             .pages
             .iter()
+            .chain(word.additional_variants.iter().flat_map(|v| &v.pages))
             .map(|p| p.locs.len() + p.meta_locs.len() + 1)
-            .sum::<usize>();
+            .sum::<usize>()
+            + word.additional_variants.len();
         index_chunk.push(word);
         if index_chunk_size >= chunk_size {
             index_chunks.push(index_chunk.clone());
@@ -739,9 +741,32 @@ mod tests {
         words
     }
 
+    /// The same postings, but held as diacritic variants rather than on the word itself
+    fn test_variant_words() -> HashMap<String, PackedWord> {
+        let mut words = test_words();
+        for word in words.values_mut() {
+            word.additional_variants.push(PackedVariant {
+                form: format!("{}\u{0301}", word.word),
+                pages: std::mem::take(&mut word.pages),
+            });
+        }
+        words
+    }
+
     #[test]
     fn build_index_chunks() {
         let chunks = chunk_index(test_words(), 8);
+
+        assert_eq!(chunks.len(), 3);
+        assert_eq!(chunks[0][0].word, "apple");
+        assert_eq!(chunks[1][0].word, "apricot");
+        assert_eq!(chunks[1][1].word, "banana");
+        assert_eq!(chunks[2][0].word, "peach");
+    }
+
+    #[test]
+    fn build_index_chunks_from_variant_words() {
+        let chunks = chunk_index(test_variant_words(), 8);
 
         assert_eq!(chunks.len(), 3);
         assert_eq!(chunks[0][0].word, "apple");

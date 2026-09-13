@@ -193,6 +193,7 @@ All-in-one compact dropdown search. Often placed in navigation.
 | `debounce` | number | `150` | Milliseconds wait after typing |
 | `max-results` | number | unlimited | Limit results shown |
 | `show-sub-results` | boolean | `false` | Show anchor sub-results |
+| `max-sub-results` | number | `3` | Max sub-results per result |
 | `show-keyboard-hints` | boolean | `true` | Show keyboard hints in footer |
 | `autofocus` | boolean | `false` | Focus input on page load |
 | `shortcut` | string | `"mod+k"` | Keyboard shortcut to focus input |

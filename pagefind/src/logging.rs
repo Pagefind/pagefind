@@ -118,7 +118,7 @@ impl Logger {
     }
 
     pub fn v_warn<S: AsRef<str>>(&self, msg: S) {
-        self.log(msg, LogLevel::Quiet, LogStyle::Warning);
+        self.log(msg, LogLevel::Verbose, LogStyle::Warning);
     }
 
     pub fn error<S: AsRef<str>>(&self, msg: S) {

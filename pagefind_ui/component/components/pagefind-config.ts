@@ -24,6 +24,11 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.excerptLength = parseInt(excerptLength, 10);
     }
 
+    const excerptEllipsis = this.getAttribute("excerpt-ellipsis");
+    if (excerptEllipsis) {
+      instance.pagefindOptions.excerptEllipsis = excerptEllipsis;
+    }
+
     const lang = this.getAttribute("lang");
     if (lang) {
       instance.setLanguage(lang);
@@ -37,6 +42,12 @@ export class PagefindConfig extends PagefindElement {
     const highlightParam = this.getAttribute("highlight-param");
     if (highlightParam) {
       instance.pagefindOptions.highlightParam = highlightParam;
+    }
+
+    const sort = this.getAttribute("sort");
+    if (sort) {
+      const [key, direction = "asc"] = sort.split(":");
+      instance.searchSort = { [key]: direction };
     }
 
     if (this.hasAttribute("exact-diacritics")) {

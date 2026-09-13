@@ -1,5 +1,6 @@
 import { PagefindElement } from "./base-element";
 import { Instance } from "../core/instance";
+import { trackComposition } from "../core/composition";
 import { compile, type Template } from "adequate-little-templates";
 import {
   type KeyBinding,
@@ -217,6 +218,7 @@ export class PagefindSearchbox extends PagefindElement {
       "debounce",
       "autofocus",
       "show-sub-results",
+      "max-sub-results",
       "max-results",
       "show-keyboard-hints",
       "shortcut",
@@ -246,6 +248,7 @@ export class PagefindSearchbox extends PagefindElement {
   debounce: number = 150;
   autofocus: boolean = false;
   showSubResults: boolean = false;
+  maxSubResults: number = 3;
   maxResults: number = 0; // 0 means no limit
   showKeyboardHints: boolean = true;
   shortcut: string = "mod+k";
@@ -275,6 +278,11 @@ export class PagefindSearchbox extends PagefindElement {
     );
   }
 
+  set placeholder(value: string) {
+    this._userPlaceholder = value;
+    if (this.inputEl) this.inputEl.placeholder = this.placeholder;
+  }
+
   private readAttributes(): void {
     if (this.hasAttribute("placeholder")) {
       this._userPlaceholder = this.getAttribute("placeholder");
@@ -288,6 +296,10 @@ export class PagefindSearchbox extends PagefindElement {
     }
     if (this.hasAttribute("show-sub-results")) {
       this.showSubResults = this.getAttribute("show-sub-results") !== "false";
+    }
+    if (this.hasAttribute("max-sub-results")) {
+      this.maxSubResults =
+        parseInt(this.getAttribute("max-sub-results") || "3", 10) || 3;
     }
     if (this.hasAttribute("max-results")) {
       this.maxResults = parseInt(this.getAttribute("max-results") || "0", 10);
@@ -500,7 +512,16 @@ export class PagefindSearchbox extends PagefindElement {
       this.instance?.triggerSearch(value);
     });
 
+    const isComposingKey = trackComposition(this.inputEl);
+
     this.inputEl.addEventListener("keydown", (e) => {
+      // Keys that drive an IME belong to the IME. Acting on them navigates the
+      // user to a result, or moves the selection under them, while they are
+      // still choosing characters.
+      if (isComposingKey(e)) {
+        return;
+      }
+
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
@@ -1048,7 +1069,7 @@ export class PagefindSearchbox extends PagefindElement {
     result: PagefindResultData,
   ): SearchboxResultTemplateData {
     const subResults = this.showSubResults
-      ? this.instance!.getDisplaySubResults(result)
+      ? this.instance!.getDisplaySubResults(result, this.maxSubResults)
       : [];
 
     const resultId = this.instance!.generateId("pf-sb-result");

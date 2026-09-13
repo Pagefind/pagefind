@@ -52,6 +52,7 @@ export const build_excerpt = (
   locations: number[],
   not_before?: number,
   not_from?: number,
+  ellipsis?: string,
 ): ExcerptResult => {
   let is_zws_delimited = content.includes("\u200B");
   let fragment_words: string[] = [];
@@ -77,7 +78,9 @@ export const build_excerpt = (
   }
 
   const joiner = is_zws_delimited ? "" : " ";
-  const plain_excerpt = fragment_words.slice(start, start + length).join(joiner).trim();
+  const pre = ellipsis && start > startcap ? `${ellipsis}${joiner}` : "";
+  const post = ellipsis && start + length < endcap ? `${joiner}${ellipsis}` : "";
+  const plain_excerpt = pre + fragment_words.slice(start, start + length).join(joiner).trim() + post;
 
   for (let word of locations) {
     if (fragment_words[word]?.startsWith(`<mark>`)) {
@@ -87,7 +90,7 @@ export const build_excerpt = (
     fragment_words[word] = `<mark>${fragment_words[word]}</mark>`;
   }
 
-  const excerpt = fragment_words.slice(start, start + length).join(joiner).trim();
+  const excerpt = pre + fragment_words.slice(start, start + length).join(joiner).trim() + post;
 
   return { excerpt, plain_excerpt };
 };

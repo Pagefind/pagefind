@@ -274,7 +274,7 @@ pub fn request_indexes(ptr: *mut SearchIndex, query: &str) -> String {
     let search_index = unsafe { Box::from_raw(ptr) };
     let mut indexes = Vec::new();
 
-    for raw_term in query.split(' ') {
+    for raw_term in query.split(' ').filter(|term| !term.is_empty()) {
         // Check both the raw term and its stemmed versions, as the
         // chunk boundaries sit on the _stemmed_ words, which in some cases can get funky.
         let stemmed = stems_from_term(raw_term);

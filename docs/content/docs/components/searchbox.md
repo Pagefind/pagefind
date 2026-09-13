@@ -23,6 +23,7 @@ An all-in-one search component combining input, results dropdown, and keyboard n
 | `debounce` | number | `150` | Milliseconds to wait after typing |
 | `max-results` | number | unlimited | Limit number of results shown |
 | `show-sub-results` | boolean | `false` | Show anchor-based sub-results in dropdown |
+| `max-sub-results` | number | `3` | Maximum number of sub-results per result |
 | `show-keyboard-hints` | boolean | `true` | Show keyboard navigation hints in footer |
 | `autofocus` | boolean | `false` | Focus input on page load |
 | `shortcut` | string | `"mod+k"` | Keyboard shortcut to focus the input |
@@ -44,7 +45,7 @@ By default, the searchbox listens for `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) 
 <pagefind-searchbox hide-shortcut></pagefind-searchbox>
 ```
 
-The `shortcut` attribute accepts the same syntax as [`<pagefind-modal-trigger>`](/docs/components/modal-trigger/#customizing-the-shortcut).
+The `shortcut` attribute accepts the same syntax as [`<pagefind-modal-trigger>`](/docs/components/modal-trigger/#customizing-the-shortcut). The shortcut hint is automatically hidden on touch-only devices.
 
 ## Keyboard Navigation
 

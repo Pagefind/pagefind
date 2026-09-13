@@ -1,0 +1,31 @@
+name: URL tests > Percent encoded filenames resolve when navigated to
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/hello%2Fworld.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1
+      id="quokka-semaphore-paperclip">Quokka semaphore
+      paperclip</h1></body></html>
+  - step: I run "ls public"
+  - step: stdout should contain "hello%2Fworld.html"
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("quokka");
+      let data = await search.results[0].data();
+      let link = document.createElement("a");
+      link.id = "result-link";
+      link.href = data.url;
+      link.innerText = data.url;
+      document.querySelector('[data-url]').replaceWith(link);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I click the selector "#result-link"
+  # Toolproof drops its JS context across a navigation, so the landing page is
+  # asserted with a selector that only that page carries.
+  - step: In my browser, I scroll to the selector "h1#quokka-semaphore-paperclip"
