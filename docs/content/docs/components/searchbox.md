@@ -23,6 +23,7 @@ An all-in-one search component combining input, results dropdown, and keyboard n
 | `debounce` | number | `150` | Milliseconds to wait after typing |
 | `max-results` | number | unlimited | Limit number of results shown |
 | `show-sub-results` | boolean | `false` | Show anchor-based sub-results in dropdown |
+| `max-sub-results` | number | `3` | Maximum number of sub-results per result |
 | `show-keyboard-hints` | boolean | `true` | Show keyboard navigation hints in footer |
 | `autofocus` | boolean | `false` | Focus input on page load |
 | `shortcut` | string | `"mod+k"` | Keyboard shortcut to focus the input |
