@@ -217,6 +217,7 @@ export class PagefindSearchbox extends PagefindElement {
       "debounce",
       "autofocus",
       "show-sub-results",
+      "max-sub-results",
       "max-results",
       "show-keyboard-hints",
       "shortcut",
@@ -246,6 +247,7 @@ export class PagefindSearchbox extends PagefindElement {
   debounce: number = 150;
   autofocus: boolean = false;
   showSubResults: boolean = false;
+  maxSubResults: number = 3;
   maxResults: number = 0; // 0 means no limit
   showKeyboardHints: boolean = true;
   shortcut: string = "mod+k";
@@ -288,6 +290,10 @@ export class PagefindSearchbox extends PagefindElement {
     }
     if (this.hasAttribute("show-sub-results")) {
       this.showSubResults = this.getAttribute("show-sub-results") !== "false";
+    }
+    if (this.hasAttribute("max-sub-results")) {
+      this.maxSubResults =
+        parseInt(this.getAttribute("max-sub-results") || "3", 10) || 3;
     }
     if (this.hasAttribute("max-results")) {
       this.maxResults = parseInt(this.getAttribute("max-results") || "0", 10);
@@ -1048,7 +1054,7 @@ export class PagefindSearchbox extends PagefindElement {
     result: PagefindResultData,
   ): SearchboxResultTemplateData {
     const subResults = this.showSubResults
-      ? this.instance!.getDisplaySubResults(result)
+      ? this.instance!.getDisplaySubResults(result, this.maxSubResults)
       : [];
 
     const resultId = this.instance!.generateId("pf-sb-result");
