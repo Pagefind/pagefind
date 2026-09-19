@@ -37,6 +37,8 @@ pub struct MetaPage {
     pub hash: String,
     #[n(1)]
     pub word_count: u32,
+    #[n(2)]
+    pub group_hash: String,
 }
 
 #[derive(Encode, Debug)]

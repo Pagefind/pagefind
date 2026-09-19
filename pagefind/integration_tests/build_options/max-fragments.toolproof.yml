@@ -1,0 +1,39 @@
+name: Build Options > Max fragments grouping
+steps:
+  - ref: ../base/background.toolproof.yml
+  - step: I have a "public/page1/index.html" file with the content "<html><body><h1>Page One</h1><p>The quick brown fox</p></body></html>"
+  - step: I have a "public/page2/index.html" file with the content "<html><body><h1>Page Two</h1><p>Jumps over the lazy dog</p></body></html>"
+  - step: I have a "public/page3/index.html" file with the content "<html><body><h1>Page Three</h1><p>Sphinx of black quartz</p></body></html>"
+  - step: I have a "public/page4/index.html" file with the content "<html><body><h1>Page Four</h1><p>Judge my vow</p></body></html>"
+  - macro: I run Pagefind with "--max-fragments 2"
+  - step: stdout should contain "Running Pagefind"
+  - step: I run "ls public/pagefind/fragment/ | grep pf_fragment | wc -l | tr -d ' '"
+  - step: stdout should contain "2"
+  - step: I run "cat public/pagefind/fragment/*.pf_fragment | gunzip | head -c 100"
+  - step: stdout should contain "{"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.init();
+
+      let search = await pagefind.search("fox");
+      let data = await search.results[0].data();
+      let div1 = document.createElement('div');
+      div1.id = "res1";
+      div1.innerText = data.url;
+      document.body.appendChild(div1);
+
+      let search2 = await pagefind.search("dog");
+      let data2 = await search2.results[0].data();
+      let div2 = document.createElement('div');
+      div2.id = "res2";
+      div2.innerText = data2.url;
+      document.body.appendChild(div2);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val1 = await toolproof.querySelector("#res1");
+      toolproof.assert_eq(val1.innerHTML, "/page1/");
+      let val2 = await toolproof.querySelector("#res2");
+      toolproof.assert_eq(val2.innerHTML, "/page2/");

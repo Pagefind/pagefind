@@ -156,6 +156,13 @@ pub(crate) struct PagefindInboundConfig {
     #[serde(default = "defaults::default_false")]
     pub(crate) write_playground: bool,
 
+    #[clap(
+        long,
+        help = "The maximum number of fragment files to output, if number of files exceeds this value they will be grouped together."
+    )]
+    #[clap(required = false)]
+    pub(crate) max_fragments: Option<u32>,
+
     #[clap(long)]
     #[clap(required = false, hide = true)]
     #[serde(default = "defaults::default_false")]
@@ -199,6 +206,9 @@ pub struct PagefindServiceConfig {
     #[patch(as_option)]
     /// Include these characters when indexing and searching words.
     pub(crate) include_characters: Option<String>,
+    #[patch(as_option)]
+    /// The maximum number of fragment files to output.
+    pub(crate) max_fragments: Option<u32>,
 }
 
 mod defaults {
@@ -237,6 +247,7 @@ pub(crate) struct SearchOptions {
     pub(crate) write_playground: bool,
     pub(crate) config_warnings: ConfigWarnings,
     pub(crate) index_chunk_size: usize,
+    pub(crate) max_fragments: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -325,6 +336,7 @@ impl SearchOptions {
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(defaults::default_index_chunk_size()),
+                max_fragments: config.max_fragments,
             })
         }
     }
