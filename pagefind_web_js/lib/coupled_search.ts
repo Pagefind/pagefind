@@ -11,6 +11,11 @@ const asyncSleep = async (ms = 100) => {
   return new Promise((r) => setTimeout(r, ms));
 };
 
+const clamped = (value: unknown): number | null => {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.min(Math.max(0, Math.trunc(value)), 4294967295);
+};
+
 const normalizeDiacritics = (str: string): string => {
   // e.g. "café" -> "cafe"
   return str.normalize("NFD").replace(/\p{M}/gu, "");
@@ -42,6 +47,8 @@ export class PagefindInstance {
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
   exactDiacritics: boolean;
+  backtrackFloor: number | null;
+  indexLanguage: string | null;
   metaCacheTag: string | null;
 
   loaded_chunks: Record<string, Promise<void>>;
@@ -100,6 +107,8 @@ export class PagefindInstance {
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
     this.exactDiacritics = opts.exactDiacritics ?? false;
+    this.backtrackFloor = clamped(opts.backtrackFloor);
+    this.indexLanguage = null;
     this.metaCacheTag = opts.metaCacheTag ?? null;
 
     this.loaded_chunks = {};
@@ -174,6 +183,7 @@ export class PagefindInstance {
       "highlightParam",
       "ranking",
       "exactDiacritics",
+      "backtrackFloor",
       "metaCacheTag",
     ];
     for (const [k, v] of Object.entries(options)) {
@@ -195,6 +205,8 @@ export class PagefindInstance {
           this.highlightParam = v;
         if (k === "exactDiacritics" && typeof v === "boolean")
           this.exactDiacritics = v;
+        if (k === "backtrackFloor" && typeof v === "number")
+          this.backtrackFloor = clamped(v);
         if (k === "metaCacheTag" && typeof v === "string")
           this.metaCacheTag = v;
       } else if (!["basePath"].includes(k)) {
@@ -247,9 +259,10 @@ export class PagefindInstance {
   async init(language: string, opts: { load_wasm: boolean }) {
     try {
       await this.loadEntry();
-      let index = this.findIndex(language);
+      let [indexLanguage, index] = this.findIndex(language);
       let lang_wasm = index.wasm ? index.wasm : "unknown";
       this.loadedLanguage = language;
+      this.indexLanguage = indexLanguage;
 
       let resources = [this.loadMeta(index.hash)];
       if (opts.load_wasm === true) {
@@ -314,16 +327,17 @@ export class PagefindInstance {
     }
   }
 
-  findIndex(language: string) {
+  findIndex(language: string): [string, internal.PagefindEntryLanguage] {
     if (this.languages) {
       let index = this.languages[language];
-      if (index) return index;
+      if (index) return [language, index];
 
-      index = this.languages[language.split("-")[0]];
-      if (index) return index;
+      let baseLanguage = language.split("-")[0];
+      index = this.languages[baseLanguage];
+      if (index) return [baseLanguage, index];
 
-      let topLang = Object.values(this.languages).sort(
-        (a, b) => b.page_count - a.page_count,
+      let topLang = Object.entries(this.languages).sort(
+        ([, a], [, b]) => b.page_count - a.page_count,
       );
       if (topLang[0]) return topLang[0];
     }
@@ -724,6 +738,9 @@ export class PagefindInstance {
       sort_list,
       exact_search,
       this.exactDiacritics,
+      // Languages that aren't whitespace delimited are segmented into very short
+      // words, where a single character may be a whole word and more suitable for backtracking
+      this.backtrackFloor ?? (needsWordSegmentation(this.indexLanguage) ? 1 : 3),
     ) as string;
     log(`Got the raw search result: ${result}`);
 
