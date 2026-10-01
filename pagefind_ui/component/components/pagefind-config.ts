@@ -19,6 +19,11 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.baseUrl = baseUrl;
     }
 
+    const backtrackFloor = this.getAttribute("backtrack-floor");
+    if (backtrackFloor) {
+      instance.pagefindOptions.backtrackFloor = parseInt(backtrackFloor, 10);
+    }
+
     const excerptLength = this.getAttribute("excerpt-length");
     if (excerptLength) {
       instance.pagefindOptions.excerptLength = parseInt(excerptLength, 10);
