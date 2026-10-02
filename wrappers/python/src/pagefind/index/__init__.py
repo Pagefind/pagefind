@@ -59,6 +59,8 @@ class IndexConfig(TypedDict, total=False):
 
     Useful for sites documenting technical topics such as programming languages.
     """
+    lowercase_filters: Optional[bool]
+    """Lowercase filter values when indexing, so that values differing only in case are merged into one."""
     output_path: Optional[str]
     """
     The folder to output the search bundle into, relative to the processed site.
