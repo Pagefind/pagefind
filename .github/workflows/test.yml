@@ -109,6 +109,11 @@ jobs:
           cargo --version
           rustc --version
 
+      - name: Build pagefind without default version
+        working-directory: ./pagefind
+        run: |
+          cargo check --no-default-features
+
       - name: Build Coupled JS
         working-directory: ./pagefind_web_js
         run: npm i && npm run build-coupled
