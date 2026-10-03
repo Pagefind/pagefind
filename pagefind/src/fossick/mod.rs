@@ -281,6 +281,9 @@ impl Fossicker {
 
         let (content, word_data, anchors, word_count) = self.parse_digest(options);
         self.tidy_meta_and_filters();
+        if options.lowercase_filters {
+            self.lowercase_filters();
+        }
 
         let data = self.data.unwrap();
 
@@ -552,6 +555,22 @@ impl Fossicker {
                     std::borrow::Cow::Borrowed(_) => { /* no-op, no replace happened */ }
                     std::borrow::Cow::Owned(s) => *meta = s,
                 }
+            }
+        }
+    }
+
+    /// Lowercases filter values, merging values on a page that only differed in case.
+    fn lowercase_filters(&mut self) {
+        if let Some(data) = self.data.as_mut() {
+            for values in data.filters.values_mut() {
+                let mut lowercased: Vec<String> = Vec::with_capacity(values.len());
+                for value in values.drain(..) {
+                    let value = value.to_lowercase();
+                    if !lowercased.contains(&value) {
+                        lowercased.push(value);
+                    }
+                }
+                *values = lowercased;
             }
         }
     }
@@ -1224,6 +1243,41 @@ mod tests {
                 get_comparison_segmentations(full_ja_input);
             assert_eq!(legitimate_ja_output, chunked_ja_output);
         }
+    }
+
+    #[tokio::test]
+    async fn lowercase_filters() {
+        let html = [
+            "<html><body>",
+            "<span data-pagefind-filter=\"Garnish\">Mint</span>",
+            "<span data-pagefind-filter=\"Garnish\">mint</span>",
+            "<span data-pagefind-filter=\"Garnish\">Basil</span>",
+            "<p>Hello World!</p>",
+            "</body></html>",
+        ]
+        .concat();
+
+        let data = test_fossick(html.clone())
+            .fossick_sync(&test_opts())
+            .unwrap();
+        assert_eq!(
+            data.fragment.data.filters,
+            BTreeMap::from_iter([(
+                "Garnish".to_string(),
+                vec!["Mint".to_string(), "mint".to_string(), "Basil".to_string()]
+            )])
+        );
+
+        let mut opts = test_opts();
+        opts.lowercase_filters = true;
+        let data = test_fossick(html).fossick_sync(&opts).unwrap();
+        assert_eq!(
+            data.fragment.data.filters,
+            BTreeMap::from_iter([(
+                "Garnish".to_string(),
+                vec!["mint".to_string(), "basil".to_string()]
+            )])
+        );
     }
 
     #[cfg(not(target_os = "windows"))]
