@@ -2,6 +2,6 @@
   "name": "docs",
   "private": true,
   "dependencies": {
-    "alpinejs": "^3.17.3"
+    "alpinejs": "^3.17.4"
   }
 }
