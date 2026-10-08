@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import path from "path";
-import fs from "fs";
+import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { commonOptions } from "./_build_common.js";
 
@@ -17,11 +17,9 @@ const build = async () => {
   console.log(`Build: `, compiled);
 
   const vendorDir = path.join(__dirname, `../pagefind/vendor/`);
-  try {
-    fs.mkdirSync(vendorDir);
-  } catch {}
+  await fs.mkdir(vendorDir, { recursive: true });
 
-  fs.cpSync(
+  await fs.cp(
     path.join(__dirname, `output/playground`),
     path.join(vendorDir, `playground`),
     { recursive: true },
