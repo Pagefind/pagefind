@@ -41,6 +41,7 @@ pub struct IndexChunk {
 pub struct Page {
     hash: String,
     word_count: u32,
+    group_hash: String,
 }
 
 pub struct SearchIndex {
@@ -466,6 +467,7 @@ pub fn search(
                 let mut page_obj = arr.object();
                 page_obj
                     .string("p", &result.page)
+                    .string("g", &result.group_hash)
                     .number("s", result.page_score as f64);
                 if search_index.playground_mode {
                     let mut params_obj = page_obj.object("params");
