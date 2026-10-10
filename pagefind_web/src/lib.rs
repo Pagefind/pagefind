@@ -289,7 +289,13 @@ pub fn request_indexes(ptr: *mut SearchIndex, query: &str) -> String {
             let strict_chunks: Vec<_> = search_index
                 .chunks
                 .iter()
-                .filter(|chunk| term >= &chunk.from && term <= &chunk.to)
+                .filter(|chunk| {
+                    (term >= &chunk.from && term <= &chunk.to)
+                        // Words that extend the term can continue into the chunks
+                        // after the one whose range contains it (e.g. "wa" sits in
+                        // a chunk ending at "wa", while "wab" starts the next one).
+                        || chunk.from.starts_with(term)
+                })
                 .collect();
 
             if !strict_chunks.is_empty() {
