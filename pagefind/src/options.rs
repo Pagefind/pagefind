@@ -98,6 +98,14 @@ pub(crate) struct PagefindInboundConfig {
 
     #[clap(
         long,
+        help = "Lowercase filter values when indexing, so that values differing only in case are merged into one."
+    )]
+    #[clap(required = false)]
+    #[serde(default = "defaults::default_false")]
+    pub(crate) lowercase_filters: bool,
+
+    #[clap(
+        long,
         help = "Serve the source directory after creating the search index"
     )]
     #[clap(required = false)]
@@ -199,6 +207,8 @@ pub struct PagefindServiceConfig {
     #[patch(as_option)]
     /// Include these characters when indexing and searching words.
     pub(crate) include_characters: Option<String>,
+    /// Lowercase filter values when indexing, so that values differing only in case are merged into one.
+    pub(crate) lowercase_filters: Option<bool>,
 }
 
 mod defaults {
@@ -230,6 +240,7 @@ pub(crate) struct SearchOptions {
     pub(crate) glob: String,
     pub(crate) force_language: Option<String>,
     pub(crate) include_characters: Vec<char>,
+    pub(crate) lowercase_filters: bool,
     pub(crate) version: &'static str,
     pub(crate) logger: Logger,
     pub(crate) keep_index_url: bool,
@@ -311,6 +322,7 @@ impl SearchOptions {
                 glob: config.glob,
                 force_language: config.force_language,
                 include_characters,
+                lowercase_filters: config.lowercase_filters,
                 version: env!("CARGO_PKG_VERSION"),
                 logger: Logger::new(
                     log_level,
