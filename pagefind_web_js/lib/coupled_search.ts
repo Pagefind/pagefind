@@ -42,6 +42,7 @@ export class PagefindInstance {
   ranking?: PagefindRankingWeights;
   highlightParam: string | null;
   exactDiacritics: boolean;
+  prefixMatching: string;
   metaCacheTag: string | null;
 
   loaded_chunks: Record<string, Promise<void>>;
@@ -100,6 +101,7 @@ export class PagefindInstance {
     this.ranking = opts.ranking;
     this.highlightParam = opts.highlightParam ?? null;
     this.exactDiacritics = opts.exactDiacritics ?? false;
+    this.prefixMatching = opts.prefixMatching ?? "all";
     this.metaCacheTag = opts.metaCacheTag ?? null;
 
     this.loaded_chunks = {};
@@ -174,6 +176,7 @@ export class PagefindInstance {
       "highlightParam",
       "ranking",
       "exactDiacritics",
+      "prefixMatching",
       "metaCacheTag",
     ];
     for (const [k, v] of Object.entries(options)) {
@@ -195,6 +198,8 @@ export class PagefindInstance {
           this.highlightParam = v;
         if (k === "exactDiacritics" && typeof v === "boolean")
           this.exactDiacritics = v;
+        if (k === "prefixMatching" && typeof v === "string")
+          this.prefixMatching = v;
         if (k === "metaCacheTag" && typeof v === "string")
           this.metaCacheTag = v;
       } else if (!["basePath"].includes(k)) {
@@ -724,6 +729,7 @@ export class PagefindInstance {
       sort_list,
       exact_search,
       this.exactDiacritics,
+      this.prefixMatching,
     ) as string;
     log(`Got the raw search result: ${result}`);
 
