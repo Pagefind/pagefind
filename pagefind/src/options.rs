@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use clap::Parser;
 use rust_patch::Patch;
 use serde::{Deserialize, Serialize};
-use std::{env, path::PathBuf};
+use std::{collections::BTreeMap, env, path::PathBuf};
 use twelf::config;
 use typed_builder::TypedBuilder;
 
@@ -21,6 +21,15 @@ use crate::{
 //
 // No options should be added that are required.
 //
+
+/// A selector paired with the Pagefind attributes to set on the elements it matches,
+/// so a site can be configured with the same vocabulary its HTML would use.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) struct PagefindRule {
+    pub(crate) selector: String,
+    #[serde(default)]
+    pub(crate) attributes: BTreeMap<String, String>,
+}
 
 #[config]
 #[derive(Parser, Debug, Clone)]
@@ -73,6 +82,11 @@ pub(crate) struct PagefindInboundConfig {
     #[clap(required = false)]
     #[serde(default)]
     pub(crate) exclude_selectors: Vec<String>,
+
+    /// Not a CLI flag: a list of selectors with attribute maps does not fit an argument.
+    #[clap(skip)]
+    #[serde(default)]
+    pub(crate) rules: Vec<PagefindRule>,
 
     #[clap(
         long,
@@ -227,6 +241,7 @@ pub(crate) struct SearchOptions {
     pub(crate) bundle_output: PathBuf,
     pub(crate) root_selector: String,
     pub(crate) exclude_selectors: Vec<String>,
+    pub(crate) rules: Vec<PagefindRule>,
     pub(crate) glob: String,
     pub(crate) force_language: Option<String>,
     pub(crate) include_characters: Vec<char>,
@@ -308,6 +323,7 @@ impl SearchOptions {
                 bundle_output,
                 root_selector: config.root_selector,
                 exclude_selectors: config.exclude_selectors,
+                rules: config.rules,
                 glob: config.glob,
                 force_language: config.force_language,
                 include_characters,
