@@ -139,7 +139,7 @@ fn get_discrete_words<S: AsRef<str>>(s: S) -> (String, Option<Vec<String>>) {
 
     let words = s
         .as_ref()
-        .replace(|c: char| c.is_ascii_punctuation(), " ")
+        .replace(|c: char| c.is_ascii_punctuation() || c == '\u{AD}', " ")
         .to_case(Case::Lower)
         .split_whitespace()
         .collect::<Vec<_>>()
@@ -210,10 +210,13 @@ mod tests {
         let camel_results = get_indexable_words("ThreeAntelopes", stemmer.as_ref(), &[]);
         let kebab_results = get_indexable_words("three-antelopes", stemmer.as_ref(), &[]);
         let snake_results = get_indexable_words("three_antelopes", stemmer.as_ref(), &[]);
+        let soft_hyphen_results =
+            get_indexable_words("three\u{AD}antelopes", stemmer.as_ref(), &[]);
 
         assert_eq!(camel_results, expected);
         assert_eq!(kebab_results, expected);
         assert_eq!(snake_results, expected);
+        assert_eq!(soft_hyphen_results, expected);
     }
 
     #[test]
@@ -256,6 +259,15 @@ mod tests {
     fn underscored_words() {
         let input = "__array_structures";
         assert_eq!(get_discrete_words(input), ("array structures".into(), None));
+    }
+
+    #[test]
+    fn soft_hyphenated_words() {
+        let input = "Hochspannungs\u{AD}netz\u{AD}teil";
+        assert_eq!(
+            get_discrete_words(input),
+            ("hochspannungs netz teil".into(), None)
+        );
     }
 
     #[test]
