@@ -1,0 +1,32 @@
+{
+    "thanks_to": "I90rche",
+    "comments": "",
+    "direction": "ltr",
+    "strings": {
+        "placeholder": "Пребарај",
+        "clear_search": "Исчисти",
+        "load_more": "Вчитај повеќе резултати",
+        "search_label": "Пребарај ја веб-локацијата",
+        "filters_label": "Филтри",
+        "zero_results": "Нема резултати за [SEARCH_TERM]",
+        "many_results": "[COUNT] резултати за [SEARCH_TERM]",
+        "one_result": "[COUNT] резултат за [SEARCH_TERM]",
+        "total_zero_results": "Нема резултати",
+        "total_one_result": "[COUNT] резултат",
+        "total_many_results": "[COUNT] резултати",
+        "alt_search": "Нема резултати за [SEARCH_TERM]. Прикажани се резултати за [DIFFERENT_TERM]",
+        "search_suggestion": "Нема резултати за [SEARCH_TERM]. Обидете се со некое од следниве пребарувања:",
+        "searching": "Се пребарува [SEARCH_TERM]...",
+        "results_label": "Резултати од пребарувањето",
+        "keyboard_navigate": "навигација",
+        "keyboard_select": "избор",
+        "keyboard_clear": "чистење",
+        "keyboard_close": "затворање",
+        "keyboard_search": "пребарување",
+        "error_search": "Пребарувањето не успеа",
+        "filter_selected_one": "[COUNT] избран",
+        "filter_selected_many": "[COUNT] избрани",
+        "input_hint": "Резултатите ќе се појават додека пишувате",
+        "loading": "Се вчитува"
+    }
+}
