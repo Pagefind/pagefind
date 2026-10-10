@@ -2303,6 +2303,7 @@ dependencies = [
  "minifier",
  "pagefind_stem 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "path-slash",
+ "percent-encoding",
  "portpicker",
  "rayon",
  "regex",
