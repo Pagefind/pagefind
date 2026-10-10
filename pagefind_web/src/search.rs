@@ -11,6 +11,15 @@ use pagefind_stem::Stemmer;
 
 use crate::SearchIndex;
 
+/// Counts the characters in a word, treating the conjoining jamo of a Hangul syllable as
+/// the single character they render as. Index keys are stored decomposed with combining
+/// marks removed, so this matches a grapheme count for every script Pagefind indexes.
+fn word_length(word: &str) -> usize {
+    word.chars()
+        .filter(|c| !matches!(*c as u32, 0x1160..=0x11FF | 0xD7B0..=0xD7FF))
+        .count()
+}
+
 pub struct PageSearchResult {
     pub page: String,
     pub page_index: usize,
@@ -437,6 +446,7 @@ impl SearchIndex {
         original_query: &str,
         filter_results: Option<BitSet>,
         exact_diacritics: bool,
+        backtrack_floor: usize,
     ) -> (Vec<usize>, Vec<PageSearchResult>, Option<Vec<QueryTermIdf>>) {
         debug!({
             format! {"Searching {:?}", term}
@@ -458,7 +468,7 @@ impl SearchIndex {
             let original_term = original_terms.get(term_idx).copied().unwrap_or("");
 
             let mut word_maps = Vec::new();
-            for (word, word_data) in self.find_word_extensions(&term) {
+            for (word, word_data) in self.find_word_extensions(&term, backtrack_floor) {
                 let length_differential: u8 = (word.len().abs_diff(term.len()) + 1)
                     .try_into()
                     .unwrap_or(std::u8::MAX);
@@ -812,7 +822,7 @@ impl SearchIndex {
         (unfiltered_results, pages, verbose_query_idfs)
     }
 
-    fn find_word_extensions(&self, term: &str) -> Vec<(&String, &WordData)> {
+    fn find_word_extensions(&self, term: &str, backtrack_floor: usize) -> Vec<(&String, &WordData)> {
         let mut extensions = vec![];
         let mut longest_prefix = None;
         for (key, results) in self.words.iter() {
@@ -822,6 +832,7 @@ impl SearchIndex {
                 });
                 extensions.push((key, results));
             } else if term.starts_with(key)
+                && word_length(key) >= backtrack_floor
                 && key.len() > longest_prefix.map(String::len).unwrap_or_default()
             {
                 longest_prefix = Some(key);

@@ -401,6 +401,7 @@ pub fn search(
     sort: &str,
     exact: bool,
     exact_diacritics: bool,
+    backtrack_floor: usize,
 ) -> String {
     let search_index = unsafe { Box::from_raw(ptr) };
     let mut output = String::new();
@@ -421,7 +422,13 @@ pub fn search(
                 search_index.exact_term(query, original_query, filter_set, exact_diacritics);
             (u, r, None)
         } else {
-            search_index.search_term(query, original_query, filter_set, exact_diacritics)
+            search_index.search_term(
+                query,
+                original_query,
+                filter_set,
+                exact_diacritics,
+                backtrack_floor,
+            )
         };
         let unfiltered_total = unfiltered_results.len();
         debug!({ format!("Raw total of {} results", unfiltered_total) });
