@@ -7,6 +7,7 @@ use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use pagefind_stem::{Algorithm, Stemmer};
 use path_slash::PathExt as _;
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::io::BufRead;
@@ -589,6 +590,22 @@ impl Fossicker {
 
 }
 
+/// The URL spec's path percent-encode set, minus `/` so that the separators
+/// between the path segments survive. `%`, `#` and `?` are already encoded one
+/// by one today; the rest of the set covers the remaining characters that a
+/// file name can carry but a URL path cannot, such as a space or a quote.
+const PATH_ENCODE_SET: &AsciiSet = &CONTROLS
+    .add(b' ')
+    .add(b'"')
+    .add(b'#')
+    .add(b'%')
+    .add(b'<')
+    .add(b'>')
+    .add(b'?')
+    .add(b'`')
+    .add(b'{')
+    .add(b'}');
+
 fn strip_index_html(url: &str) -> &str {
     if url.ends_with("/index.html") {
         &url[..url.len() - 10]
@@ -621,13 +638,7 @@ fn build_url(page_url: &Path, relative_to: Option<&Path>, options: &SearchOption
         url.to_slash_lossy().to_owned().to_string()
     };
 
-    format!(
-        "/{}",
-        final_url
-            .replace('%', "%25")
-            .replace('#', "%23")
-            .replace('?', "%3F")
-    )
+    format!("/{}", utf8_percent_encode(&final_url, PATH_ENCODE_SET))
 }
 
 fn normalize_content(content: &str) -> String {
@@ -1254,6 +1265,31 @@ mod tests {
 
         let p: PathBuf = cwd.join::<PathBuf>("hello/world/100%/C#/why?.html".into());
         assert_eq!(&build_url(&p, None, &opts), "/100%25/C%23/why%3F.html");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn building_urls_with_characters_that_need_encoding() {
+        std::env::set_var("PAGEFIND_SITE", "hello/world");
+        let config =
+            PagefindInboundConfig::with_layers(&[Layer::Env(Some("PAGEFIND_".into()))]).unwrap();
+        let opts = SearchOptions::load(config).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/Müsli.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%C3%BCsli.html");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/Müsli/index.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%C3%BCsli/");
+
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/a b/c#d?e.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/a%20b/c%23d%3Fe.html");
+
+        // A literal percent in the file name is encoded, so the URL points back at
+        // the file that is on disk rather than at the one it looks like it names.
+        let p: PathBuf = cwd.join::<PathBuf>("hello/world/M%C3%BCsli.html".into());
+        assert_eq!(&build_url(&p, None, &opts), "/M%25C3%25BCsli.html");
     }
 
     #[cfg(target_os = "windows")]
