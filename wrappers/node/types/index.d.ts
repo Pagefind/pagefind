@@ -56,6 +56,10 @@ export interface PagefindServiceConfig {
      * @example "<>$"
      */
     includeCharacters?: string,
+    /**
+     * Lowercase filter values when indexing, so that values differing only in case are merged into one.
+     */
+    lowercaseFilters?: boolean,
 }
 
 

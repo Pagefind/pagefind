@@ -121,6 +121,15 @@ This defaults to false, so playground files are not written to your live site. P
 |----------------------|--------------------|--------------------|
 | `--write-playground` | `PAGEFIND_WRITE_PLAYGROUND` | `write_playground` |
 
+### Lowercase filters
+Lowercases all filter values when indexing, so that values differing only in case are merged. With this option, `<span data-pagefind-filter="garnish">Mint</span>` and `<span data-pagefind-filter="garnish">mint</span>` both come through as the `mint` value of the `garnish` filter. Filter names are left as they are.
+
+Filter values passed to Pagefind search should then be lowercase too, and any UI that displays them will show the lowercased values.
+
+| CLI Flag              | ENV Variable                 | Config Key          |
+|-----------------------|------------------------------|---------------------|
+| `--lowercase-filters` | `PAGEFIND_LOWERCASE_FILTERS` | `lowercase_filters` |
+
 ### Verbose
 Prints extra logging while indexing the site. Only affects the CLI, does not impact web-facing search.
 

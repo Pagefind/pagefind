@@ -22,6 +22,7 @@ class InternalPagefindServiceConfig(TypedDict, total=False):
     keep_index_url: Optional[bool]
     write_playground: Optional[bool]
     include_characters: Optional[str]
+    lowercase_filters: Optional[bool]
 
 
 class InternalNewIndexRequest(TypedDict):

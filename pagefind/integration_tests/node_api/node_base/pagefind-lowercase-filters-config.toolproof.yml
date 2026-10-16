@@ -1,0 +1,39 @@
+name: Node API Base Tests > Pagefind lowercaseFilters config
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex({
+               lowercaseFilters: true,
+           });
+           await index.addHTMLFile({sourcePath: "page_a/index.html", content: "<html lang='en'><body><h1 data-pagefind-filter='color:White'>Cat</h1></body></html>"});
+           await index.addCustomRecord({
+               url: "/page_b/",
+               content: "Cat",
+               language: "en",
+               filters: { color: ["WHITE", "Black"] },
+           });
+           await index.writeFiles();
+           console.log(`Successfully wrote files`);
+       }
+
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: stdout should contain "Successfully wrote files"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let filters = await pagefind.filters();
+
+      toolproof.assert_eq(JSON.stringify(filters), `{"color":{"black":1,"white":2}}`);
+  - step: In my browser, the console should be empty
