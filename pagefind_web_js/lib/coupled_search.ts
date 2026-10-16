@@ -909,11 +909,20 @@ export class Pagefind {
       await asyncSleep(50);
     }
 
-    await newInstance.init(options.language || this.primaryLanguage, {
-      load_wasm: false,
-    });
+    try {
+      await newInstance.init(options.language || this.primaryLanguage, {
+        load_wasm: false,
+      });
+    } catch (e) {
+      if (!options.optional) throw e;
+      this.instances = this.instances.filter((i) => i !== newInstance);
+      console.warn(
+        `Skipping optional mergeIndex ${indexPath} that failed to load`,
+      );
+      return;
+    }
 
-    const { language, ...remainingOptions } = options;
+    const { language, optional, ...remainingOptions } = options;
     await newInstance.options(remainingOptions);
   }
 
