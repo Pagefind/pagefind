@@ -1,0 +1,39 @@
+name: Partial Matching > Prefix matching falls back for words that are not whole words
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body
+      data-pagefind-ignore><p>Search</p></body></html>
+  - step: I have a "public/desk/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p>The car rental
+      desk</p></body></html>
+  - step: I have a "public/carpet/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p>A carpet rental
+      shop</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.options({ prefixMatching: "last" });
+      let urls = async (term) => {
+        let search = await pagefind.search(term);
+        let pages = await Promise.all(search.results.map(r => r.data()));
+        return pages.map(p => p.url).sort();
+      };
+      // "carp" isn't a whole word on the site, so it is still extended to "carpet"
+      let extended = await urls("carp rental");
+      // "carts" has no match at all, so it still backtracks to "car"
+      let backtracked = await urls("carts rental");
+      // Phrase searches are unaffected
+      let phrase = await urls(`"carpet rental"`);
+      return [extended, backtracked, phrase];
+    expected:
+      - - /carpet/
+      - - /desk/
+      - - /carpet/
