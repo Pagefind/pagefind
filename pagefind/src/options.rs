@@ -217,6 +217,9 @@ mod defaults {
     pub fn default_index_chunk_size() -> usize {
         20000
     }
+    pub fn default_write_concurrency() -> usize {
+        32
+    }
 }
 
 // The configuration object used internally
@@ -237,6 +240,7 @@ pub(crate) struct SearchOptions {
     pub(crate) write_playground: bool,
     pub(crate) config_warnings: ConfigWarnings,
     pub(crate) index_chunk_size: usize,
+    pub(crate) write_concurrency: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -325,6 +329,11 @@ impl SearchOptions {
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(defaults::default_index_chunk_size()),
+                write_concurrency: env::var("PAGEFIND_UNSTABLE_WRITE_CONCURRENCY")
+                    .ok()
+                    .and_then(|s| s.parse::<usize>().ok())
+                    .filter(|n| *n > 0)
+                    .unwrap_or(defaults::default_write_concurrency()),
             })
         }
     }
