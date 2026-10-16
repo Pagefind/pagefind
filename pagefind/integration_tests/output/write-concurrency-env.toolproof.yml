@@ -1,0 +1,41 @@
+name: Output > Writes complete with a custom write concurrency
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have the environment variable "PAGEFIND_UNSTABLE_WRITE_CONCURRENCY" set to "1"
+
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>cat</p>
+      </body></html>
+
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>dog</p>
+      </body></html>
+
+  - step: I have a "public/cattle/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body>
+      <p>cattle</p>
+      </body></html>
+
+  - macro: I run Pagefind
+
+  - stdout should contain "Indexed 3 pages"
+
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+
+  # Searching "cat" should match both "cat" and "cattle" via stemming,
+  # exercising reads against the index built with a single write in flight.
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("cat");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url).sort();
+    expected:
+      - /cat/
+      - /cattle/

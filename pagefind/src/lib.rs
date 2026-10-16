@@ -319,12 +319,9 @@ impl SearchState {
             .map(|indexes| indexes.get_lang_meta(&self.options))
             .collect();
 
-        join_all(
-            self.built_indexes
-                .iter()
-                .map(|indexes| async { indexes.write_files_to_disk(&self.options, &outdir).await }),
-        )
-        .await;
+        for indexes in &self.built_indexes {
+            indexes.write_files_to_disk(&self.options, &outdir).await;
+        }
 
         output::write_common_to_disk(
             index_entries,
