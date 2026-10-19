@@ -1,0 +1,39 @@
+name: Pagefind ignores a Thai vowel sign typed on its own
+steps:
+  - ref: ./background.toolproof.yml
+  # A query starting with a combining vowel sign (ิ) segments into the lone sign
+  # and the rest of the word. The sign normalizes away to nothing and the then-empty
+  # term should be omitted
+  - step: I have a "public/th/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>ต้นไม้ ใหญ่ ริมน้ำ มี นก หลาย ตัว</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/th/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let locations = async (term) => {
+        let search = await pagefind.search(term);
+        let pages = await Promise.all(search.results.map(r => r.data()));
+        return pages.map(p => p.locations);
+      };
+
+      let bare = await locations("ต");
+      let withSign = await locations("ิต");
+
+      return {
+        found: bare.length,
+        same_locations: JSON.stringify(withSign) === JSON.stringify(bare),
+      };
+    expected:
+      found: 1
+      same_locations: true

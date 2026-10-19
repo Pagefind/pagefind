@@ -667,8 +667,12 @@ export class PagefindInstance {
         .trim();
     }
 
-    const originalTerm = term;
-    term = normalizeDiacritics(term);
+    const termPairs = term
+      .split(" ")
+      .map((original) => [original, normalizeDiacritics(original)])
+      .filter(([, normalized]) => normalized.length);
+    const originalTerm = termPairs.map(([original]) => original).join(" ");
+    term = termPairs.map(([, normalized]) => normalized).join(" ");
     log(`Normalized search term to ${term}`);
 
     if (!term?.length && !filter_only) {
