@@ -1,0 +1,45 @@
+name: >-
+  Pagefind keeps Japanese voiced sounds distinct
+steps:
+  - ref: ./background.toolproof.yml
+  # The kana voiced sound mark is a combining mark, but it distinguishes words
+  # rather than decorating them. Stripping it as a diacritic would collapse
+  # バンド ("band") and ハンド ("hand") onto the same indexed word, so each
+  # query would match both pages
+  - step: I have a "public/ja/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>バンド</p>
+      </body>
+      </html>
+  - step: I have a "public/ja/other.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>ハンド</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ja/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let band = await pagefind.search("バンド");
+      let hand = await pagefind.search("ハンド");
+
+      return {
+        "バンド": (await Promise.all(band.results.map(r => r.data()))).map(p => p.url),
+        "ハンド": (await Promise.all(hand.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      バンド:
+        - /ja/
+      ハンド:
+        - /ja/other.html

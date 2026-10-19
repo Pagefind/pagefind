@@ -168,10 +168,26 @@ fn normalize_diacritics(word: &str) -> Option<String> {
         return None;
     }
 
-    let normalized: String = word
+    // The kana voiced/semi-voiced sound marks are combining marks, but they
+    // distinguish words, so they are kept
+    let stripped: String = word
         .nfd()
-        .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+        .filter(|c| {
+            !unicode_normalization::char::is_combining_mark(*c)
+                || matches!(*c, '\u{3099}' | '\u{309A}')
+        })
         .collect();
+
+    // Recompose when kana voiced/semi-voiced sound marks survived,
+    // otherwise we conflate バンド ("band") and ハンド ("hand").
+    // Leave everything else decomposed for better search, for example in Hangul,
+    // jamo are letters rather than combining marks. Composing them into syllable
+    // blocks would stop a partially-typed syllable being a prefix of the indexed word
+    let normalized = if stripped.chars().any(|c| matches!(c, '\u{3099}' | '\u{309A}')) {
+        stripped.nfc().collect::<String>()
+    } else {
+        stripped
+    };
 
     if normalized != word {
         Some(normalized)
