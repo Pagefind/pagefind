@@ -1,6 +1,4 @@
 use anyhow::{bail, Result};
-#[cfg(feature = "extended")]
-use charabia::Segment;
 use either::Either;
 use flate2::read::GzDecoder;
 use hashbrown::HashMap;
@@ -61,6 +59,21 @@ pub struct FossickedData {
     pub has_old_bundle_reference: bool,
     pub has_default_ui_reference: bool,
     pub language: String,
+}
+
+/// Segment a run of text into words, for languages that
+/// don't reliably delimit words with whitespace.
+/// ICU4X agrees (ish) with the browser's `Intl.Segmenter` (ICU4C),
+/// which is going to segment the user's search query.
+#[cfg(feature = "extended")]
+fn segment_words(input: &str) -> impl Iterator<Item = &str> {
+    let segmenter = icu_segmenter::WordSegmenter::new_dictionary(Default::default());
+    let mut start = 0;
+    segmenter.segment_str(input).skip(1).map(move |end| {
+        let word = &input[start..end];
+        start = end;
+        word
+    })
 }
 
 #[derive(Debug)]
@@ -368,7 +381,7 @@ impl Fossicker {
             } else {
                 if should_segment {
                     // Run a segmenter only for any languages which require it.
-                    Either::Right(seg.segment_str())
+                    Either::Right(segment_words(seg))
                 } else {
                     // Currently hesitant to run segmentation during indexing
                     // that we can't also run during search, since we don't
@@ -1130,11 +1143,11 @@ mod tests {
 
         let mut words = words.keys().collect::<Vec<_>>();
         words.sort();
-        assert_eq!(words, vec!["哎呀", "我", "的", "错"]);
+        assert_eq!(words, vec!["哎呀", "我的", "错"]);
 
         assert_eq!(
             content,
-            "哎呀\u{200b}！ \u{200b}我\u{200b}的\u{200b}错\u{200b}。"
+            "哎呀\u{200b}！ \u{200b}我的\u{200b}错\u{200b}。"
         );
     }
 
@@ -1148,16 +1161,14 @@ mod tests {
                 .collect::<Vec<_>>();
             let clean_input = chunked_input.join(" ");
 
-            let mut legitimate_output = clean_input
-                .as_str()
-                .segment_str()
+            let mut legitimate_output = segment_words(clean_input.as_str())
                 .filter(|w| w.chars().any(|c| !c.is_whitespace()))
                 .map(Into::into)
                 .collect::<Vec<_>>();
             let mut chunked_output = chunked_input
                 .into_iter()
                 .flat_map(|inp| {
-                    inp.segment_str()
+                    segment_words(inp)
                         .filter(|w| w.chars().any(|c| !c.is_whitespace()))
                         .collect::<Vec<_>>()
                 })
