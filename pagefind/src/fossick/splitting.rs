@@ -1,5 +1,6 @@
 use convert_case::{Case, Casing};
 use emojis;
+use hashbrown::HashSet;
 use lazy_static::lazy_static;
 use pagefind_stem::Stemmer;
 use regex::Regex;
@@ -64,6 +65,17 @@ pub fn get_indexable_words(
         });
     }
 
+    for suffix in katakana_suffixes(raw_word) {
+        let suffix_diacritic = normalize_diacritics(suffix);
+        results.push(IndexableWord {
+            stemmed: suffix_diacritic
+                .clone()
+                .unwrap_or_else(|| suffix.to_string()),
+            original: suffix_diacritic.map(|_| suffix.to_string()),
+            is_compound_part: true,
+        });
+    }
+
     let possibly_compound = raw_word.chars().any(|c| !c.is_alphanumeric())
         || raw_word.chars().skip(1).any(|c| c.is_uppercase());
 
@@ -112,6 +124,40 @@ pub fn get_indexable_words(
 
     results
 }
+
+/// True for the characters ICU4X (currently) leaves in an unsegmented run: katakana,
+/// the prolonged sound mark, and their halfwidth forms.
+fn is_katakana(c: char) -> bool {
+    matches!(c as u32,
+        0x30A1..=0x30FA | 0x30FC..=0x30FF | 0x31F0..=0x31FF | 0xFF66..=0xFF9F)
+}
+
+/// ICU4X's dictionary (currently) has no katakana entries.
+/// Indexing every suffix is a cheap hack for now, so the existing prefix
+/// matching resolves a query for substrings.
+///
+/// Tracking: https://github.com/unicode-org/icu4x/issues/2239
+fn katakana_suffixes(word: &str) -> Vec<&str> {
+    if word.chars().count() < 3 || !word.chars().all(is_katakana) {
+        return Vec::new();
+    }
+    let mut seen = HashSet::new();
+    let mut suffixes = Vec::new();
+    for (i, _) in word.char_indices().skip(1) {
+        let rest = &word[i..];
+        let suffix = match rest.char_indices().nth(MAX_KATAKANA_SUFFIX_CHARS) {
+            Some((end, _)) => &rest[..end],
+            None => rest,
+        };
+        // Skip duplicate suffixes
+        if suffix.chars().count() >= 2 && seen.insert(suffix) {
+            suffixes.push(suffix);
+        }
+    }
+    suffixes
+}
+
+const MAX_KATAKANA_SUFFIX_CHARS: usize = 16;
 
 /// Normalize diacritics, if required, before indexing
 /// (context: we index "café" as "cafe" for retrieval purposes,
@@ -294,6 +340,33 @@ mod tests {
         assert_eq!(
             get_discrete_words(input),
             ("form component data pagefind meta key value".into(), None)
+        );
+    }
+
+    #[test]
+    fn katakana_suffixes_of_a_compound() {
+        assert_eq!(
+            katakana_suffixes("バックアップ"),
+            vec!["ックアップ", "クアップ", "アップ", "ップ"]
+        );
+        assert!(katakana_suffixes("テスト").contains(&"スト"));
+        assert!(katakana_suffixes("リスト型").is_empty());
+    }
+
+    #[test]
+    fn katakana_suffixes_stay_linear_on_long_runs() {
+        let kana: Vec<char> = ('ァ'..='ヶ').collect();
+        let run: String = (0..10_000).map(|i| kana[(i * 7) % kana.len()]).collect();
+        let suffixes = katakana_suffixes(&run);
+        assert!(suffixes
+            .iter()
+            .all(|s| s.chars().count() <= MAX_KATAKANA_SUFFIX_CHARS));
+
+        // A repetitive run collapses to one suffix per distinct length
+        let rule = "ー".repeat(1_000);
+        assert_eq!(
+            katakana_suffixes(&rule).len(),
+            MAX_KATAKANA_SUFFIX_CHARS - 1
         );
     }
 
