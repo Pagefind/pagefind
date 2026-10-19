@@ -13,7 +13,7 @@ use std::io::Read;
 use std::ops::Mul;
 use std::path::{Path, PathBuf};
 
-use crate::fossick::splitting::get_indexable_words;
+use crate::fossick::splitting::{get_dotted_tails, get_indexable_words};
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
 use crate::SearchOptions;
 use parser::DomParser;
@@ -488,8 +488,15 @@ impl Fossicker {
 
             let word_weight = *weight_stack.last().unwrap_or(&1);
 
-            let indexable_words =
+            let mut indexable_words =
                 get_indexable_words(&base_word, stemmer.as_ref(), &options.include_characters);
+            let dotted_tails = get_dotted_tails(
+                &base_word,
+                stemmer.as_ref(),
+                &options.include_characters,
+                &indexable_words,
+            );
+            indexable_words.extend(dotted_tails);
 
             let compound_count = indexable_words
                 .iter()
