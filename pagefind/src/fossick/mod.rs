@@ -67,13 +67,27 @@ pub struct FossickedData {
 /// which is going to segment the user's search query.
 #[cfg(feature = "extended")]
 fn segment_words(input: &str) -> impl Iterator<Item = &str> {
+    use unicode_segmentation::UnicodeSegmentation;
+
     let segmenter = icu_segmenter::WordSegmenter::new_dictionary(Default::default());
+    // Where its dictionary finds no match, ICU4X can break between a base
+    // character and a mark that belongs to it, splitting Thai วิกิพีเดีย as
+    // วิ|กิพ|ี|เดีย. A word can't start with a dangling vowel or tone mark, so
+    // breakpoints inside a grapheme cluster are dropped
+    let mut grapheme_starts = input.grapheme_indices(true).map(|(i, _)| i).peekable();
     let mut start = 0;
-    segmenter.segment_str(input).skip(1).map(move |end| {
-        let word = &input[start..end];
-        start = end;
-        word
-    })
+    segmenter
+        .segment_str(input)
+        .skip(1)
+        .filter(move |&end| {
+            while grapheme_starts.next_if(|&g| g < end).is_some() {}
+            end == input.len() || grapheme_starts.peek() == Some(&end)
+        })
+        .map(move |end| {
+            let word = &input[start..end];
+            start = end;
+            word
+        })
 }
 
 #[derive(Debug)]
@@ -1156,6 +1170,22 @@ mod tests {
             content,
             "哎呀\u{200b}！ \u{200b}我的\u{200b}错\u{200b}。"
         );
+    }
+
+    #[cfg(feature = "extended")]
+    #[test]
+    fn segmentation_keeps_grapheme_clusters_whole() {
+        for input in ["ช่วยวิกิพีเดียได้", "สปีชีส์", "ฉันชอบกินข้าวผัดที่ร้านริมน้ำ"] {
+            let words: Vec<&str> = segment_words(input).collect();
+            assert_eq!(words.concat(), input);
+            for word in &words {
+                let first = word.chars().next().unwrap();
+                assert!(
+                    !unicode_normalization::char::is_combining_mark(first),
+                    "{input:?} segmented as {words:?}: {word:?} starts with a combining mark"
+                );
+            }
+        }
     }
 
     #[cfg(feature = "extended")]
