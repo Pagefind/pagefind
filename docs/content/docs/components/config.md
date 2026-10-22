@@ -27,6 +27,7 @@ Declaratively configure a Pagefind instance. Optionally include this on the page
 | `faceted` | boolean | `false` | Enable faceted search mode |
 | `highlight-param` | string | — | Add the search term as a query parameter under this key for use with the [highlight script](/docs/highlighting/) |
 | `exact-diacritics` | boolean | `false` | Treat diacritics as distinct characters instead of normalizing them |
+| `prefix-matching` | string | `"all"` | Which words of a search may match longer words: `"all"`, `"last"`, or `"none"`. See [prefix matching](/docs/search-config/#prefix-matching) |
 | `meta-cache-tag` | string | — | Replace the default cache-busting timestamp with a fixed string for offline/PWA support |
 | `no-worker` | boolean | `false` | Force Pagefind to run on the main thread instead of a web worker |
 | `sort` | string | — | Order results by a [sort key](/docs/sorts/) rather than by relevance, as `key:asc` or `key:desc` |
