@@ -1,0 +1,28 @@
+name: The backtrack floor defaults lower in languages that aren't whitespace delimited
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ja/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>東京 の 人 が 多い</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ja/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      // 人々 is not indexed, and Japanese defaults to a floor of 1, so backing off
+      // to the single character word 人 is allowed
+      let byDefault = await pagefind.search("人々");
+      // An explicit floor overrides that default in every language
+      await pagefind.options({ backtrackFloor: 3 });
+      let raised = await pagefind.search("人々");
+      return [byDefault.results.length, raised.results.length];
+    expected:
+      - 1
+      - 0
