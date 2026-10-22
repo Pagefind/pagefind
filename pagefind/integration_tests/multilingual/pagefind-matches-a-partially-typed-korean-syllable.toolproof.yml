@@ -1,0 +1,49 @@
+name: Pagefind matches a partially typed Korean syllable
+steps:
+  - ref: ./background.toolproof.yml
+  # A Hangul syllable is composed from two or three letters, and a Korean IME
+  # emits the partially built block while the user is still typing it: 한국
+  # ("hanguk") passes through 한구 on its way, and 서울 ("Seoul") through 서우.
+  # Pagefind matches by prefix, so those intermediate states only resolve while
+  # Hangul is indexed as its constituent letters
+  - step: I have a "public/ko/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ko">
+      <body>
+          <p>한국어 검색</p>
+      </body>
+      </html>
+  - step: I have a "public/ko/other.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ko">
+      <body>
+          <p>서울 지도</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ko/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let partial_han = await pagefind.search("한구");
+      let partial_seo = await pagefind.search("서우");
+      let whole = await pagefind.search("한국어");
+
+      return {
+        "한구": (await Promise.all(partial_han.results.map(r => r.data()))).map(p => p.url),
+        "서우": (await Promise.all(partial_seo.results.map(r => r.data()))).map(p => p.url),
+        "한국어": (await Promise.all(whole.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      한구:
+        - /ko/
+      서우:
+        - /ko/other.html
+      한국어:
+        - /ko/

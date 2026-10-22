@@ -1,0 +1,42 @@
+name: Character Tests > Dotted names are indexed by their trailing members
+steps:
+  - ref: ./background.toolproof.yml
+  # Ensure searching for `is_python_build` catches `sysconfig.is_python_build`,
+  # even when `is_python_build` is itself a valid word elsewhere.
+  - step: I have a "public/standalone/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>is_python_build() returns a bool</p></body></html>
+  - step: I have a "public/dotted/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>Call sysconfig.is_python_build() first</p></body></html>
+  - step: I have a "public/nested/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>Use os.path.join_all to combine them</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let urls = async (term) => {
+        let search = await pagefind.search(term);
+        let pages = await Promise.all(search.results.map(r => r.data()));
+        return pages.map(p => p.url).sort();
+      };
+
+      return {
+        "is_python_build": await urls("is_python_build"),
+        "path.join_all": await urls("path.join_all"),
+      };
+    expected:
+      is_python_build:
+        - /dotted/
+        - /standalone/
+      path.join_all:
+        - /nested/

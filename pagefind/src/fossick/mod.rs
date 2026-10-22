@@ -1,6 +1,4 @@
 use anyhow::{bail, Result};
-#[cfg(feature = "extended")]
-use charabia::Segment;
 use either::Either;
 use flate2::read::GzDecoder;
 use hashbrown::HashMap;
@@ -15,7 +13,7 @@ use std::io::Read;
 use std::ops::Mul;
 use std::path::{Path, PathBuf};
 
-use crate::fossick::splitting::get_indexable_words;
+use crate::fossick::splitting::{get_dotted_tails, get_indexable_words};
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
 use crate::SearchOptions;
 use parser::DomParser;
@@ -61,6 +59,35 @@ pub struct FossickedData {
     pub has_old_bundle_reference: bool,
     pub has_default_ui_reference: bool,
     pub language: String,
+}
+
+/// Segment a run of text into words, for languages that
+/// don't reliably delimit words with whitespace.
+/// ICU4X agrees (ish) with the browser's `Intl.Segmenter` (ICU4C),
+/// which is going to segment the user's search query.
+#[cfg(feature = "extended")]
+fn segment_words(input: &str) -> impl Iterator<Item = &str> {
+    use unicode_segmentation::UnicodeSegmentation;
+
+    let segmenter = icu_segmenter::WordSegmenter::new_dictionary(Default::default());
+    // Where its dictionary finds no match, ICU4X can break between a base
+    // character and a mark that belongs to it, splitting Thai วิกิพีเดีย as
+    // วิ|กิพ|ี|เดีย. A word can't start with a dangling vowel or tone mark, so
+    // breakpoints inside a grapheme cluster are dropped
+    let mut grapheme_starts = input.grapheme_indices(true).map(|(i, _)| i).peekable();
+    let mut start = 0;
+    segmenter
+        .segment_str(input)
+        .skip(1)
+        .filter(move |&end| {
+            while grapheme_starts.next_if(|&g| g < end).is_some() {}
+            end == input.len() || grapheme_starts.peek() == Some(&end)
+        })
+        .map(move |end| {
+            let word = &input[start..end];
+            start = end;
+            word
+        })
 }
 
 #[derive(Debug)]
@@ -368,7 +395,7 @@ impl Fossicker {
             } else {
                 if should_segment {
                     // Run a segmenter only for any languages which require it.
-                    Either::Right(seg.segment_str())
+                    Either::Right(segment_words(seg))
                 } else {
                     // Currently hesitant to run segmentation during indexing
                     // that we can't also run during search, since we don't
@@ -475,8 +502,15 @@ impl Fossicker {
 
             let word_weight = *weight_stack.last().unwrap_or(&1);
 
-            let indexable_words =
+            let mut indexable_words =
                 get_indexable_words(&base_word, stemmer.as_ref(), &options.include_characters);
+            let dotted_tails = get_dotted_tails(
+                &base_word,
+                stemmer.as_ref(),
+                &options.include_characters,
+                &indexable_words,
+            );
+            indexable_words.extend(dotted_tails);
 
             let compound_count = indexable_words
                 .iter()
@@ -1130,12 +1164,28 @@ mod tests {
 
         let mut words = words.keys().collect::<Vec<_>>();
         words.sort();
-        assert_eq!(words, vec!["哎呀", "我", "的", "错"]);
+        assert_eq!(words, vec!["哎呀", "我的", "错"]);
 
         assert_eq!(
             content,
-            "哎呀\u{200b}！ \u{200b}我\u{200b}的\u{200b}错\u{200b}。"
+            "哎呀\u{200b}！ \u{200b}我的\u{200b}错\u{200b}。"
         );
+    }
+
+    #[cfg(feature = "extended")]
+    #[test]
+    fn segmentation_keeps_grapheme_clusters_whole() {
+        for input in ["ช่วยวิกิพีเดียได้", "สปีชีส์", "ฉันชอบกินข้าวผัดที่ร้านริมน้ำ"] {
+            let words: Vec<&str> = segment_words(input).collect();
+            assert_eq!(words.concat(), input);
+            for word in &words {
+                let first = word.chars().next().unwrap();
+                assert!(
+                    !unicode_normalization::char::is_combining_mark(first),
+                    "{input:?} segmented as {words:?}: {word:?} starts with a combining mark"
+                );
+            }
+        }
     }
 
     #[cfg(feature = "extended")]
@@ -1148,16 +1198,14 @@ mod tests {
                 .collect::<Vec<_>>();
             let clean_input = chunked_input.join(" ");
 
-            let mut legitimate_output = clean_input
-                .as_str()
-                .segment_str()
+            let mut legitimate_output = segment_words(clean_input.as_str())
                 .filter(|w| w.chars().any(|c| !c.is_whitespace()))
                 .map(Into::into)
                 .collect::<Vec<_>>();
             let mut chunked_output = chunked_input
                 .into_iter()
                 .flat_map(|inp| {
-                    inp.segment_str()
+                    segment_words(inp)
                         .filter(|w| w.chars().any(|c| !c.is_whitespace()))
                         .collect::<Vec<_>>()
                 })
