@@ -156,6 +156,8 @@ jobs:
           curl -sL https://github.com/cross-tools/musl-cross/releases/download/20250929/aarch64-unknown-linux-musl.tar.xz | sudo tar xJ -C /opt/
           echo "CC_aarch64_unknown_linux_musl=/opt/aarch64-unknown-linux-musl/bin/aarch64-unknown-linux-musl-gcc" >> $GITHUB_ENV
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/opt/aarch64-unknown-linux-musl/bin/aarch64-unknown-linux-musl-gcc" >> $GITHUB_ENV
+          # Build jemalloc for 64KiB pages so the binary also runs on kernels with 16KiB pages (Raspberry Pi 5, Asahi, Docker on Apple Silicon)
+          echo "JEMALLOC_SYS_WITH_LG_PAGE=16" >> $GITHUB_ENV
 
       - name: Install Nightly Rust
         run: |
