@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use pagefind_microjson::JSONValue;
+use json::Value;
 use search::{stems_from_term, BM25Params, ScoringMetrics};
 use util::*;
 use wasm_bindgen::prelude::*;
@@ -12,6 +12,7 @@ use crate::search::BalancedWordScore;
 mod filter;
 mod filter_index;
 mod index;
+mod json;
 mod metadata;
 mod search;
 mod util;
@@ -169,56 +170,40 @@ pub fn enter_playground_mode(ptr: *mut SearchIndex) -> *mut SearchIndex {
 pub fn set_ranking_weights(ptr: *mut SearchIndex, weights: &str) -> *mut SearchIndex {
     debug!({ "Loading Ranking Weights" });
 
-    let Ok(weights) = JSONValue::parse(weights) else {
+    let Some(weights) = Value::parse(weights) else {
         return ptr;
     };
 
     let mut search_index = unsafe { Box::from_raw(ptr) };
 
-    if let Ok(term_similarity) = weights
-        .get_key_value("term_similarity")
-        .and_then(|v| v.read_float())
-    {
+    if let Some(term_similarity) = weights.get("term_similarity").and_then(Value::as_f32) {
         search_index.ranking_weights.term_similarity = term_similarity.max(0.0);
     }
 
-    if let Ok(page_length) = weights
-        .get_key_value("page_length")
-        .and_then(|v| v.read_float())
-    {
+    if let Some(page_length) = weights.get("page_length").and_then(Value::as_f32) {
         search_index.ranking_weights.page_length = page_length.clamp(0.0, 1.0);
     }
 
-    if let Ok(term_saturation) = weights
-        .get_key_value("term_saturation")
-        .and_then(|v| v.read_float())
-    {
+    if let Some(term_saturation) = weights.get("term_saturation").and_then(Value::as_f32) {
         search_index.ranking_weights.term_saturation = term_saturation.clamp(0.0, 2.0);
     }
 
-    if let Ok(term_frequency) = weights
-        .get_key_value("term_frequency")
-        .and_then(|v| v.read_float())
-    {
+    if let Some(term_frequency) = weights.get("term_frequency").and_then(Value::as_f32) {
         search_index.ranking_weights.term_frequency = term_frequency.clamp(0.0, 1.0);
     }
 
-    if let Ok(diacritic_similarity) = weights
-        .get_key_value("diacritic_similarity")
-        .and_then(|v| v.read_float())
+    if let Some(diacritic_similarity) = weights.get("diacritic_similarity").and_then(Value::as_f32)
     {
         search_index.ranking_weights.diacritic_similarity = diacritic_similarity.max(0.0);
     }
 
-    if let Ok(meta_weights_obj) = weights.get_key_value("meta_weights") {
-        if let Ok(obj_iter) = meta_weights_obj.iter_object() {
-            for (key, value) in obj_iter.filter_map(|o| o.ok()) {
-                if let Ok(weight) = value.read_float() {
-                    search_index
-                        .ranking_weights
-                        .meta_weights
-                        .insert(key.to_string(), weight.max(0.0));
-                }
+    if let Some(meta_weights) = weights.get("meta_weights").and_then(Value::as_obj) {
+        for (key, value) in meta_weights {
+            if let Some(weight) = value.as_f32() {
+                search_index
+                    .ranking_weights
+                    .meta_weights
+                    .insert(key.to_string(), weight.max(0.0));
             }
         }
     }

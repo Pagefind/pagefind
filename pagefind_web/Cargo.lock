@@ -82,6 +82,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 
 [[package]]
+name = "hifijson"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "242402749acf71e6f32f5857598b7002c4058a4e3c3b22b4c7d51cab9aea754e"
+
+[[package]]
 name = "indexmap"
 version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -110,12 +116,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "pagefind_microjson"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f97aa64cde14e78d6274c473f36cec98d401f0b583282055e953d2df907e210"
-
-[[package]]
 name = "pagefind_stem"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,8 +126,8 @@ name = "pagefind_web"
 version = "0.0.0"
 dependencies = [
  "bit-set",
+ "hifijson",
  "minicbor",
- "pagefind_microjson",
  "pagefind_stem",
  "wasm-bindgen",
  "write-json",

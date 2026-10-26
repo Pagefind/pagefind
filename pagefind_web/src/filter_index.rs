@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use super::SearchIndex;
+use crate::json::Value;
 use crate::util::*;
 use minicbor::{decode, Decoder};
-use pagefind_microjson::{JSONValue, JSONValueType};
 
 /*
 {} = fixed length array
@@ -63,52 +63,43 @@ impl SearchIndex {
             format! {"Adding synthetic filters for {:?}", filter}
         });
 
-        use JSONValueType as J;
-
-        let Ok(all_filters) = JSONValue::parse(filter) else {
+        let Some(all_filters) = Value::parse(filter) else {
             debug!({ "Malformed object passed to Pagefind synthetic filters" });
             return;
         };
-        if !matches!(all_filters.value_type, J::Object) {
+        let Some(obj) = all_filters.as_obj() else {
             debug!({ "Filters was passed a non-object" });
             return;
-        }
+        };
 
         let all_pages = Vec::from_iter(0..self.pages.len() as u32);
 
-        if let Ok(obj) = all_filters.iter_object() {
-            for (filter_name, value) in obj.filter_map(|o| o.ok()) {
-                if !self.filters.contains_key(filter_name) {
-                    debug!({
-                        format! {"No map found for {}, adding one.", filter_name}
-                    });
-                    let filter_map = BTreeMap::new();
-                    self.filters.insert(filter_name.to_string(), filter_map);
+        for (filter_name, value) in obj {
+            if !self.filters.contains_key(&**filter_name) {
+                debug!({
+                    format! {"No map found for {}, adding one.", filter_name}
+                });
+                let filter_map = BTreeMap::new();
+                self.filters.insert(filter_name.to_string(), filter_map);
+            }
+
+            let filter_map = self
+                .filters
+                .get_mut(&**filter_name)
+                .expect("Filter should have just been created");
+
+            match value {
+                Value::Str(s) => {
+                    filter_map.insert(s.to_string(), all_pages.clone());
                 }
-
-                let filter_map = self
-                    .filters
-                    .get_mut(filter_name)
-                    .expect("Filter should have just been created");
-
-                match value.value_type {
-                    J::String => {
-                        filter_map
-                            .insert(value.read_string().unwrap().to_string(), all_pages.clone());
-                    }
-                    J::Array => {
-                        for value in value.iter_array().unwrap() {
-                            if !matches!(value.value_type, J::String) {
-                                continue;
-                            }
-                            filter_map.insert(
-                                value.read_string().unwrap().to_string(),
-                                all_pages.clone(),
-                            );
+                Value::Arr(arr) => {
+                    for value in arr {
+                        if let Value::Str(s) = value {
+                            filter_map.insert(s.to_string(), all_pages.clone());
                         }
                     }
-                    _ => {}
                 }
+                _ => {}
             }
         }
     }
