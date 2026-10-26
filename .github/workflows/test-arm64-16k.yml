@@ -1,0 +1,167 @@
+name: Test arm64 16K pages
+
+# Boots the aarch64 musl release binary on a Linux kernel with 16KiB pages
+# (Raspberry Pi 5, Asahi Linux, Docker on Apple Silicon, ...), see #1147.
+# GitHub's arm64 runners use 4KiB pages, so this has to run under QEMU.
+#
+# This workflow is self-contained and can be deleted without affecting anything else.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-arm64-16k.yml"
+      - ".github/workflows/release.yml"
+      - "pagefind/Cargo.toml"
+      - "pagefind/src/main.rs"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_PACK_VERSION: "v0.14.0"
+  TARGET: aarch64-unknown-linux-musl
+
+jobs:
+  boot-16k:
+    name: Boot aarch64 musl binary on a 16K page kernel
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      # Use whatever jemalloc page size the release workflow builds with,
+      # so this fails if that setting is removed from release.yml.
+      - name: Read jemalloc page size from release workflow
+        run: |
+          lg_page="$(grep -oP 'JEMALLOC_SYS_WITH_LG_PAGE=\K[0-9]+' .github/workflows/release.yml | head -n1)"
+          if [ -z "$lg_page" ]; then
+            echo "::error::JEMALLOC_SYS_WITH_LG_PAGE is not set in release.yml for the aarch64 musl build"
+            exit 1
+          fi
+          echo "JEMALLOC_SYS_WITH_LG_PAGE=$lg_page" >> "$GITHUB_ENV"
+
+      # Mirrors the "Install aarch64 Tooling" step of release.yml
+      - name: Install aarch64 musl tooling
+        run: |
+          sudo apt update -y
+          sudo apt install -y musl-tools musl-dev clang gcc-aarch64-linux-gnu
+          curl -sL https://github.com/cross-tools/musl-cross/releases/download/20250929/aarch64-unknown-linux-musl.tar.xz | sudo tar xJ -C /opt/
+          echo "CC_aarch64_unknown_linux_musl=/opt/aarch64-unknown-linux-musl/bin/aarch64-unknown-linux-musl-gcc" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=/opt/aarch64-unknown-linux-musl/bin/aarch64-unknown-linux-musl-gcc" >> "$GITHUB_ENV"
+
+      # pagefind_web/local_build.sh builds the wasm with nightly and -Z build-std
+      - name: Install Nightly Rust
+        run: |
+          rustup toolchain install nightly --component rust-src --target ${{ env.TARGET }}
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --target ${{ env.TARGET }}
+          rustup default stable
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@0d096b08b4e5a7de8c28de67e11e945404e9eefa # v0.4.0
+        with:
+          version: ${{env.WASM_PACK_VERSION}}
+
+      # The binary embeds the web assets, so these are needed to compile it.
+      - name: Build Coupled JS
+        working-directory: ./pagefind_web_js
+        run: npm i && npm run build-coupled
+
+      - name: Build WASM
+        working-directory: ./pagefind_web
+        run: ./local_build.sh
+
+      - name: Build UI
+        working-directory: ./pagefind_ui/default
+        run: npm i && npm run build
+
+      - name: Build Modular UI
+        working-directory: ./pagefind_ui/modular
+        run: npm i && npm run build
+
+      - name: Build Component UI
+        working-directory: ./pagefind_ui/component
+        run: npm i && npm run build
+
+      - name: Build Playground
+        working-directory: ./pagefind_playground
+        run: npm i && npm run build
+
+      - name: Build
+        working-directory: ./pagefind
+        run: cargo build --release --target ${{ env.TARGET }} --features extended
+
+      - name: Install QEMU
+        run: |
+          sudo apt update -y
+          sudo apt install -y qemu-system-arm cpio
+
+      - name: Fetch a 16K page arm64 kernel
+        run: |
+          mkdir -p vm/kernel
+          pkg="$(curl -sSf http://deb.debian.org/debian/dists/stable/main/binary-arm64/Packages.xz | xz -dc \
+            | awk '/^Package: linux-image-[0-9].*-arm64-16k$/ {p=$2} /^Filename:/ && p {print p, $2; p=""}' \
+            | sort -V | tail -n1)"
+          echo "Using kernel package: $pkg"
+          curl -sSfo vm/kernel.deb "http://deb.debian.org/debian/${pkg#* }"
+          dpkg-deb -x vm/kernel.deb vm/kernel
+          grep -q '^CONFIG_ARM64_16K_PAGES=y' vm/kernel/boot/config-*
+          cp vm/kernel/boot/vmlinuz-* vm/vmlinuz
+
+      # The guest is arm64, so it needs an arm64 busybox (not the runner's x86_64 one)
+      - name: Fetch an arm64 busybox
+        run: |
+          mkdir -p vm/busybox
+          fn="$(curl -sSf http://deb.debian.org/debian/dists/stable/main/binary-arm64/Packages.xz | xz -dc \
+            | awk '/^Package: busybox-static$/ {p=1} /^Filename:/ && p && !d {print $2; d=1}')"
+          echo "Using busybox package: $fn"
+          curl -sSfo vm/busybox.deb "http://deb.debian.org/debian/$fn"
+          dpkg-deb -x vm/busybox.deb vm/busybox
+          test -x vm/busybox/usr/bin/busybox
+
+      - name: Build initramfs
+        run: |
+          mkdir -p vm/rd/bin vm/rd/proc
+          cp vm/busybox/usr/bin/busybox vm/rd/bin/
+          cp target/${{ env.TARGET }}/release/pagefind vm/rd/pagefind
+          cat > vm/rd/init <<'EOF'
+          #!/bin/busybox sh
+          /bin/busybox --install -s /bin
+          mount -t proc proc /proc
+          echo "GUEST_KERNEL=$(uname -r)"
+          echo "GUEST_PAGESIZE=$(grep -m1 KernelPageSize /proc/self/smaps)"
+          /pagefind --version
+          echo "GUEST_EXIT=$?"
+          poweroff -f
+          EOF
+          chmod +x vm/rd/init
+          (cd vm/rd && find . | cpio -o -H newc | gzip) > vm/initramfs.gz
+
+      - name: Run on the 16K page kernel
+        run: |
+          timeout 600 qemu-system-aarch64 \
+            -machine virt -cpu max -m 1024 -nographic -no-reboot \
+            -kernel vm/vmlinuz -initrd vm/initramfs.gz \
+            -append "console=ttyAMA0 rdinit=/init quiet panic=1" \
+            | tr -d '\r' | tee vm/console.log || true
+
+          echo "--- checks"
+          grep -E '^GUEST_PAGESIZE=KernelPageSize: +16 kB' vm/console.log
+          grep -E '^pagefind [0-9]' vm/console.log
+          grep -qx 'GUEST_EXIT=0' vm/console.log
