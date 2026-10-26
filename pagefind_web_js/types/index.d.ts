@@ -46,6 +46,18 @@ declare global {
      */
     exactDiacritics?: boolean;
     /**
+     * Which words of a search may match longer words that start with them.
+     *
+     * - "all" (default): every word is a prefix, so "car rental" also matches "carpet".
+     * - "last": only the last word is a prefix, as it may still be being typed.
+     *   Every other word has to match a whole word, so "car rental" does not match "carpet".
+     * - "none": every word has to match a whole word.
+     *
+     * Words are still stemmed, and a word that matches no whole word on the site
+     * falls back to matching as a prefix.
+     */
+    prefixMatching?: "all" | "last" | "none";
+    /**
      * Force Pagefind to run on the main thread instead of using a web worker.
      *
      * By default, Pagefind will use a web worker for search operations when available,

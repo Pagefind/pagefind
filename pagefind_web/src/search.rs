@@ -437,6 +437,7 @@ impl SearchIndex {
         original_query: &str,
         filter_results: Option<BitSet>,
         exact_diacritics: bool,
+        prefix_matching: &str,
     ) -> (Vec<usize>, Vec<PageSearchResult>, Option<Vec<QueryTermIdf>>) {
         debug!({
             format! {"Searching {:?}", term}
@@ -449,6 +450,13 @@ impl SearchIndex {
         let mut words: Vec<MatchingPageWord> = Vec::new();
         let split_term = stems_from_term(term);
         let original_terms: Vec<&str> = original_query.split(' ').collect();
+        // How many of the leading terms should match whole words rather than
+        // being extended to every word that starts with them.
+        let whole_word_terms = match prefix_matching {
+            "last" => split_term.len().saturating_sub(1),
+            "none" => split_term.len(),
+            _ => 0,
+        };
         // Track combined page count for each original query term.
         // We use this to calculate a true-minimum IDF score when ranking,
         // for example we calculate the IDF of all to* words.
@@ -457,8 +465,19 @@ impl SearchIndex {
         for (term_idx, term) in split_term.iter().enumerate() {
             let original_term = original_terms.get(term_idx).copied().unwrap_or("");
 
+            let whole_word = if term_idx < whole_word_terms {
+                self.find_whole_word(&term, original_term, exact_diacritics)
+            } else {
+                None
+            };
+            // If this term isn't a whole word anywhere, fall back to extending it
+            let matching_words = match whole_word {
+                Some(word) => vec![word],
+                None => self.find_word_extensions(&term),
+            };
+
             let mut word_maps = Vec::new();
-            for (word, word_data) in self.find_word_extensions(&term) {
+            for (word, word_data) in matching_words {
                 let length_differential: u8 = (word.len().abs_diff(term.len()) + 1)
                     .try_into()
                     .unwrap_or(std::u8::MAX);
@@ -810,6 +829,31 @@ impl SearchIndex {
         });
 
         (unfiltered_results, pages, verbose_query_idfs)
+    }
+
+    /// Finds the indexed word that matches this term in full,
+    /// as long as one of its forms would survive the diacritics check.
+    fn find_whole_word(
+        &self,
+        term: &str,
+        original_term: &str,
+        exact_diacritics: bool,
+    ) -> Option<(&String, &WordData)> {
+        let (word, word_data) = self.words.get_key_value(term)?;
+        let has_matching_form = !exact_diacritics
+            || diacritics_match(original_term, word)
+            || word_data
+                .additional_variants
+                .iter()
+                .any(|variant| diacritics_match(original_term, &variant.form));
+        if has_matching_form {
+            debug!({
+                format! {"Matching {:#?} as a whole word", word}
+            });
+            Some((word, word_data))
+        } else {
+            None
+        }
     }
 
     fn find_word_extensions(&self, term: &str) -> Vec<(&String, &WordData)> {
