@@ -1,7 +1,7 @@
 import test from 'ava';
 import type * as external from "../types/index";
 
-import { build_excerpt, calculate_excerpt_region } from "../lib/excerpt";
+import { build_excerpt, calculate_excerpt_region } from "../lib/excerpt.ts";
 
 test('empty excerpt regions', t => {
     const weighted_words: PagefindWordLocation[] = []
