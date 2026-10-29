@@ -155,6 +155,30 @@ await pagefind.mergeIndex("https://docs.example.com/pagefind", {
 ```
 {{< /diffcode >}}
 
+## Skipping indexes that fail to load
+
+By default, a merged index that can't be loaded stops search from working. If some of your indexes might be missing, for example while one of the sites hasn't been built yet, pass an `optional` option for those indexes. Pagefind will log a warning and search across the indexes that did load:
+
+{{< diffcode >}}
+```js
+// Component UI:
+const { configureInstance } = window.PagefindComponents;
+
+configureInstance("default", {
+    mergeIndex: [{
+        bundlePath: "https://docs.example.com/pagefind",
++        optional: true
+    }]
+});
+
+// JS API:
+const pagefind = await import("/pagefind/pagefind.js");
+await pagefind.mergeIndex("https://docs.example.com/pagefind", {
++    optional: true
+});
+```
+{{< /diffcode >}}
+
 ## Notes
 
 ### Cross origin indexes
