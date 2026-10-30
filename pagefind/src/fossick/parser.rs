@@ -21,7 +21,8 @@ lazy_static! {
 }
 
 const SENTENCE_SELECTORS: &[&'static str] = &[
-    "h1", "h2", "h3", "h4", "h5", "h6", "p", "td", "div", "ul", "li", "article", "section",
+    "h1", "h2", "h3", "h4", "h5", "h6", "p", "td", "div", "ul", "li", "dl", "dt", "dd", "article",
+    "section",
 ];
 const INLINE_SELECTORS: &[&'static str] = &[
     "a", "abbr", "acronym", "b", "bdo", "big", "br", "button", "cite", "code", "dfn", "em", "i",
@@ -361,11 +362,13 @@ impl<'a> DomParser<'a> {
                                 // Similarly, we want to separate block elements
                                 // with punctuation, so that the excerpts read nicely.
                                 // (As long as it doesn't already end with, say, a . or ?)
+                                // Description list terms lead into their details,
+                                // so they get a colon instead.
                                 if node.current_value.chars()
                                     .last()
                                     .filter(|c| SENTENCE_CHARS.is_match(&c.to_string()))
                                     .is_some() {
-                                        node.current_value.push('.');
+                                        node.current_value.push(if tag_name == "dt" { ':' } else { '.' });
                                 }
                                 node.current_value.push(' ');
                             }
@@ -834,6 +837,23 @@ mod tests {
         assert_eq!(
             data.digest,
             "Sentences should have periods. Unless one exists. Or it ends with punctuation: Except for 'quotes'."
+        )
+    }
+
+    #[test]
+    fn description_list_formatting() {
+        let data = test_parse(vec![
+            "<dl>",
+            "<dt>Morgawr</dt>",
+            "<dd>A sea serpent</dd>",
+            "<dt>Owlman:</dt>",
+            "<dd>A giant owl-like creature</dd>",
+            "</dl>",
+        ]);
+
+        assert_eq!(
+            data.digest,
+            "Morgawr: A sea serpent. Owlman: A giant owl-like creature."
         )
     }
 
