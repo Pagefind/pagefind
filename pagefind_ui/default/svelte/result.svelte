@@ -9,9 +9,10 @@
     let meta = [];
 
     const resolveImageUrl = (src, pageUrl) => {
-        if (!src || /^[a-z][a-z0-9+.-]*:/i.test(src) || /^\/\//.test(src) || src.startsWith("/")) return src;
+        if (!src || /^[a-z][a-z0-9+.-]*:/i.test(src) || /^\/\//.test(src)) return src;
         try {
-            return new URL(src, new URL(pageUrl || "/", "https://p")).pathname;
+            const url = new URL(src, new URL(pageUrl || "/", "https://p"));
+            return url.origin === "https://p" ? url.pathname + url.search + url.hash : url.href;
         } catch {
             return src;
         }

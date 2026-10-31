@@ -88,10 +88,11 @@ The template engine provides [built-in filters](https://github.com/bglw/adequate
 
 #### `resolveUrl(pageUrl)`
 
-Resolves a relative URL against a page URL. Absolute URLs are returned unchanged.
+Resolves a relative URL against a page URL. Absolute URLs are returned unchanged. If the page URL includes a domain, for example from a `baseUrl` on a merged index, the resolved URL keeps that domain.
 
 ```
 "images/hero.png" | resolveUrl("/blog/post/")  →  /blog/post/images/hero.png
+"images/hero.png" | resolveUrl("https://example.com/blog/post/")  →  https://example.com/blog/post/images/hero.png
 ```
 
 ### Placeholder Template
