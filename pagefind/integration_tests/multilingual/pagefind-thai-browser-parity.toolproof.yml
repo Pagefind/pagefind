@@ -1,0 +1,41 @@
+name: Pagefind Thai browser parity
+steps:
+  - ref: ./background.toolproof.yml
+  # อังกฤษ ("England") and อังคาร ("Tuesday") are each one word to Intl.Segmenter.
+  - step: I have a "public/th/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>อังกฤษ</p>
+      </body>
+      </html>
+  - step: I have a "public/th/other.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>อังคาร</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/th/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let england = await pagefind.search("อังกฤษ");
+      let tuesday = await pagefind.search("อังคาร");
+
+      return {
+        "อังกฤษ": (await Promise.all(england.results.map(r => r.data()))).map(p => p.url),
+        "อังคาร": (await Promise.all(tuesday.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      อังกฤษ:
+        - /th/
+      อังคาร:
+        - /th/other.html
