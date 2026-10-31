@@ -1,0 +1,59 @@
+name: Pagefind finds Thai words that span two tokens
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/th/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>ยินดีต้อนรับเข้าสู่เว็บไซต์ของเรา</p>
+      </body>
+      </html>
+  # ICU4X splits วิกิพีเดีย as วิ|กิพี|เดีย while the browser's ICU4C gives
+  # วิกิ|พี|เดีย, so a search for the ICU4C word พี has to find the part of the
+  # word that ICU4X kept together
+  - step: I have a "public/th/wikipedia.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>ช่วยวิกิพีเดียได้</p>
+      </body>
+      </html>
+  - step: I have a "public/th/university.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="th">
+      <body>
+          <p>มหาวิทยาลัยมีนักศึกษาจำนวนมาก</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/th/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let wikipedia = await pagefind.search("วิกิพีเดีย");
+      let full = await pagefind.search("วิกิ");
+      let part = await pagefind.search("พี");
+      let university = await pagefind.search("มหาวิทยาลัย");
+
+      return {
+        "วิกิพีเดีย": (await Promise.all(wikipedia.results.map(r => r.data()))).map(p => p.url),
+        "วิกิ": (await Promise.all(full.results.map(r => r.data()))).map(p => p.url),
+        "พี": (await Promise.all(part.results.map(r => r.data()))).map(p => p.url),
+        "มหาวิทยาลัย": (await Promise.all(university.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      วิกิพีเดีย:
+        - /th/wikipedia.html
+      วิกิ:
+        - /th/wikipedia.html
+      พี:
+        - /th/wikipedia.html
+      มหาวิทยาลัย:
+        - /th/university.html

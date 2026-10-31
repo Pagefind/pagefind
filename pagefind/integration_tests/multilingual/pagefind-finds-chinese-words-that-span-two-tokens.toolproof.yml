@@ -1,0 +1,64 @@
+name: Pagefind finds Chinese words that span two tokens
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/zh/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>欢迎来到我们的网站。</p>
+      </body>
+      </html>
+  # ICU4X's dictionary takes the longest match, so it segments
+  # 學生在學校裡學習 as 學生|在學|校|裡|學習, while the browser's ICU4C weighs
+  # 在 against 學校 and gives 學生|在|學校|裡|學習. A search for the ICU4C word
+  # 學校 only matches if the indexed words can start partway through our token.
+  - step: I have a "public/zh/school.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>學生在學校裡學習。</p>
+      </body>
+      </html>
+  - step: I have a "public/zh/highway.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>汽车在高速公路上行驶。</p>
+      </body>
+      </html>
+  - step: I have a "public/zh/exam.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>学生正在准备期末考试。</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/zh/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let school = await pagefind.search("學校");
+      let highway = await pagefind.search("高速公路");
+      let exam = await pagefind.search("考试");
+
+      return {
+        "學校": (await Promise.all(school.results.map(r => r.data()))).map(p => p.url),
+        "高速公路": (await Promise.all(highway.results.map(r => r.data()))).map(p => p.url),
+        "考试": (await Promise.all(exam.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      學校:
+        - /zh/school.html
+      高速公路:
+        - /zh/highway.html
+      考试:
+        - /zh/exam.html
