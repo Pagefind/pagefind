@@ -1,0 +1,40 @@
+name: Pagefind highlights the segment a match starts in
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/zh/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>欢迎来到我们的网站。</p>
+      </body>
+      </html>
+  # ICU4X segments 學生在學校裡學習 as 學生|在學|校|裡|學習, so 校 on its own is a
+  # whole segment, but the pairs spanning segments (學校, 校裡) are indexed against
+  # the segment they start in. A search for 校 must only highlight 校, the text it
+  # actually matches, and not the 裡 that follows it.
+  - step: I have a "public/zh/school.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="zh">
+      <body>
+          <p>學生在學校裡學習。</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/zh/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("校");
+      let data = await Promise.all(search.results.map(r => r.data()));
+
+      return data.map(d => ({ url: d.url, excerpt: d.excerpt, plain: d.plain_excerpt }));
+    expected:
+      - url: /zh/school.html
+        excerpt: 學生在學<mark>校</mark>裡學習。
+        plain: 學生在學校裡學習。

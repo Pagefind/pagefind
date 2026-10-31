@@ -12,8 +12,11 @@ use std::io::Error;
 use std::io::Read;
 use std::ops::Mul;
 use std::path::{Path, PathBuf};
+use unicode_segmentation::UnicodeSegmentation;
 
-use crate::fossick::splitting::{get_dotted_tails, get_indexable_words};
+use crate::fossick::splitting::{
+    get_dotted_tails, get_indexable_bigrams, get_indexable_cross_bigram, get_indexable_words,
+};
 use crate::fragments::{PageAnchorData, PageFragment, PageFragmentData};
 use crate::SearchOptions;
 use parser::DomParser;
@@ -67,8 +70,6 @@ pub struct FossickedData {
 /// which is going to segment the user's search query.
 #[cfg(feature = "extended")]
 fn segment_words(input: &str) -> impl Iterator<Item = &str> {
-    use unicode_segmentation::UnicodeSegmentation;
-
     let segmenter = icu_segmenter::WordSegmenter::new_dictionary(Default::default());
     // Where its dictionary finds no match, ICU4X can break between a base
     // character and a mark that belongs to it, splitting Thai วิกิพีเดีย as
@@ -410,7 +411,7 @@ impl Fossicker {
         let coarse_segments =
             segment_chunks.map(|s| Either::<&str, core::slice::Iter<&str>>::Left(s));
 
-        let mut total_word_index = 0;
+        let mut total_word_index: usize = 0;
         let mut max_word_index = 0;
         let weight_multiplier = 24.0;
         let weight_max = 10.0;
@@ -418,7 +419,10 @@ impl Fossicker {
 
         let mut weight_stack: Vec<u8> = vec![(1.0 * weight_multiplier) as u8];
 
-        let mut track_word = |word: &str, append_whitespace: bool| {
+        let mut track_word = |word: &str,
+                              append_whitespace: bool,
+                              previous_cluster: Option<&str>,
+                              segmented: bool| {
             if word.chars().next() == Some('_') {
                 if word.starts_with("___PAGEFIND_ANCHOR___") {
                     if let Some((element_name, anchor_id)) =
@@ -511,11 +515,26 @@ impl Fossicker {
                 &indexable_words,
             );
             indexable_words.extend(dotted_tails);
+            let mut cross_bigram = None;
+            if segmented {
+                let bigrams =
+                    get_indexable_bigrams(&base_word, stemmer.as_ref(), &indexable_words);
+                indexable_words.extend(bigrams);
+                // The pair that spans the boundary from the previous segment is
+                // indexed against that segment, so it is tracked separately
+                cross_bigram = get_indexable_cross_bigram(
+                    &base_word,
+                    previous_cluster,
+                    stemmer.as_ref(),
+                    &indexable_words,
+                );
+            }
 
             let compound_count = indexable_words
                 .iter()
                 .filter(|w| w.is_compound_part)
-                .count();
+                .count()
+                + usize::from(cross_bigram.is_some());
             let partial_weight = if compound_count > 0 && word_weight > 0 {
                 (word_weight / compound_count.try_into().unwrap_or(std::u8::MAX)).max(1)
             } else {
@@ -541,6 +560,25 @@ impl Fossicker {
                 }
             }
 
+            // The pair spanning two segments belongs to the segment it starts
+            // in, the word before this one, so that an excerpt highlights the
+            // text from where the matched word starts rather than from where it
+            // ends up in our segmentation.
+            if let Some(indexable) = cross_bigram {
+                if let Some(position) = total_word_index.checked_sub(1) {
+                    let entry = FossickedWord {
+                        position: position.try_into().unwrap(),
+                        weight: partial_weight,
+                        original_word: indexable.original,
+                    };
+                    let positions = map.entry(indexable.stemmed).or_default();
+                    // The word before may already index this pair
+                    if !positions.iter().any(|word| word.position == entry.position) {
+                        positions.push(entry);
+                    }
+                }
+            }
+
             max_word_index = total_word_index;
             total_word_index += 1;
         };
@@ -548,12 +586,16 @@ impl Fossicker {
         for segment in coarse_segments {
             match segment {
                 Either::Left(word) => {
-                    track_word(word, true);
+                    track_word(word, true, None, false);
                 }
                 Either::Right(words) => {
+                    // Segments of a single run of text, so that the pairs of
+                    // grapheme clusters spanning two segments can be indexed as well
                     let mut words = words.peekable();
+                    let mut previous_cluster: Option<&str> = None;
                     while let Some(word) = words.next() {
-                        track_word(word, words.peek().is_none());
+                        track_word(word, words.peek().is_none(), previous_cluster, true);
+                        previous_cluster = word.graphemes(true).last();
                     }
                 }
             };
@@ -1162,9 +1204,17 @@ mod tests {
 
         let (content, words, _, _) = f.parse_digest(&test_opts());
 
-        let mut words = words.keys().collect::<Vec<_>>();
-        words.sort();
-        assert_eq!(words, vec!["哎呀", "我的", "错"]);
+        let mut keys = words.keys().collect::<Vec<_>>();
+        keys.sort();
+        // 的错 spans the boundary between the segments 我的 and 错,
+        // and is indexed so that neither segmentation of it is unsearchable
+        assert_eq!(keys, vec!["哎呀", "我的", "的错", "错"]);
+
+        // It is indexed as part of 我的, the segment it starts in, so that an
+        // excerpt highlights 我的 rather than only 错
+        let position = |word: &str| words[word][0].position;
+        assert_eq!(position("的错"), position("我的"));
+        assert_eq!(position("错"), position("我的") + 1);
 
         assert_eq!(
             content,

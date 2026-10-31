@@ -1,0 +1,55 @@
+name: Pagefind finds Japanese words that span two tokens
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ja/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>ようこそ、私たちのサイトへ。</p>
+      </body>
+      </html>
+  # ICU4X segments この料理はとてもおいしいです as この|料理|はと|て|も|おいしい|です|。
+  # while the browser's ICU4C gives この|料理|は|とても|おいしい|です. A search for
+  # とても only matches if the indexed words can start partway through our token.
+  - step: I have a "public/ja/delicious.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>この料理はとてもおいしいです。</p>
+      </body>
+      </html>
+  - step: I have a "public/ja/leaking.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>台所の水道から水が漏れています。</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ja/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let delicious = await pagefind.search("とても");
+      let leaking = await pagefind.search("から");
+      let endings = await pagefind.search("ます");
+
+      return {
+        "とても": (await Promise.all(delicious.results.map(r => r.data()))).map(p => p.url),
+        "から": (await Promise.all(leaking.results.map(r => r.data()))).map(p => p.url),
+        "ます": (await Promise.all(endings.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      とても:
+        - /ja/delicious.html
+      から:
+        - /ja/leaking.html
+      ます:
+        - /ja/leaking.html
