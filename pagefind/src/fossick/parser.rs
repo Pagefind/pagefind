@@ -496,10 +496,10 @@ impl<'a> DomParser<'a> {
                                 && !data.meta.contains_key("auto_image")
                                 && (data.meta.contains_key("auto_title") || data.meta.contains_key("title")) {
                                 if let Some(src) = el.get_attribute("src") {
-                                    data.meta.insert("auto_image".into(), src);
+                                    data.meta.insert("auto_image".into(), normalize_content(&src));
 
                                     if let Some(alt) = el.get_attribute("alt") {
-                                        data.meta.insert("auto_image_alt".into(), alt);
+                                        data.meta.insert("auto_image_alt".into(), normalize_content(&alt));
                                     }
                                 }
                             }
@@ -884,6 +884,20 @@ mod tests {
         assert_eq!(data.meta.get("headline"), Some(&"Hello World".to_owned()));
         assert_eq!(data.meta.get("adj"), Some(&"hella".to_owned()));
         assert_eq!(data.meta.get("hero"), Some(&"/huzzah.png".to_owned()));
+    }
+
+    #[test]
+    fn auto_image_metadata_decodes_entities() {
+        let data = test_parse(vec![
+            "<h1>Hello World</h1>",
+            "<img src='/cat.png?width=400&amp;format=webp' alt='Cat &amp; dog'>",
+        ]);
+
+        assert_eq!(
+            data.meta.get("image"),
+            Some(&"/cat.png?width=400&format=webp".to_owned())
+        );
+        assert_eq!(data.meta.get("image_alt"), Some(&"Cat & dog".to_owned()));
     }
 
     #[test]
