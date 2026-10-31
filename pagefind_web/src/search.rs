@@ -219,28 +219,30 @@ impl SearchIndex {
 
         let mut unfiltered_results: Vec<usize> = vec![];
         let mut maps = Vec::new();
-        let mut words = Vec::new();
+        let mut words: Vec<Vec<&PageWord>> = Vec::new();
 
         for (term_idx, term) in split_term.iter().enumerate() {
             if let Some(word_data) = self.words.get(term.as_ref()) {
                 let original_term = original_terms.get(term_idx).copied().unwrap_or("");
                 let mut set = BitSet::new();
+                let mut term_words = Vec::new();
 
                 if !exact_diacritics || diacritics_match(original_term, term) {
-                    words.extend(&word_data.pages);
+                    term_words.extend(&word_data.pages);
                     for page in &word_data.pages {
                         set.insert(page.page as usize);
                     }
                 }
                 for variant in &word_data.additional_variants {
                     if !exact_diacritics || diacritics_match(original_term, &variant.form) {
-                        words.extend(&variant.pages);
+                        term_words.extend(&variant.pages);
                         for page in &variant.pages {
                             set.insert(page.page as usize);
                         }
                     }
                 }
                 maps.push(set);
+                words.push(term_words);
             } else {
                 // If we can't find this word, there are obviously no exact matches
                 return (vec![], vec![]);
@@ -271,12 +273,12 @@ impl SearchIndex {
         for page_index in results.iter() {
             let word_locations: Vec<Vec<(u8, u32)>> = words
                 .iter()
-                .filter_map(|p| {
-                    if p.page as usize == page_index {
-                        Some(p.locs.iter().map(|d| *d).collect())
-                    } else {
-                        None
-                    }
+                .map(|term_words| {
+                    term_words
+                        .iter()
+                        .filter(|p| p.page as usize == page_index)
+                        .flat_map(|p| p.locs.iter().copied())
+                        .collect()
                 })
                 .collect();
             debug!({
@@ -325,15 +327,17 @@ impl SearchIndex {
             if !found_match {
                 let meta_word_locations: Vec<HashMap<u16, Vec<u32>>> = words
                     .iter()
-                    .filter_map(|p| {
-                        if p.page as usize == page_index && !p.meta_locs.is_empty() {
-                            let mut by_field: HashMap<u16, Vec<u32>> = HashMap::new();
+                    .filter_map(|term_words| {
+                        let mut by_field: HashMap<u16, Vec<u32>> = HashMap::new();
+                        for p in term_words.iter().filter(|p| p.page as usize == page_index) {
                             for &(field_id, position) in &p.meta_locs {
                                 by_field.entry(field_id).or_default().push(position);
                             }
-                            Some(by_field)
-                        } else {
+                        }
+                        if by_field.is_empty() {
                             None
+                        } else {
+                            Some(by_field)
                         }
                     })
                     .collect();
@@ -878,5 +882,67 @@ fn union_maps(mut maps: Vec<BitSet>) -> Option<BitSet> {
         Some(base)
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{IndexChunk, Page, PageWord, SearchIndex, WordData, WordVariant};
+
+    #[test]
+    fn exact_phrase_matches_when_page_has_diacritic_and_plain_variants() {
+        let page_word = |position| PageWord {
+            page: 0,
+            locs: vec![(25, position)],
+            meta_locs: vec![],
+        };
+        let mut words = BTreeMap::new();
+        words.insert(
+            "cafe".to_string(),
+            WordData {
+                pages: vec![page_word(2)],
+                additional_variants: vec![WordVariant {
+                    form: "café".to_string(),
+                    pages: vec![page_word(0)],
+                }],
+            },
+        );
+        words.insert(
+            "latte".to_string(),
+            WordData {
+                pages: vec![page_word(1)],
+                additional_variants: vec![],
+            },
+        );
+
+        let index = SearchIndex {
+            web_version: "test",
+            playground_mode: false,
+            generator_version: None,
+            pages: vec![Page {
+                hash: "index".to_string(),
+                word_count: 3,
+            }],
+            average_page_length: 3.0,
+            chunks: Vec::<IndexChunk>::new(),
+            filter_chunks: BTreeMap::new(),
+            words,
+            filters: BTreeMap::new(),
+            sorts: BTreeMap::new(),
+            meta_fields: vec![],
+            ranking_weights: crate::RankingWeights::default(),
+        };
+
+        let (_, pages) = index.exact_term("cafe latte", "café latte", None, false);
+
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].page, "index");
+
+        let (_, pages) = index.exact_term("cafe latte", "café latte", None, true);
+        assert_eq!(pages.len(), 1);
+
+        let (_, pages) = index.exact_term("cafe latte", "cafe latte", None, true);
+        assert!(pages.is_empty());
     }
 }
