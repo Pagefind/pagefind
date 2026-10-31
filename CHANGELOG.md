@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+* Fixed the aarch64 Linux musl binary crashing with `<jemalloc>: Unsupported system page size` on systems with 16KiB pages (Raspberry Pi 5, Asahi Linux, Docker on Apple Silicon).
+
 ## v1.5.2 (April 12, 2026)
 
 * `v1.5.0` was meant to 2x indexing performance, which it does on macOS and Windows. On Linux, with the published musl build, it actually _halves_ the indexing performance. This release subs in jemalloc on Linux musl builds to fix the musl allocator thrashing, and performance now achieves the 2x `v1.4.0` claim.
