@@ -14,5 +14,4 @@ pub struct PagefindEntryLanguage {
     pub hash: String,
     pub wasm: Option<String>,
     pub page_count: usize,
-    pub max_fragments: Option<u32>,
 }
