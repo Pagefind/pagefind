@@ -27,6 +27,7 @@ pub struct PagefindIndexes {
     pub sorts: Vec<String>,
     pub language: String,
     pub word_count: usize,
+    pub page_count: usize,
 }
 
 #[derive(Clone)]
@@ -396,11 +397,59 @@ pub async fn build_indexes(
     );
     fragments.sort_by_cached_key(|(_, (_, fragment))| fragment.page_number);
 
-    meta.pages
-        .extend(fragments.iter().map(|(word_count, (hash, _))| MetaPage {
-            hash: hash.clone(),
-            word_count: *word_count as u32,
-        }));
+    let page_count = fragments.len();
+    let mut final_fragments = Vec::new();
+
+    if let Some(max_fragments) =
+        options.max_fragments.filter(|&m| m > 0 && (m as usize) < fragments.len())
+    {
+        let group_size = (fragments.len() as f32 / max_fragments as f32).ceil() as usize;
+        options.logger.info(format!(
+            "Bundling {} fragments into groups of {}, resulting in {} files",
+            fragments.len(),
+            group_size,
+            fragments.chunks(group_size).len()
+        ));
+        let mut group_hashes: BTreeSet<String> = BTreeSet::new();
+        for chunk in fragments.chunks(group_size) {
+            let mut group_map = BTreeMap::new();
+            for (_, (hash, frag)) in chunk {
+                let val: serde_json::Value = serde_json::from_str(&frag.encoded_data).unwrap();
+                group_map.insert(hash.clone(), val);
+            }
+            let group_json = serde_json::to_string(&group_map).unwrap();
+            let prefix = format!("{language}_group_");
+            let group_hash = format!("{prefix}{}", full_hash(group_json.as_bytes()));
+
+            // If we hit a collision, extend one hash until we stop colliding
+            let mut hash_length = 7;
+            let mut short_group_hash = &group_hash[..prefix.len() + hash_length];
+            while group_hashes.contains(short_group_hash) && hash_length < 40 {
+                hash_length += 1;
+                short_group_hash = &group_hash[..prefix.len() + hash_length];
+            }
+            group_hashes.insert(short_group_hash.to_string());
+
+            final_fragments.push((short_group_hash.to_string(), group_json));
+
+            for (word_count, (hash, _)) in chunk {
+                meta.pages.push(MetaPage {
+                    hash: hash.clone(),
+                    word_count: *word_count as u32,
+                    group_hash: short_group_hash.to_string(),
+                });
+            }
+        }
+    } else {
+        for (word_count, (hash, frag)) in fragments {
+            final_fragments.push((hash.clone(), frag.encoded_data));
+            meta.pages.push(MetaPage {
+                hash: hash.clone(),
+                word_count: word_count as u32,
+                group_hash: "".into(),
+            });
+        }
+    }
 
     // Encode filter indexes in parallel
     // Accumulate into HashMap for O(1) inserts, then sort once before encoding
@@ -538,12 +587,10 @@ pub async fn build_indexes(
         filter_indexes,
         sorts,
         meta_index: (meta_hash, meta_index),
-        fragments: fragments
-            .into_iter()
-            .map(|(_, (hash, frag))| (hash, frag.encoded_data))
-            .collect(),
+        fragments: final_fragments,
         language,
         word_count,
+        page_count,
     })
 }
 

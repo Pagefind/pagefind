@@ -88,6 +88,21 @@ include_characters: "<>$"
 |----------------------------|-------------------------------|---------------------|
 | `--include-characters <S>` | `PAGEFIND_INCLUDE_CHARACTERS` | `include_characters` |
 
+### Max fragments
+Limits the number of files Pagefind writes by bundling multiple page fragments into shared files.
+Useful for hosting providers that limit the number of files in a deployment.
+
+This limit applies per language, so a multilingual site can contain up to `max_fragments` files for each language that Pagefind indexes.
+By default Pagefind outputs one fragment file per page.
+
+```yml
+max_fragments: 1000
+```
+
+| CLI Flag               | ENV Variable           | Config Key    |
+|------------------------|------------------------|---------------|
+| `--max-fragments <N>`  | `PAGEFIND_MAX_FRAGMENTS` | `max_fragments` |
+
 ### Glob
 Configures the glob used by Pagefind to discover HTML files. Defaults to `**/*.{html}`.
 See [Wax patterns documentation](https://github.com/olson-sean-k/wax#patterns) for more details.

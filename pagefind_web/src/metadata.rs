@@ -52,11 +52,16 @@ impl SearchIndex {
         debug!({ format!("Reading {:#?} pages", page_hashes) });
         self.pages = Vec::with_capacity(page_hashes as usize);
         for _ in 0..page_hashes {
-            consume_fixed_arr!(decoder);
-            self.pages.push(Page {
+            let fields = consume_fixed_arr!(decoder);
+            let mut page = Page {
                 hash: consume_string!(decoder),
                 word_count: consume_num!(decoder),
-            });
+                group_hash: "".into(),
+            };
+            if fields == Some(3) {
+                page.group_hash = consume_string!(decoder);
+            }
+            self.pages.push(page);
         }
 
         if !self.pages.is_empty() {

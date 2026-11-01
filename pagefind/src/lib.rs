@@ -251,8 +251,8 @@ impl SearchState {
             log.v_info(format!(
                 "Language {}: \n  Indexed {} page{}\n  Indexed {} word{}\n  Indexed {} filter{}\n  Indexed {} sort{}\n",
                 index.language,
-                index.fragments.len(),
-                plural!(index.fragments.len()),
+                index.page_count,
+                plural!(index.page_count),
                 index.word_count,
                 plural!(index.word_count),
                 index.filter_indexes.len(),
@@ -274,7 +274,7 @@ impl SearchState {
                 _ => {}
             };
 
-            stats.0 += index.fragments.len();
+            stats.0 += index.page_count;
             stats.1 += index.word_count;
             stats.2 += index.filter_indexes.len();
             stats.3 += index.sorts.len();

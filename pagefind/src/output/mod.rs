@@ -290,7 +290,7 @@ impl PagefindIndexes {
         }
 
         LanguageMeta {
-            page_count: self.fragments.len(),
+            page_count: self.page_count,
             language: self.language.clone(),
             hash: self.meta_index.0.clone(),
             wasm: wasm_file,

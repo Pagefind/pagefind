@@ -13,6 +13,7 @@ use crate::SearchIndex;
 
 pub struct PageSearchResult {
     pub page: String,
+    pub group_hash: String,
     pub page_index: usize,
     pub page_length: u32,
     pub page_score: f32,
@@ -304,6 +305,7 @@ impl SearchIndex {
                     };
                     let search_result = PageSearchResult {
                         page: page.hash.clone(),
+                        group_hash: page.group_hash.clone(),
                         page_index,
                         page_score: 1.0,
                         page_length: page.word_count,
@@ -383,6 +385,7 @@ impl SearchIndex {
 
                                 let search_result = PageSearchResult {
                                     page: page.hash.clone(),
+                                    group_hash: page.group_hash.clone(),
                                     page_index,
                                     page_score: meta_boost,
                                     page_length: page.word_count,
@@ -411,6 +414,7 @@ impl SearchIndex {
                 if let Some(loc_0) = word_locations.get(0) {
                     let search_result = PageSearchResult {
                         page: page.hash.clone(),
+                        group_hash: page.group_hash.clone(),
                         page_index,
                         page_score: 1.0,
                         page_length: page.word_count,
@@ -798,6 +802,7 @@ impl SearchIndex {
 
             let search_result = PageSearchResult {
                 page: page.hash.clone(),
+                group_hash: page.group_hash.clone(),
                 page_index,
                 page_score,
                 page_length: page.word_count,
@@ -931,6 +936,7 @@ mod tests {
             pages: vec![Page {
                 hash: "index".to_string(),
                 word_count: 3,
+                group_hash: String::new(),
             }],
             average_page_length: 3.0,
             chunks: Vec::<IndexChunk>::new(),

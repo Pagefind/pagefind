@@ -56,6 +56,12 @@ export interface PagefindServiceConfig {
      * @example "<>$"
      */
     includeCharacters?: string,
+    /**
+     * The maximum number of fragment files to output per language.
+     * If a language contains more pages than this, its fragments will be
+     * bundled into shared files.
+     */
+    maxFragments?: number,
 }
 
 

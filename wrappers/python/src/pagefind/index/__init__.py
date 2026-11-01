@@ -59,6 +59,13 @@ class IndexConfig(TypedDict, total=False):
 
     Useful for sites documenting technical topics such as programming languages.
     """
+    max_fragments: Optional[int]
+    """The maximum number of fragment files to output per language.
+
+    If a language contains more pages than this, its fragments will be bundled into
+    shared files. Useful for hosting providers that limit the number of files in a
+    deployment.
+    """
     output_path: Optional[str]
     """
     The folder to output the search bundle into, relative to the processed site.
