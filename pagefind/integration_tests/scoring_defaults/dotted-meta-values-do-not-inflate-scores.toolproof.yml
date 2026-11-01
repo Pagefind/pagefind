@@ -1,0 +1,40 @@
+name: Result Scoring > Dotted meta values do not inflate scores
+steps:
+  # Regression: ensure we don't blow out meta scoring with dot-expanded variants
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p>Home</p></body></html>
+  - step: I have a "public/handling/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head><title>Path handling</title></head><body>
+      <h1>Path handling</h1>
+      <p>Each path is resolved before use. A relative path is joined to the
+      root path, and the final path is normalized.</p></body></html>
+  - step: I have a "public/reference/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head><title>config.path.loader.paths reference</title></head><body>
+      <h1>config.path.loader.paths reference</h1>
+      <p>Settings that control how modules are found and loaded.</p></body></html>
+  - step: I have a "public/photo/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head><title>Gallery</title></head><body>
+      <h1>Gallery</h1>
+      <img src="/img/path.walk.trail.path.view.jpg" alt="">
+      <p>Photos from the weekend.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("path");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url);
+    expected:
+      - /handling/
+      - /reference/
+      - /photo/

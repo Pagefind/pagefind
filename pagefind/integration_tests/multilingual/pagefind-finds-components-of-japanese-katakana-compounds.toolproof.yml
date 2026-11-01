@@ -1,0 +1,41 @@
+name: >-
+  Pagefind finds the components of Japanese katakana compounds
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ja/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>バックアップ</p>
+      </body>
+      </html>
+  - step: I have a "public/ja/other.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>オンライン</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ja/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let up = await pagefind.search("アップ");
+      let line = await pagefind.search("ライン");
+
+      return {
+        "アップ": (await Promise.all(up.results.map(r => r.data()))).map(p => p.url),
+        "ライン": (await Promise.all(line.results.map(r => r.data()))).map(p => p.url),
+      };
+    expected:
+      アップ:
+        - /ja/
+      ライン:
+        - /ja/other.html

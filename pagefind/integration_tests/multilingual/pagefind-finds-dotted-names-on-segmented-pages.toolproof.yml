@@ -1,0 +1,34 @@
+name: Pagefind finds dotted names on segmented pages
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ja/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>is_python_build() は真偽値を返します。</p>
+      </body>
+      </html>
+  - step: I have a "public/ja/dotted.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ja">
+      <body>
+          <p>まず sysconfig.is_python_build() を呼び出します。</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ja/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let search = await pagefind.search("is_python_build");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      return pages.map(p => p.url).sort();
+    expected:
+      - /ja/
+      - /ja/dotted.html

@@ -1,7 +1,8 @@
-use bit_set::BitSet;
-use pagefind_microjson::JSONValue;
-use pagefind_microjson::JSONValueType;
+use std::borrow::Cow;
 
+use bit_set::BitSet;
+
+use crate::json::Value;
 use crate::util::*;
 use crate::SearchIndex;
 
@@ -51,11 +52,9 @@ impl SearchIndex {
     fn parse_filter_value(
         &self,
         filter_key: &str,
-        filter: JSONValue,
+        filter: &Value,
         behaviour: FilterBehaviour,
     ) -> Option<BitSet> {
-        use JSONValueType as J;
-
         debug!({
             format! {"Processing value object {filter:?} with {behaviour:?}" }
         });
@@ -68,13 +67,11 @@ impl SearchIndex {
         }
 
         let mut maps = Vec::new();
-        let build_set = |val: JSONValue| {
+        let build_set = |val: &str| {
             debug!({
                 format! {"Adding the filter {filter_key}: {val:?}" }
             });
-            if let Some(Some(filter_pages)) =
-                filter_map.map(|m| m.get(val.read_string().unwrap_or_default()))
-            {
+            if let Some(Some(filter_pages)) = filter_map.map(|m| m.get(val)) {
                 let mut set = BitSet::new();
                 for page in filter_pages {
                     set.insert(*page as usize);
@@ -89,55 +86,51 @@ impl SearchIndex {
             }
         };
 
-        match filter.value_type {
-            JSONValueType::String => maps.push(build_set(filter)),
-            JSONValueType::Array => {
-                if let Ok(arr) = filter.iter_array() {
-                    for value in arr {
-                        match value.value_type {
-                            J::String => {
-                                maps.push(build_set(value));
-                            }
-                            J::Object => {
-                                if let Some(inner_set) =
-                                    self.parse_filter_value(filter_key, value, FilterBehaviour::All)
-                                {
-                                    maps.push(inner_set);
-                                }
-                            }
-                            _ => continue,
+        match filter {
+            Value::Str(s) => maps.push(build_set(s)),
+            Value::Arr(arr) => {
+                for value in arr {
+                    match value {
+                        Value::Str(s) => {
+                            maps.push(build_set(s));
                         }
+                        Value::Obj(_) => {
+                            if let Some(inner_set) =
+                                self.parse_filter_value(filter_key, value, FilterBehaviour::All)
+                            {
+                                maps.push(inner_set);
+                            }
+                        }
+                        _ => continue,
                     }
                 }
             }
-            JSONValueType::Object => {
-                if let Ok(obj) = filter.iter_object() {
-                    for (k, value) in obj.filter_map(|o| o.ok()) {
-                        if let Some(Some(mut map)) = match (k, value.value_type) {
-                            ("any" | "none", J::Object | J::Array | J::String) => Some(
-                                self.parse_filter_value(filter_key, value, FilterBehaviour::Any),
-                            ),
-                            ("all" | "not", J::Object | J::Array | J::String) => Some(
-                                self.parse_filter_value(filter_key, value, FilterBehaviour::All),
-                            ),
-                            _ => {
-                                debug!({
-                                    format! {"Unsupported filter key {k} value {:?}", value.value_type}
-                                });
-                                None
-                            }
-                        } {
-                            if matches!(k, "none" | "not") {
-                                self.invert(&mut map);
-                            }
-                            maps.push(map);
+            Value::Obj(obj) => {
+                for (k, value) in obj {
+                    if let Some(Some(mut map)) = match (&**k, value) {
+                        ("any" | "none", Value::Obj(_) | Value::Arr(_) | Value::Str(_)) => {
+                            Some(self.parse_filter_value(filter_key, value, FilterBehaviour::Any))
                         }
+                        ("all" | "not", Value::Obj(_) | Value::Arr(_) | Value::Str(_)) => {
+                            Some(self.parse_filter_value(filter_key, value, FilterBehaviour::All))
+                        }
+                        _ => {
+                            debug!({
+                                format! {"Unsupported filter key {k} value {:?}", value}
+                            });
+                            None
+                        }
+                    } {
+                        if matches!(&**k, "none" | "not") {
+                            self.invert(&mut map);
+                        }
+                        maps.push(map);
                     }
                 }
             }
             _ => {
                 debug!({
-                    format! {"Unsupported filter value {:?}", filter.value_type}
+                    format! {"Unsupported filter value {:?}", filter}
                 });
                 return None;
             }
@@ -150,27 +143,22 @@ impl SearchIndex {
         }
     }
 
-    fn parse_filter_arr(&self, filter: JSONValue, behaviour: FilterBehaviour) -> Option<BitSet> {
-        use JSONValueType as J;
-        debug_assert!(matches!(filter.value_type, J::Array));
-
+    fn parse_filter_arr(&self, filter: &[Value], behaviour: FilterBehaviour) -> Option<BitSet> {
         debug!({
             format! {"Processing outer array {filter:?} with {behaviour:?}" }
         });
 
         let mut maps = Vec::new();
 
-        if let Ok(arr) = filter.iter_array() {
-            for value in arr {
-                if !matches!(value.value_type, J::Object) {
-                    debug!({
-                        format! {"Skipping {value:?} as it is not an object" }
-                    });
-                    continue;
-                }
-                if let Some(map) = self.parse_filter_obj(value, FilterBehaviour::All) {
-                    maps.push(map)
-                }
+        for value in filter {
+            let Value::Obj(value) = value else {
+                debug!({
+                    format! {"Skipping {value:?} as it is not an object" }
+                });
+                continue;
+            };
+            if let Some(map) = self.parse_filter_obj(value, FilterBehaviour::All) {
+                maps.push(map)
             }
         }
 
@@ -181,37 +169,30 @@ impl SearchIndex {
         }
     }
 
-    fn parse_filter_obj(&self, filter: JSONValue, behaviour: FilterBehaviour) -> Option<BitSet> {
-        use JSONValueType as J;
-        debug_assert!(matches!(filter.value_type, J::Object));
-
+    fn parse_filter_obj(
+        &self,
+        filter: &[(Cow<str>, Value)],
+        behaviour: FilterBehaviour,
+    ) -> Option<BitSet> {
         debug!({
             format! {"Processing outer object {filter:?} with {behaviour:?}" }
         });
 
         let mut maps = Vec::new();
 
-        if let Ok(obj) = filter.iter_object() {
-            for (k, value) in obj.filter_map(|o| o.ok()) {
-                let map = match (k, value.value_type) {
-                    ("any" | "none", J::Object) => {
-                        self.parse_filter_obj(value, FilterBehaviour::Any)
-                    }
-                    ("all" | "not", J::Object) => {
-                        self.parse_filter_obj(value, FilterBehaviour::All)
-                    }
-                    ("any" | "none", J::Array) => {
-                        self.parse_filter_arr(value, FilterBehaviour::Any)
-                    }
-                    ("all" | "not", J::Array) => self.parse_filter_arr(value, FilterBehaviour::All),
-                    (k, _) => self.parse_filter_value(k, value, FilterBehaviour::All),
-                };
-                if let Some(mut map) = map {
-                    if matches!(k, "none" | "not") {
-                        self.invert(&mut map);
-                    }
-                    maps.push(map);
+        for (k, value) in filter {
+            let map = match (&**k, value) {
+                ("any" | "none", Value::Obj(o)) => self.parse_filter_obj(o, FilterBehaviour::Any),
+                ("all" | "not", Value::Obj(o)) => self.parse_filter_obj(o, FilterBehaviour::All),
+                ("any" | "none", Value::Arr(a)) => self.parse_filter_arr(a, FilterBehaviour::Any),
+                ("all" | "not", Value::Arr(a)) => self.parse_filter_arr(a, FilterBehaviour::All),
+                (k, _) => self.parse_filter_value(k, value, FilterBehaviour::All),
+            };
+            if let Some(mut map) = map {
+                if matches!(&**k, "none" | "not") {
+                    self.invert(&mut map);
                 }
+                maps.push(map);
             }
         }
 
@@ -223,8 +204,6 @@ impl SearchIndex {
     }
 
     pub fn filter(&self, filter: &str) -> Option<BitSet> {
-        use JSONValueType as J;
-
         debug!({
             format! {"Filtering with {:?}", filter}
         });
@@ -234,21 +213,19 @@ impl SearchIndex {
             return None;
         }
 
-        let Ok(all_filters) = JSONValue::parse(filter) else {
+        let Some(all_filters) = Value::parse(filter) else {
             debug!({ "Malformed object passed to Pagefind filters" });
             return None;
         };
-        if !matches!(all_filters.value_type, J::Object) {
+        let Some(obj) = all_filters.as_obj() else {
             debug!({ "Filters was passed a non-object" });
             return None;
-        }
+        };
 
-        self.parse_filter_obj(all_filters, FilterBehaviour::All)
+        self.parse_filter_obj(obj, FilterBehaviour::All)
     }
 
-    pub fn dig_filter(&self, filter: JSONValue) -> Option<Vec<String>> {
-        use JSONValueType as J;
-
+    pub fn dig_filter(&self, filter: &Value) -> Option<Vec<String>> {
         debug!({
             format! {"Digging into {:?} to look for filters", filter}
         });
@@ -256,46 +233,42 @@ impl SearchIndex {
         let mut has_filters = false;
         let mut indexes = Vec::new();
 
-        match filter.value_type {
-            J::Object => {
-                if let Ok(obj) = filter.iter_object() {
-                    for (k, value) in obj.filter_map(|o| o.ok()) {
-                        match (k, value.value_type) {
-                            ("any" | "all" | "not" | "none", J::Object | J::Array) => {
-                                if let Some(nested_filters) = self.dig_filter(value) {
-                                    has_filters = true;
-                                    indexes.extend(nested_filters)
-                                }
-                            }
-                            (filter, _) => {
+        match filter {
+            Value::Obj(obj) => {
+                for (k, value) in obj {
+                    match (&**k, value) {
+                        ("any" | "all" | "not" | "none", Value::Obj(_) | Value::Arr(_)) => {
+                            if let Some(nested_filters) = self.dig_filter(value) {
                                 has_filters = true;
-                                if let Some(hash) = self.filter_chunks.get(filter) {
-                                    debug!({
-                                        format! {"Need {:?} for {:?}", hash, filter}
-                                    });
-                                    indexes.push(hash.clone());
-                                } else {
-                                    debug!({
-                                        format! {"No hash found for {:?}", filter}
-                                    })
-                                }
+                                indexes.extend(nested_filters)
+                            }
+                        }
+                        (filter, _) => {
+                            has_filters = true;
+                            if let Some(hash) = self.filter_chunks.get(filter) {
+                                debug!({
+                                    format! {"Need {:?} for {:?}", hash, filter}
+                                });
+                                indexes.push(hash.clone());
+                            } else {
+                                debug!({
+                                    format! {"No hash found for {:?}", filter}
+                                })
                             }
                         }
                     }
                 }
             }
-            J::Array => {
-                if let Ok(arr) = filter.iter_array() {
-                    for value in arr {
-                        match value.value_type {
-                            J::Object | J::Array => {
-                                if let Some(nested_filters) = self.dig_filter(value) {
-                                    has_filters = true;
-                                    indexes.extend(nested_filters)
-                                }
+            Value::Arr(arr) => {
+                for value in arr {
+                    match value {
+                        Value::Obj(_) | Value::Arr(_) => {
+                            if let Some(nested_filters) = self.dig_filter(value) {
+                                has_filters = true;
+                                indexes.extend(nested_filters)
                             }
-                            _ => {}
                         }
+                        _ => {}
                     }
                 }
             }
@@ -314,17 +287,15 @@ impl SearchIndex {
             format! {"Finding the filter chunks needed for {:?}", filter}
         });
 
-        use JSONValueType as J;
-
-        let Ok(all_filters) = JSONValue::parse(filter) else {
+        let Some(all_filters) = Value::parse(filter) else {
             debug!({ "Malformed object passed to Pagefind filters" });
             return None;
         };
-        if !matches!(all_filters.value_type, J::Object) {
+        if all_filters.as_obj().is_none() {
             debug!({ "Filters was passed a non-object" });
             return None;
         }
 
-        self.dig_filter(all_filters)
+        self.dig_filter(&all_filters)
     }
 }

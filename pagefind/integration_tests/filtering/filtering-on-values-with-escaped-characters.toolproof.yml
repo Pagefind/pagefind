@@ -1,0 +1,43 @@
+name: Filtering > Filtering on values with escaped characters
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p
+      data-results>Nothing</p></body></html>
+  - step: I have a "public/quote/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><span
+      data-pagefind-filter="name">The "Cat"</span><h1>Cat</h1></body></html>
+  - step: I have a "public/path/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><span
+      data-pagefind-filter="name">C:\Cat</span><h1>Cat</h1></body></html>
+  - step: I have a "public/plain/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><span
+      data-pagefind-filter="name">Cat</span><h1>Cat</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+      let urls = async (filters) => {
+          let search = await pagefind.search("Cat", { filters });
+          let data = await Promise.all(search.results.map(result => result.data()));
+          return data.map(d => d.url).sort().join(", ");
+      };
+
+      document.querySelector('[data-results]').innerText = [
+          await urls({ name: 'The "Cat"' }),
+          await urls({ name: "C:\\Cat" }),
+          await urls({ name: { any: ['The "Cat"', "Cat"] } }),
+      ].join(" | ");
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-results]");
+      toolproof.assert_eq(val.innerHTML, `/quote/ | /path/ | /plain/, /quote/`);

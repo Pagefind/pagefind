@@ -13,7 +13,10 @@ const asyncSleep = async (ms = 100) => {
 
 const normalizeDiacritics = (str: string): string => {
   // e.g. "café" -> "cafe"
-  return str.normalize("NFD").replace(/\p{M}/gu, "");
+  // Kana voiced/semi-voiced sound marks distinguish words and must be kept
+  const stripped = str.normalize("NFD").replace(/(?![\u3099\u309A])\p{M}/gu, "");
+  // Recompose when kana voiced/semi-voiced sound marks survived
+  return /[\u3099\u309A]/.test(stripped) ? stripped.normalize("NFC") : stripped;
 };
 
 // Environment detection
@@ -691,8 +694,12 @@ export class PagefindInstance {
         .trim();
     }
 
-    const originalTerm = term;
-    term = normalizeDiacritics(term);
+    const termPairs = term
+      .split(" ")
+      .map((original) => [original, normalizeDiacritics(original)])
+      .filter(([, normalized]) => normalized.length);
+    const originalTerm = termPairs.map(([original]) => original).join(" ");
+    term = termPairs.map(([, normalized]) => normalized).join(" ");
     log(`Normalized search term to ${term}`);
 
     if (!term?.length && !filter_only) {

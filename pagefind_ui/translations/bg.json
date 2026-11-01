@@ -1,0 +1,32 @@
+{
+    "thanks_to": "Salif Mehmed <mail@salif.eu>",
+    "comments": "",
+    "direction": "ltr",
+    "strings": {
+        "placeholder": "Търсене",
+        "clear_search": "Изчистване",
+        "load_more": "Зареждане на още резултати",
+        "search_label": "Търсене в сайта",
+        "filters_label": "Филтри",
+        "zero_results": "Няма намерени резултати за [SEARCH_TERM]",
+        "many_results": "[COUNT] резултата за [SEARCH_TERM]",
+        "one_result": "[COUNT] резултат за [SEARCH_TERM]",
+        "total_zero_results": "Няма резултати",
+        "total_one_result": "[COUNT] резултат",
+        "total_many_results": "[COUNT] резултата",
+        "alt_search": "Няма намерени резултати за [SEARCH_TERM]. Показване на резултати за [DIFFERENT_TERM] вместо това",
+        "search_suggestion": "Няма намерени резултати за [SEARCH_TERM]. Опитайте някое от следните търсения:",
+        "searching": "Търсене на [SEARCH_TERM]...",
+        "results_label": "Резултати от търсенето",
+        "keyboard_navigate": "навигация",
+        "keyboard_select": "избор",
+        "keyboard_clear": "изчистване",
+        "keyboard_close": "затваряне",
+        "keyboard_search": "търсене",
+        "error_search": "Неуспешно търсене",
+        "filter_selected_one": "[COUNT] избран",
+        "filter_selected_many": "[COUNT] избрани",
+        "input_hint": "Резултатите ще се появят, докато пишете",
+        "loading": "Зареждане"
+    }
+}
