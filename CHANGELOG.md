@@ -9,7 +9,81 @@
 
 ## Unreleased
 
-* Decoded HTML entities in the `image` and `image_alt` metadata that Pagefind captures automatically from the first `<img>` after the title, as it already does for explicit metadata.
+
+👋 A little overdue, but this release knocks out a healthy selection of bug reports, and includes a lot of work from the community. Thanks to everyone who contributed ❤️ - @bglw
+
+### Multilingual Segmentation
+
+Pagefind's extended build now segments Chinese, Japanese, and Thai pages with ICU4X, replacing the previous dependency (PR #1383). Alongside producing a smaller binary, ICU4X segments a lot closer to the `Intl.Segmenter` used in the browser on the search query (which is ICU4C). This closes out a mixture of latent and reported issues where the different segmentation between indexing and searching makes for iffy results. It's not perfect yet, but it's a darn sight closer.
+
+Bonuses:
+* Segmentation is smarter in languages such as Thai, and doesn't break inside a grapheme cluster
+* Japanese katakana has special handling, but should still be improved over 1.5.2
+* Japanese voiced and semi-voiced sound marks are no longer normalized into each other
+
+### Fewer Fragment Files
+
+Pagefind now has an option to limit the total number of fragment files produced, for hosting providers that cap the number of uploaded files. Contributed in PR #1020 — thanks @yakovsh !
+
+This limit is set with `--max-fragments` / `max_fragments`, and applies per language. When applied, multiple fragments are bundled together and loaded as a set when required.
+
+See [📘 Max fragments](https://pagefind.app/docs/config-options/#max-fragments).
+
+### Explicit Sub-Result Titles
+
+Added support for explicit sub-result titles. Any element with both an `id` and a `data-pagefind-title` attribute can be used as a sub-result (PR #1282 — thanks @samuel-williams-shopify !)
+
+See [📘 Defining a sub result explicitly](https://pagefind.app/docs/sub-results/#defining-a-sub-result-explicitly).
+
+### Component UI
+
+* Added a `sort` attribute to `<pagefind-config>`, to order results by a [sort key](https://pagefind.app/docs/js-api-sorting/) (PR #1326)
+* Added a `max-sub-results` attribute to `<pagefind-searchbox>` (PR #1324)
+* Added a `placeholder` setter to `<pagefind-searchbox>` and `<pagefind-modal-trigger>` (PR #1321)
+* `configureInstance` now applies to an instance that already exists but has not loaded yet (PR #1323)
+* Fixed the UI language being resolved after the first render, which could flash the wrong translations (PR #1332)
+* Fixed component cleanup after being disconnected (PR #1322)
+* Fixed IME composition keystrokes support (PR #1284 — thanks @oharu121 !)
+* Fixed the modal staying open when clicking a result for the current page (PR #1327)
+* Fixed the filter panel checkbox shrinking when its label wraps (PR #1166 — thanks @mbrambilla !)
+* Hid the keyboard shortcut badge on touch-only devices (PR #1325)
+
+### Search Results & Options
+
+* Added an `excerptEllipsis` option to mark the truncated ends of excerpts (PR #1320)
+  * See [📘 Excerpt ellipsis](https://pagefind.app/docs/search-config/#excerpt-ellipsis)
+* Fixed phrase search across diacritic variants, so searching `"cafe latte"` can match a page containing `café latte` (PR #1386 — thanks @sean0407 !)
+* Fixed filters not matching values containing escaped characters such as quotes or backslashes (PR #1392)
+* Fixed compound words being counted twice in metadata coverage, which could overvalue a metadata match (PR #1319)
+* Fixed a bug which could build excerpts from the wrong words (PR #1318)
+* Fixed decoding for HTML entities in the automatic `image` and `image_alt` metadata (PR #1393 — thanks @digilist !)
+
+### Indexing & Performance
+
+* More work making the index deterministic between builds (PR #1124 — thanks @gissimo !)
+* Improved search performance on a bunch of broad queries (PR #1334)
+* Fixed a bug where a word with many variants could produce an oversized index chunk (PR #1316)
+* Searches no longer request index chunks for empty terms (PR #1317)
+* More minor search performance work (PR #1238 — thanks @sanjaiyan-dev !)
+
+### Fixes & Tweaks
+
+* Search terms that normalize to nothing are now dropped, rather than searching for an empty term (PR #1382)
+* Improved some compound indexing, so `sysconfig.is_python_build` can be found by searching `is_python_build`
+* Fixed a way that output files could be truncated in service-mode (PR #1272 — thanks @zelinskyy !)
+* Fixed `--exclude-selectors` hard-erroring when a single selector could not be parsed (PR #1312 — thanks @dualfroz !)
+* Improved handling of percent-encoded page URLs (PR #1315, PR #1335 — thanks @dualfroz !)
+* Failed index fetches are now evicted from the cache correctly and are retried (PR #1329)
+* Per-page warnings are now only logged with `--verbose` (PR #1314)
+
+### UI Translations
+
+* Added Macedonian (mk) translations (PR #1353 — thanks @I90rche !)
+* Added Bulgarian (bg) translations (PR #1341 — thanks @salif !)
+* Improved French (fr) translations (PR #1145 — thanks @maxonss !)
+* Improved German (de) translations (PR #1096 — thanks @randomguy-2650 !)
+* Improved Persian (fa) translations (PR #1204 — thanks @Goudarz !)
+* Improved Swahili (sw) translations (PR #1185 — thanks @gully223 !)
 
 ## v1.5.2 (April 12, 2026)
 
