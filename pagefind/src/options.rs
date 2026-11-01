@@ -158,7 +158,7 @@ pub(crate) struct PagefindInboundConfig {
 
     #[clap(
         long,
-        help = "The maximum number of fragment files to output, if number of files exceeds this value they will be grouped together."
+        help = "The maximum number of fragment files to output per language. If a language contains more pages than this, its fragments will be bundled into shared files."
     )]
     #[clap(required = false)]
     pub(crate) max_fragments: Option<u32>,
@@ -207,7 +207,7 @@ pub struct PagefindServiceConfig {
     /// Include these characters when indexing and searching words.
     pub(crate) include_characters: Option<String>,
     #[patch(as_option)]
-    /// The maximum number of fragment files to output.
+    /// The maximum number of fragment files to output per language.
     pub(crate) max_fragments: Option<u32>,
 }
 
