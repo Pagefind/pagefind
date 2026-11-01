@@ -47,7 +47,7 @@ export class PagefindInstance {
   loaded_chunks: Record<string, Promise<void>>;
   loaded_filters: Record<string, Promise<void>>;
   loaded_fragments: Record<string, Promise<PagefindSearchFragment>>;
-  loaded_fragment_groups: Record<string, Promise<any>>;
+  loaded_fragment_groups: Record<string, Promise<Record<string, PagefindSearchFragment>>>;
 
   private fetchQueue: Array<{ resolve: (response: Response) => void; reject: (error: any) => void; input: RequestInfo | URL }> = [];
   private activeFetches: number = 0;
