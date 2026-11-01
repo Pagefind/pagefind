@@ -7,6 +7,7 @@ steps:
   - step: I have a "public/page4/index.html" file with the content "<html><body><h1>Page Four</h1><p>Judge my vow</p></body></html>"
   - macro: I run Pagefind with "--max-fragments 2"
   - step: stdout should contain "Running Pagefind"
+  - step: stdout should contain "Indexed 5 pages"
   - step: I run "ls public/pagefind/fragment/ | grep pf_fragment | wc -l | tr -d ' '"
   - step: stdout should contain "2"
   - step: I run "cat public/pagefind/fragment/*.pf_fragment | gunzip | head -c 100"

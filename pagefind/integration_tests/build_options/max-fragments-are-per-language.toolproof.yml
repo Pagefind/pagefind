@@ -1,0 +1,97 @@
+name: Build Options > Max fragments grouping is per language
+steps:
+  - ref: ../base/background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+          <head>
+              <title>Empty</title>
+          </head>
+          <body></body>
+      </html>
+  - step: I have a "public/en/one/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+          <body><p>The quick brown fox</p></body>
+      </html>
+  - step: I have a "public/en/two/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+          <body><p>Jumps over the lazy dog</p></body>
+      </html>
+  - step: I have a "public/en/three/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+          <body><p>Sphinx of black quartz</p></body>
+      </html>
+  - step: I have a "public/fr/one/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="fr">
+          <body><p>Le renard brun rapide</p></body>
+      </html>
+  - step: I have a "public/fr/two/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="fr">
+          <body><p>Saute par dessus le chien</p></body>
+      </html>
+  - step: I have a "public/fr/three/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="fr">
+          <body><p>Sphinx de quartz noir</p></body>
+      </html>
+  - macro: I run Pagefind with "--max-fragments 2"
+  - step: stdout should contain "Running Pagefind"
+  - step: stdout should contain "Indexed 6 pages"
+  - step: I run "ls public/pagefind/fragment/ | grep pf_fragment | wc -l | tr -d ' '"
+  - step: stdout should contain "4"
+  - step: I run "ls public/pagefind/fragment/"
+  - step: stdout should contain "en_group_"
+  - step: stdout should contain "fr_group_"
+  - step: I serve the directory "public"
+  # English results are grouped in the en index
+  - step: In my browser, I load "/en/one/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.init();
+
+      let urls = [];
+      for (let term of ["fox", "quartz"]) {
+        let search = await pagefind.search(term);
+        urls.push((await search.results[0].data()).url);
+      }
+
+      let div = document.createElement('div');
+      div.id = "en-results";
+      div.innerText = urls.join(" ");
+      document.body.appendChild(div);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("#en-results");
+      toolproof.assert_eq(val.innerHTML, "/en/one/ /en/three/");
+  # French results are grouped in the fr index
+  - step: In my browser, I load "/fr/two/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.init();
+
+      let search = await pagefind.search("chien");
+
+      let div = document.createElement('div');
+      div.id = "fr-results";
+      div.innerText = (await search.results[0].data()).url;
+      document.body.appendChild(div);
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("#fr-results");
+      toolproof.assert_eq(val.innerHTML, "/fr/two/");
