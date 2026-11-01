@@ -936,6 +936,7 @@ mod tests {
             pages: vec![Page {
                 hash: "index".to_string(),
                 word_count: 3,
+                group_hash: String::new(),
             }],
             average_page_length: 3.0,
             chunks: Vec::<IndexChunk>::new(),
