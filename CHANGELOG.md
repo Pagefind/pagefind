@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+## v1.6.0 (November 1, 2026)
+
 
 👋 A little overdue, but this release knocks out a healthy selection of bug reports, and includes a lot of work from the community. Thanks to everyone who contributed ❤️ - @bglw
 
