@@ -131,6 +131,7 @@ config = IndexConfig(
     exclude_selectors=["nav"],
     force_language="en",
     include_characters="._",
+    max_fragments=1000,
     verbose=True,
     logfile="index.log",
     keep_index_url=True,

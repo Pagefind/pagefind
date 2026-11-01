@@ -21,6 +21,7 @@ Declaratively configure a Pagefind instance. Optionally include this on the page
 | `bundle-path` | string | auto-detected | Path to Pagefind bundle files |
 | `base-url` | string | `"/"` | Base URL prepended to all result links |
 | `excerpt-length` | number | `30` | Length of result excerpts (in words) |
+| `excerpt-ellipsis` | string | — | String appended to truncated excerpts; see [Excerpt ellipsis](/docs/search-config/#excerpt-ellipsis) |
 | `lang` | string | auto-detected | Override the detected language for stemming and translations |
 | `instance` | string | `"default"` | Instance name to configure |
 | `preload` | boolean | `false` | Load Pagefind immediately instead of on first search |

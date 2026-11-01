@@ -30,6 +30,7 @@ If word stemming is unsupported, search results won't match across root words. I
 | Armenian — `hy`   | ❌               | ✅             |
 | Basque — `eu`     | ✅               | ✅             |
 | Bengali — `bn`    | ✅               | ❌             |
+| Bulgarian — `bg`  | ✅               | ❌             |
 | Catalan — `ca`    | ✅               | ✅             |
 | Chinese — `zh`    | ✅               | See below     |
 | Croatian — `hr`   | ✅               | ❌             |
@@ -37,6 +38,8 @@ If word stemming is unsupported, search results won't match across root words. I
 | Danish — `da`     | ✅               | ✅             |
 | Dutch — `nl`      | ✅               | ✅             |
 | English — `en`    | ✅               | ✅             |
+| Esperanto — `eo`  | ❌               | ✅             |
+| Estonian — `et`   | ❌               | ✅             |
 | Finnish — `fi`    | ✅               | ✅             |
 | French — `fr`     | ✅               | ✅             |
 | Galician — `gl`   | ✅               | ❌             |
@@ -51,6 +54,7 @@ If word stemming is unsupported, search results won't match across root words. I
 | Japanese — `ja`   | ✅               | See below     |
 | Korean — `ko`     | ✅               | ❌             |
 | Lithuanian — `lt` | ❌               | ✅             |
+| Macedonian — `mk` | ✅               | ❌             |
 | Māori — `mi`      | ✅               | ❌             |
 | Myanmar — `my`    | ✅               | ❌             |
 | Nepali — `ne`     | ❌               | ✅             |
@@ -58,7 +62,6 @@ If word stemming is unsupported, search results won't match across root words. I
 | Norwegian (bokmål) — `nb`  | ✅      | ✅             |
 | Norwegian (nynorsk) — `nn` | ✅      | ✅             |
 | Persian — `fa`    | ✅               | ❌             |
-| Estonian — `et`   | ❌               | ✅             |
 | Polish — `pl`     | ✅               | ✅             |
 | Portuguese — `pt` | ✅               | ✅             |
 | Romanian — `ro`   | ✅               | ✅             |
@@ -68,7 +71,7 @@ If word stemming is unsupported, search results won't match across root words. I
 | Swahili — `sw`    | ✅               | ❌             |
 | Swedish — `sv`    | ✅               | ✅             |
 | Tamil — `ta`      | ✅               | ✅             |
-| Thai — `th`       | ✅               | ❌             |
+| Thai — `th`       | ✅               | See below     |
 | Turkish — `tr`    | ✅               | ✅             |
 | Ukrainian — `uk`  | ✅               | ❌             |
 | Vietnamese — `vi` | ✅               | ❌             |
@@ -78,10 +81,12 @@ If word stemming is unsupported, search results won't match across root words. I
 
 ## Specialized languages
 
-> This section currently applies to Chinese, Japanese, and Korean languages. Specialized languages are only supported in Pagefind's extended release, which is the default when running `npx pagefind`.
+> This section currently applies to Chinese, Japanese, and Thai languages. Specialized languages are only supported in Pagefind's extended release, which is the default when running `npx pagefind`.
 
 Currently when indexing, Pagefind does not support stemming for specialized languages, but does support segmentation for words not separated by whitespace.
 
-In practice, this means that on a page tagged as a `zh-` language, `每個月都` will be indexed as the words `每個`, `月`, and `都`.
+In practice, on a page tagged as Chinese (`zh`, `zh-cn`, or `zh-tw`), the text `每個月都` is segmented into words including `每個`, `月`, and `都`.
+
+The same segmentation applies to Japanese and Thai pages, so words within unspaced text can be searched for individually.
 
 When searching in the browser, searching for `每個`, `月`, or `都` individually will work. Searching `每個月都` will segment the query into words and return results containing each word. Additionally, searching `每個 月 都` will return results containing each word in any order, and searching `"每個 月 都"` in quotes will match `每個月都` exactly.
