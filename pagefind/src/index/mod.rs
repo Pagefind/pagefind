@@ -418,17 +418,15 @@ pub async fn build_indexes(
                 group_map.insert(hash.clone(), val);
             }
             let group_json = serde_json::to_string(&group_map).unwrap();
-            let group_hash = format!("{}_group_{}", language, full_hash(group_json.as_bytes()));
-            let mut short_group_hash = &group_hash[0..=(language.len() + 13)];
+            let prefix = format!("{language}_group_");
+            let group_hash = format!("{prefix}{}", full_hash(group_json.as_bytes()));
 
             // If we hit a collision, extend one hash until we stop colliding
-            while group_hashes.contains(short_group_hash) {
-                let new_length = short_group_hash.len() + 1;
-                short_group_hash = &group_hash[0..=new_length];
-
-                if short_group_hash.len() == group_hash.len() {
-                    break;
-                }
+            let mut hash_length = 7;
+            let mut short_group_hash = &group_hash[..prefix.len() + hash_length];
+            while group_hashes.contains(short_group_hash) && hash_length < 40 {
+                hash_length += 1;
+                short_group_hash = &group_hash[..prefix.len() + hash_length];
             }
             group_hashes.insert(short_group_hash.to_string());
 
