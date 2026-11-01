@@ -414,22 +414,25 @@ export class PagefindInstance {
     ).catch(() => {});
   }
 
+  private async _loadFragmentGroup(
+    groupHash: string,
+  ): Promise<Record<string, PagefindSearchFragment>> {
+    return this.cachedLoad(this.loaded_fragment_groups, groupHash, async () => {
+      let compressed_resp = await this.throttledFetch(
+        `${this.basePath}fragment/${groupHash}.pf_fragment`,
+      );
+      let compressed_fragment = await compressed_resp.arrayBuffer();
+      let fragment = this.decompress(
+        new Uint8Array(compressed_fragment),
+        `Fragment group ${groupHash}`,
+      );
+      return JSON.parse(new TextDecoder().decode(fragment));
+    });
+  }
+
   async _loadFragment(hash: string, groupHash: string = "") {
     if (groupHash) {
-      if (!this.loaded_fragment_groups[groupHash]) {
-        this.loaded_fragment_groups[groupHash] = (async () => {
-          let compressed_resp = await this.throttledFetch(
-            `${this.basePath}fragment/${groupHash}.pf_fragment`,
-          );
-          let compressed_fragment = await compressed_resp.arrayBuffer();
-          let fragment = this.decompress(
-            new Uint8Array(compressed_fragment),
-            `Fragment group ${groupHash}`,
-          );
-          return JSON.parse(new TextDecoder().decode(fragment));
-        })();
-      }
-      let group = await this.loaded_fragment_groups[groupHash];
+      let group = await this._loadFragmentGroup(groupHash);
       return group[hash];
     } else {
       let compressed_resp = await this.throttledFetch(
