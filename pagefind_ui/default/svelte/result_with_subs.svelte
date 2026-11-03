@@ -10,6 +10,16 @@
   let non_root_sub_results = [];
   let has_root_sub_result = false;
 
+  const resolveImageUrl = (src, pageUrl) => {
+    if (!src || /^[a-z][a-z0-9+.-]*:/i.test(src) || /^\/\//.test(src)) return src;
+    try {
+      const url = new URL(src, new URL(pageUrl || "/", "https://p"));
+      return url.origin === "https://p" ? url.pathname + url.search + url.hash : url.href;
+    } catch {
+      return src;
+    }
+  };
+
   const thin_sub_results = (results, limit) => {
     if (results.length <= limit) {
       return results;
@@ -26,6 +36,9 @@
   const load = async (r) => {
     data = await r.data();
     data = process_result?.(data) ?? data;
+    if (data.meta?.image) {
+      data = { ...data, meta: { ...data.meta, image: resolveImageUrl(data.meta.image, data.meta.url || data.url) } };
+    }
     meta = Object.entries(data.meta).filter(([key]) => !skipMeta.includes(key));
     if (Array.isArray(data.sub_results)) {
       has_root_sub_result =

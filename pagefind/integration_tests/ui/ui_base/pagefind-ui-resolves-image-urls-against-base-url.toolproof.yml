@@ -1,0 +1,67 @@
+name: Base UI Tests > Pagefind UI resolves image URLs against an absolute base URL
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body><div id="search"></div>
+      <script src="/pagefind/pagefind-ui.js"></script>
+
+      <script>
+          window.pui = new PagefindUI({ element: "#search", baseUrl: "https://example.com/" });
+      </script></body></html>
+  - step: I have a "public/subs/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head></head><body><div id="search"></div>
+      <script src="/pagefind/pagefind-ui.js"></script>
+
+      <script>
+          window.pui = new PagefindUI({ element: "#search", baseUrl: "https://example.com/", showSubResults: true });
+      </script></body></html>
+  - step: I have a "public/blog/post/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Relative Image</h1><img
+      src="images/header.png"><p>A page with a relative image
+      URL.</p></body></html>
+  - step: I have a "public/about/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>Absolute Image</h1><img
+      src="/images/hero.png"><p>A page with an absolute image
+      URL.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: window.pui.triggerSearch("image");
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      await toolproof.waitFor(() => document.querySelectorAll(".pagefind-ui__result-image").length === 2);
+      let items = Array.from(document.querySelectorAll(".pagefind-ui__result"));
+      items.sort((a, b) => a.textContent.localeCompare(b.textContent));
+      return items.map(li => {
+        let title = li.querySelector(".pagefind-ui__result-link").textContent;
+        return title + ": " + li.querySelector(".pagefind-ui__result-image").getAttribute("src");
+      }).join("\n");
+    snapshot_content: |-
+      ╎Absolute Image: https://example.com/images/hero.png
+      ╎Relative Image: https://example.com/blog/post/images/header.png
+  - step: In my browser, I load "/subs/"
+  - step: In my browser, I evaluate {js}
+    js: window.pui.triggerSearch("image");
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      await toolproof.waitFor(() => document.querySelectorAll(".pagefind-ui__result-image").length === 2);
+      let items = Array.from(document.querySelectorAll(".pagefind-ui__result"));
+      items.sort((a, b) => a.textContent.localeCompare(b.textContent));
+      return items.map(li => {
+        let title = li.querySelector(".pagefind-ui__result-link").textContent;
+        return title + ": " + li.querySelector(".pagefind-ui__result-image").getAttribute("src");
+      }).join("\n");
+    snapshot_content: |-
+      ╎Absolute Image: https://example.com/images/hero.png
+      ╎Relative Image: https://example.com/blog/post/images/header.png

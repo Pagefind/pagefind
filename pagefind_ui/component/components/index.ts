@@ -4,9 +4,12 @@ import { registerFunction } from "adequate-little-templates";
 
 registerFunction("resolveUrl", (url, pageUrl) => {
   const s = String(url ?? "");
-  if (!s || /^[a-z][a-z0-9+.-]*:/i.test(s) || /^\/\//.test(s) || s.startsWith("/")) return s;
+  if (!s || /^[a-z][a-z0-9+.-]*:/i.test(s) || /^\/\//.test(s)) return s;
   try {
-    return new URL(s, new URL(String(pageUrl ?? "/"), "https://p")).pathname;
+    const resolved = new URL(s, new URL(String(pageUrl ?? "/"), "https://p"));
+    return resolved.origin === "https://p"
+      ? resolved.pathname + resolved.search + resolved.hash
+      : resolved.href;
   } catch {
     return s;
   }
