@@ -22,7 +22,7 @@ echo "==> Building generic WASM"
 if [ "$1" = "debug" ]; then
     wasm-pack build --dev -t no-modules
 else
-    RUSTUP_TOOLCHAIN=nightly RUSTFLAGS="-Z unstable-options -C panic=immediate-abort" wasm-pack build --release -t no-modules --manifest-path ./Cargo.toml -Z build-std=panic_abort,std
+    RUSTUP_TOOLCHAIN=nightly CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-Z unstable-options -C panic=immediate-abort" wasm-pack build --release -t no-modules --manifest-path ./Cargo.toml -Z build-std=panic_abort,std
 fi
 node build.js
 mv pkg/pagefind_web.js ../pagefind/vendor/pagefind_web.$WASM_VERSION.js
@@ -44,7 +44,7 @@ while read line ; do
     if [ "$1" = "debug" ]; then
         wasm-pack build --dev -t no-modules --features $LANG_CODE
     else
-        RUSTUP_TOOLCHAIN=nightly RUSTFLAGS="-Z unstable-options -C panic=immediate-abort" wasm-pack build --release -t no-modules --features $LANG_CODE --manifest-path ./Cargo.toml -Z build-std=panic_abort,std
+        RUSTUP_TOOLCHAIN=nightly CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-Z unstable-options -C panic=immediate-abort" wasm-pack build --release -t no-modules --features $LANG_CODE --manifest-path ./Cargo.toml -Z build-std=panic_abort,std
     fi
 
     # Append pagefind_dcd to the decompressed wasm as a magic word read by the frontend
