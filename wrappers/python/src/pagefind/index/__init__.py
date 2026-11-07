@@ -7,13 +7,16 @@ from ..service.types import (
     InternalAddDirRequest,
     InternalAddFileRequest,
     InternalAddRecordRequest,
+    InternalAddRecordsRequest,
     InternalDeleteIndexRequest,
     InternalGetFilesRequest,
     InternalGetFilesResponse,
     InternalIndexedDirResponse,
     InternalIndexedFileResponse,
+    InternalIndexedFilesResponse,
     InternalDecodedFile,
     InternalWriteFilesRequest,
+    CustomRecordInput,
 )
 
 log = logging.getLogger(__name__)
@@ -245,6 +248,51 @@ class PagefindIndex:
         )
         assert result["type"] == "IndexedFile"
         return cast(InternalIndexedFileResponse, result)
+
+    async def add_custom_records(
+        self,
+        *,
+        records: Sequence[CustomRecordInput],
+    ) -> List[InternalIndexedFileResponse]:
+        """Add multiple custom records in a single batch request.
+
+        :param records: a sequence of CustomRecordInput dicts, each containing:
+            - url: the output URL of this record
+            - content: the raw content of this record
+            - language: ISO 639-1 code of the language
+            - meta: optional metadata dict (title recommended)
+            - filters: optional filters dict
+            - sort: optional sort keys dict
+        """
+        assert self._service is not None
+        assert self._index_id is not None
+        result = await self._service.send(
+            InternalAddRecordsRequest(
+                type="AddRecords",
+                index_id=self._index_id,
+                records=list(records),
+            )
+        )
+        assert result["type"] == "IndexedFiles", f"Unexpected response: {result}"
+        return cast(List[InternalIndexedFileResponse], result["files"])
+
+    async def add_custom_records_batched(
+        self,
+        *,
+        records: Sequence[CustomRecordInput],
+        batch_size: int = 500,
+    ) -> List[InternalIndexedFileResponse]:
+        """Add records in batches to avoid transport limits.
+
+        :param records: a sequence of CustomRecordInput dicts
+        :param batch_size: maximum records per batch (default 500)
+        """
+        all_results: List[InternalIndexedFileResponse] = []
+        for i in range(0, len(records), batch_size):
+            batch = records[i : i + batch_size]
+            results = await self.add_custom_records(records=batch)
+            all_results.extend(results)
+        return all_results
 
     async def write_files(self, output_path: Optional[str] = None) -> None:
         """Write the index files to disk.

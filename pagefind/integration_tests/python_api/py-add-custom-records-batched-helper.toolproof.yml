@@ -1,0 +1,56 @@
+name: Python API > Add custom records via batched helper
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/run.py" file with the content {python}
+    python: |2-
+      import sys
+      sys.path.append('%toolproof_process_directory%/wrappers/python/src')
+
+      import asyncio
+      import os
+      from pagefind.index import PagefindIndex
+
+      async def main():
+        records = [
+            {
+                "url": f"/batched/{i}/",
+                "content": f"Batched record {i} content",
+                "language": "en",
+                "meta": {"title": f"Record {i}"}
+            }
+            for i in range(300)
+        ]
+
+        async with PagefindIndex() as index:
+          responses = await index.add_custom_records_batched(records=records, batch_size=500)
+          print(f"Total added: {len(responses)}")
+          assert len(responses) == 300
+
+          files = await index.get_files()
+          for file in files:
+              output_path = os.path.join("pagefind", file["path"])
+              dir = os.path.dirname(output_path)
+              if not os.path.exists(dir):
+                  os.makedirs(dir, exist_ok=True)
+              with open(output_path, 'wb') as f:
+                  f.write(file["content"])
+
+      if __name__ == "__main__":
+          asyncio.run(main())
+  - macro: I run Pagefind Python as "run.py" in "public"
+  - step: 'stdout should contain "Total added: 300"'
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("batched");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      let count = pages.length;
+      document.body.innerText = `Found ${count} batched records`;
+      if (count !== 300) throw new Error(`Expected 300, got ${count}`);
+  - step: In my browser, the console should be empty
