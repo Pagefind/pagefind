@@ -184,8 +184,13 @@ pub async fn run_service() {
                     }
                 }
             }
-            RequestAction::AddRecords { .. } => {
-                err("AddRecords not yet implemented");
+            RequestAction::AddRecords { index_id, records } => {
+                if let Some(index) = get_index(&mut indexes, index_id, err) {
+                    match index.add_custom_records(records).await {
+                        Ok(files) => send(ResponseAction::IndexedFiles { files }),
+                        Err(message) => err(&message.to_string()),
+                    }
+                }
             }
             RequestAction::AddDir {
                 index_id,

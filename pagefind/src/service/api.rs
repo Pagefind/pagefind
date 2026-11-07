@@ -296,4 +296,114 @@ mod tests {
             .iter()
             .any(|f| f.to_string_lossy().ends_with(".pf_index")));
     }
+
+    #[tokio::test]
+    async fn test_add_custom_records_batch() {
+        let options = PagefindServiceConfig::builder()
+            .force_language("en".to_string())
+            .build();
+        let mut index = PagefindIndex::new(Some(options)).unwrap();
+
+        let records = vec![
+            CustomRecordInput {
+                url: "/batch/1/".into(),
+                content: "First custom record about testing".into(),
+                language: "en".into(),
+                meta: Some([("title".into(), "Record 1".into())].into()),
+                filters: Some([("category".into(), vec!["test".into()])].into()),
+                sort: Some([("date".into(), "2024-01-01".into())].into()),
+                chunk_id: None,
+                total_chunks: None,
+            },
+            CustomRecordInput {
+                url: "/batch/2/".into(),
+                content: "Second custom record about searching".into(),
+                language: "en".into(),
+                meta: Some([("title".into(), "Record 2".into())].into()),
+                filters: None,
+                sort: None,
+                chunk_id: None,
+                total_chunks: None,
+            },
+        ];
+
+        let responses = index.add_custom_records(records).await.unwrap();
+
+        assert_eq!(responses.len(), 2);
+        assert_eq!(responses[0].page_url, "/batch/1/");
+        assert_eq!(responses[1].page_url, "/batch/2/");
+        assert!(responses.iter().all(|r| r.page_word_count > 0));
+
+        index.build_indexes().await.unwrap();
+        let files = index.get_files().await.unwrap();
+        let fragments: Vec<_> = files.iter().filter(|f| f.filename.to_string_lossy().contains("fragment")).collect();
+        assert!(!fragments.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_add_custom_records_empty_batch() {
+        let mut index = PagefindIndex::new(None).unwrap();
+        let responses = index.add_custom_records(vec![]).await.unwrap();
+        assert_eq!(responses.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_add_custom_records_deduplication() {
+        let mut index = PagefindIndex::new(None).unwrap();
+
+        let records = vec![
+            CustomRecordInput {
+                url: "/dup/".into(),
+                content: "Original content".into(),
+                language: "en".into(),
+                meta: None,
+                filters: None,
+                sort: None,
+                chunk_id: None,
+                total_chunks: None,
+            },
+        ];
+        index.add_custom_records(records).await.unwrap();
+
+        let records2 = vec![
+            CustomRecordInput {
+                url: "/dup/".into(),
+                content: "Updated content here".into(),
+                language: "en".into(),
+                meta: None,
+                filters: None,
+                sort: None,
+                chunk_id: None,
+                total_chunks: None,
+            },
+        ];
+        let responses = index.add_custom_records(records2).await.unwrap();
+        assert_eq!(responses.len(), 1);
+        assert_eq!(responses[0].page_url, "/dup/");
+        assert!(responses[0].page_word_count > 1); // "Updated content here" = 3 words
+    }
+
+    #[tokio::test]
+    async fn test_add_custom_records_force_language() {
+        let options = PagefindServiceConfig::builder()
+            .force_language("fr".to_string())
+            .build();
+        let mut index = PagefindIndex::new(Some(options)).unwrap();
+
+        let records = vec![
+            CustomRecordInput {
+                url: "/forced/".into(),
+                content: "English content but forced to French".into(),
+                language: "en".into(), // Should be ignored
+                meta: None,
+                filters: None,
+                sort: None,
+                chunk_id: None,
+                total_chunks: None,
+            },
+        ];
+
+        let responses = index.add_custom_records(records).await.unwrap();
+        assert_eq!(responses[0].page_url, "/forced/");
+    }
 }
