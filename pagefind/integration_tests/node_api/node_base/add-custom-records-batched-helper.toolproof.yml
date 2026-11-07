@@ -1,0 +1,54 @@
+name: Node API Base Tests > Add custom records via batched helper
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+       import fs from "fs";
+       import path from "path";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex();
+
+           const records = Array.from({ length: 300 }, (_, i) => ({
+               url: `/batched/${i}/`,
+               content: `Batched record ${i} content`,
+               language: "en",
+               meta: { title: `Record ${i}` }
+           }));
+
+           const responses = await index.addCustomRecords(records);
+           console.log(`Total added: ${responses.files.length}`);
+
+           const { files } = await index.getFiles();
+
+           for (const file of files) {
+               const output_path = path.join("pagefind", file.path);
+               const dir = path.dirname(output_path);
+               if (!fs.existsSync(dir)){
+                   fs.mkdirSync(dir, { recursive: true });
+               }
+
+               fs.writeFileSync(output_path, file.content);
+           }
+           console.log("Donezo!");
+       };
+
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: 'stdout should contain "Total added: 300"'
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("batched");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      let count = pages.length;
+      document.body.innerText = `Found ${count} batched records`;
+      if (count !== 300) throw new Error(`Expected 300, got ${count}`);
+  - step: In my browser, the console should be empty
