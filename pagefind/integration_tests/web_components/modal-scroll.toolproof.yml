@@ -1,0 +1,108 @@
+name: Web Components Tests > Modal scrolls the dialog, keeping header and footer pinned
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      <style>:root { --pf-modal-max-height: 300px; }</style>
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal></pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat-one/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat one</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-two/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat two</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-three/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat three</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-four/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat four</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-five/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat five</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-six/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat six</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-seven/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat seven</h1><p>A cat sat on the mat.</p></body></html>
+  - step: I have a "public/cat-eight/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Cat eight</h1><p>A cat sat on the mat.</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I click the selector "pagefind-modal input"
+  - step: In my browser, I type "cat"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let results = await toolproof.querySelector("pagefind-modal pagefind-results ul");
+      await toolproof.waitFor(() => results.querySelectorAll("li").length === 8);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      // The modal dialog itself is the scroll container, so that touch
+      // scrolling works on iPadOS (a nested scroll container inside a top
+      // layer dialog does not receive touch scrolls in WebKit).
+      let dialog = document.querySelector("pagefind-modal dialog");
+      let body = document.querySelector("pagefind-modal-body");
+
+      toolproof.assert(
+        getComputedStyle(dialog).overflowY === "auto",
+        `Expected the dialog to be the scroll container, got overflow-y ${getComputedStyle(dialog).overflowY}`,
+      );
+
+      let bodyOverflow = getComputedStyle(body).overflowY;
+      toolproof.assert(
+        bodyOverflow === "visible",
+        `Expected the modal body to not scroll itself, got overflow-y ${bodyOverflow}`,
+      );
+      toolproof.assert(
+        body.scrollHeight <= body.clientHeight + 1,
+        `Expected the modal body to not overflow, got ${body.scrollHeight} in ${body.clientHeight}`,
+      );
+
+      toolproof.assert(
+        dialog.scrollHeight > dialog.clientHeight + 10,
+        `Expected the dialog content to overflow, got ${dialog.scrollHeight} in ${dialog.clientHeight}`,
+      );
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = document.querySelector("pagefind-modal dialog");
+      let header = document.querySelector("pagefind-modal-header");
+      let footer = document.querySelector("pagefind-modal-footer");
+
+      let dialogRect = dialog.getBoundingClientRect();
+      toolproof.assert(
+        dialogRect.bottom <= window.innerHeight + 1,
+        `Expected the dialog to fit in the viewport, got ${dialogRect.bottom} in ${window.innerHeight}`,
+      );
+
+      let headerTop = header.getBoundingClientRect().top;
+      let footerBottom = footer.getBoundingClientRect().bottom;
+
+      dialog.scrollTop = 120;
+      await toolproof.waitFor(() => dialog.scrollTop > 0);
+
+      toolproof.assert(
+        Math.abs(header.getBoundingClientRect().top - headerTop) <= 1,
+        `Expected the header to stay pinned, moved from ${headerTop} to ${header.getBoundingClientRect().top}`,
+      );
+      toolproof.assert(
+        Math.abs(footer.getBoundingClientRect().bottom - footerBottom) <= 1,
+        `Expected the footer to stay pinned, moved from ${footerBottom} to ${footer.getBoundingClientRect().bottom}`,
+      );
+      toolproof.assert(
+        window.scrollY === 0,
+        `Expected the page behind the modal to stay still, got scrollY ${window.scrollY}`,
+      );
+  - step: In my browser, the console should be empty
