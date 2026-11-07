@@ -36,6 +36,7 @@
 pub use crate::output::SyntheticFile;
 use anyhow::{bail, Result};
 use rust_patch::Patch;
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
 use crate::{
@@ -44,7 +45,7 @@ use crate::{
     PagefindInboundConfig, SearchOptions, SearchState,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IndexedFileResponse {
     pub page_word_count: u32,
     pub page_url: String,

@@ -184,6 +184,9 @@ pub async fn run_service() {
                     }
                 }
             }
+            RequestAction::AddRecords { .. } => {
+                err("AddRecords not yet implemented");
+            }
             RequestAction::AddDir {
                 index_id,
                 path,
