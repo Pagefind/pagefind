@@ -43,6 +43,7 @@ use crate::{
     fossick::{parser::DomParserResult, Fossicker},
     options::PagefindServiceConfig,
     PagefindInboundConfig, SearchOptions, SearchState,
+    service::requests::CustomRecordInput,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -169,6 +170,33 @@ impl PagefindIndex {
             page_url: data.fragment.data.url,
             page_meta: data.fragment.data.meta,
         })
+    }
+    /// Index multiple custom records in a single batch.
+    ///
+    /// # Arguments
+    /// * `records` - A vector of CustomRecordInput containing the records to index.
+    ///
+    /// # Returns
+    /// A vector of IndexedFileResponse with metadata about each added record.
+    pub async fn add_custom_records(
+        &mut self,
+        records: Vec<CustomRecordInput>,
+    ) -> Result<Vec<IndexedFileResponse>> {
+        let state = Arc::clone(&self.search_index);
+        let data = tokio::task::spawn_blocking(move || {
+            state.blocking_lock().fossick_many_custom(records)
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Task join error: {e}"))??;
+
+        Ok(data
+            .into_iter()
+            .map(|d| IndexedFileResponse {
+                page_word_count: d.fragment.data.word_count as u32,
+                page_url: d.fragment.data.url,
+                page_meta: d.fragment.data.meta,
+            })
+            .collect())
     }
 
     /// Index a directory of HTML files from disk.

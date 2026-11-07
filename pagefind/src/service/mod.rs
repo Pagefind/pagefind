@@ -9,7 +9,7 @@ pub mod api;
 use requests::*;
 use responses::*;
 
-mod requests;
+pub mod requests;
 mod responses;
 
 pub async fn run_service() {
