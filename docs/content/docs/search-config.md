@@ -216,6 +216,40 @@ await pagefind.options({
 {{< /tab >}}
 {{< /tabs >}}
 
+### Backtrack floor
+
+Sets the shortest word, in characters, that Pagefind may fall back to when a search term has no matches of its own.
+
+When a search term isn't found, Pagefind backtracks (trims characters) from the end of the word and searches for the longest prefix that does match.
+
+In most languages, the default is `3`. In languages that aren't whitespace delimited (Chinese, Japanese, and Thai) this defaults to `1`.
+
+- When set to `3`, a search for `aubergine` may fall back to `aub`, but never to `a`.
+- When set to `3`, search terms of three characters or fewer will never backtrack.
+- Set to `0` to remove the limit, matching Pagefind's behavior before v1.6.
+
+{{< tabs >}}
+{{< tab "UI (declarative)" "sync-cfg-declarative" >}}
+```html
+<pagefind-config backtrack-floor="3"></pagefind-config>
+```
+{{< /tab >}}
+{{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
+```js
+configureInstance("default", {
++    backtrackFloor: 3
+});
+```
+{{< /tab >}}
+{{< tab "Search API" "sync-cfg-searchapi" >}}
+```js
+await pagefind.options({
++    backtrackFloor: 3
+});
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Meta cache tag
 
 By default, Pagefind appends a timestamp to the metadata request to ensure fresh data. If you're building a PWA or offline-capable site, set this to a fixed string so that your service worker can cache the request. Change this value each time you rebuild your site. A build timestamp or random string works well.
