@@ -67,7 +67,7 @@ build-main:
 test:
     cd pagefind && cargo test --release --lib
     cd pagefind && cargo test --release --lib --features extended
-    cd pagefind_web && cargo test
+    cd pagefind_web && cargo test --release
     cd pagefind_web_js && npm test
     npx -y toolproof@latest
 
