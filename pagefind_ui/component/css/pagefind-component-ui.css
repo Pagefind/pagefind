@@ -1086,6 +1086,11 @@ pagefind-modal-trigger {
   As of writing, this only works on Chrome 144. Tracking:
   https://bugzilla.mozilla.org/show_bug.cgi?id=1837436
   https://bugs.webkit.org/show_bug.cgi?id=243452
+
+  The modal dialog is the scroll container, rather than the modal body.
+  A nested scroll container inside a top layer dialog does not reliably
+  receive touch scrolling in WebKit, where the
+  gesture is handed to the page behind the dialog instead.
 */
 
 :is(*, #\#):is(*, #\#):is(*, #\#) dialog.pf-modal {
@@ -1100,7 +1105,8 @@ pagefind-modal-trigger {
     border-radius: 12px;
     box-shadow: var(--pf-shadow-lg);
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
 }
 
@@ -1174,6 +1180,12 @@ pagefind-modal-trigger {
     padding: 16px;
     border-bottom: 1px solid var(--pf-border);
     flex-shrink: 0;
+
+    /* Pinned while the dialog scrolls */
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: var(--pf-background);
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-header-content {
@@ -1225,9 +1237,8 @@ pagefind-modal-trigger {
 
 :is(*, #\#):is(*, #\#):is(*, #\#) pagefind-modal-body,
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    flex: 1 0 auto;
+    overflow: visible;
     padding: 8px 16px 16px;
 }
 
@@ -1256,6 +1267,12 @@ pagefind-modal-trigger {
     font-size: 12px;
     color: var(--pf-text-muted);
     flex-shrink: 0;
+
+    /* Pinned while the dialog scrolls */
+    position: sticky;
+    inset-block-end: 0;
+    z-index: 2;
+    background: var(--pf-background);
 }
 
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-modal-footer-hint,
