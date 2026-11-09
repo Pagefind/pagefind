@@ -140,9 +140,10 @@ export class PagefindModal extends PagefindElement {
     this._isOpen = true;
     this.dialogEl.showModal();
 
+    const escLabel = this.instance?.translate("keyboard_key_esc") || "esc";
     const closeText = this.instance?.translate("keyboard_close") || "close";
     this.instance?.registerShortcut(
-      { label: "esc", description: closeText },
+      { label: escLabel, description: closeText },
       this,
     );
 
