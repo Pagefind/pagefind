@@ -78,7 +78,7 @@ pub async fn run_service() {
             let encoded = general_purpose::STANDARD.encode(serde_json::to_vec(&msg).unwrap());
 
             stdout.write_all(encoded.as_bytes()).unwrap();
-            stdout.write(b",").unwrap();
+            stdout.write_all(b",").unwrap();
             stdout.flush().unwrap();
         }
     });
