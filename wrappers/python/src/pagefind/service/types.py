@@ -70,6 +70,7 @@ class InternalAddRecordsRequest(TypedDict):
 
 class InternalIndexedFilesResponse(TypedDict):
     type: Literal["IndexedFiles"]
+    files: List["InternalIndexedFileResponse"]
 
 
 class InternalAddDirRequest(TypedDict, total=False):
@@ -97,6 +98,7 @@ class InternalDeleteIndexRequest(TypedDict):
     index_id: int
     """index_id must be positive."""
 
+
 InternalRequestPayload = Union[
     InternalNewIndexRequest,
     InternalAddFileRequest,
@@ -107,7 +109,6 @@ InternalRequestPayload = Union[
     InternalGetFilesRequest,
     InternalDeleteIndexRequest,
 ]
-
 
 
 class InternalServiceRequest(TypedDict):

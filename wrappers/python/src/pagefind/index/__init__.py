@@ -274,7 +274,8 @@ class PagefindIndex:
             )
         )
         assert result["type"] == "IndexedFiles", f"Unexpected response: {result}"
-        return cast(List[InternalIndexedFileResponse], result["files"])
+        indexed_files = cast(InternalIndexedFilesResponse, result)
+        return cast(List[InternalIndexedFileResponse], indexed_files["files"])
 
     async def add_custom_records_batched(
         self,
