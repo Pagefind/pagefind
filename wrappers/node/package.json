@@ -40,6 +40,7 @@
   },
   "homepage": "https://github.com/Pagefind/pagefind#readme",
   "devDependencies": {
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^7.0.2"
   }
 }

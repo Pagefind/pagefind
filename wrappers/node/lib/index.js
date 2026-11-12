@@ -95,6 +95,7 @@ const indexFns = (indexId) => {
     return {
         addHTMLFile: (file) => addHTMLFile(indexId, file),
         addCustomRecord: (record) => addCustomRecord(indexId, record),
+        addCustomRecords: (records) => addCustomRecords(indexId, records),
         addDirectory: (dir) => addDirectory(indexId, dir),
         writeFiles: (options) => writeFiles(indexId, options),
         getFiles: () => getFiles(indexId),
@@ -172,6 +173,39 @@ const addCustomRecord = (indexId, record) => new Promise((resolve, reject) => {
                         url: success.page_url,
                         meta: success.page_meta,
                     }
+                }
+            };
+            handleApiResponse(resolve, reject, response, successCallback);
+        }
+    );
+});
+/**
+ * @param {number} indexId 
+ * @param {import('pagefindService').CustomRecordInput[]} records
+ * @returns {Promise<import('pagefindService').NewFileResponse[]>}
+ */
+const addCustomRecords = (indexId, records) => new Promise((resolve, reject) => {
+    const action = 'AddRecords';
+    const responseAction = 'IndexedFiles';
+    launch().sendMessage(
+        {
+            type: action,
+            index_id: indexId,
+            records: records,
+        }, (response) => {
+            /** @type {function(InternalResponsePayload): {files: import('pagefindService').NewFileResponse[]}?} */
+            const successCallback = (success) => {
+                if (success.type !== responseAction) {
+                    reject(`Message returned from backend should have been ${action}, but was ${success.type}`);
+                    return null;
+                }
+
+                return {
+                    files: success.files.map(file => ({
+                        uniqueWords: file.page_word_count,
+                        url: file.page_url,
+                        meta: file.page_meta,
+                    }))
                 }
             };
             handleApiResponse(resolve, reject, response, successCallback);
