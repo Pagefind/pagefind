@@ -223,6 +223,17 @@ impl PagefindIndex {
         state.build_indexes().await?;
         Ok(state.get_files().await)
     }
+
+    /// Build the search index and return its files, consuming this instance.
+    ///
+    /// Parsed input pages are moved into the build instead of retained for a
+    /// subsequent build. Use this when no more records will be added; use
+    /// [`Self::get_files`] when the index must remain available for reuse.
+    pub async fn into_files(self) -> Result<Vec<SyntheticFile>> {
+        let mut state = self.search_index.lock().await;
+        state.build_indexes_with_consumption(true).await?;
+        Ok(state.get_files().await)
+    }
 }
 
 #[cfg(test)]

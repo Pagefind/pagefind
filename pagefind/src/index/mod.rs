@@ -146,181 +146,200 @@ pub async fn build_indexes(
     let meta_fields_ref = meta.meta_fields.clone();
     let language_ref = language.clone();
 
-    // Process pages in parallel - each page builds its own word map
-    let page_results: Vec<PageProcessingResult> = pages
-        .into_par_iter()
-        .map(|page| {
-            let mut local_word_map: HashMap<String, PackedWord> = HashMap::new();
+    // Bound temporary word maps while retaining parallel page conversion.
+    // An indexed parallel collect preserves input order within each batch, so
+    // fragment collision handling still observes the original page order.
+    let batch_size = rayon::current_num_threads().saturating_mul(4).max(1);
+    let mut pages = pages.into_iter();
+    let page_results = std::iter::from_fn(|| {
+        let batch: Vec<_> = pages.by_ref().take(batch_size).collect();
+        if batch.is_empty() {
+            return None;
+        }
+        Some(
+            batch
+                .into_par_iter()
+                .map(|page| {
+                    let mut local_word_map: HashMap<String, PackedWord> = HashMap::new();
 
-            // Meta field IDs were assigned per-page,
-            // but need to be remapped to the global meta_fields order.
-            let page_field_order: Vec<&String> = page.fragment.data.meta.keys().collect();
-            let field_id_map: Vec<u16> = page_field_order
-                .iter()
-                .map(|name| meta_fields_ref.iter().position(|f| f == *name).unwrap() as u16)
-                .collect();
+                    // Meta field IDs were assigned per-page,
+                    // but need to be remapped to the global meta_fields order.
+                    let page_field_order: Vec<&String> = page.fragment.data.meta.keys().collect();
+                    let field_id_map: Vec<u16> = page_field_order
+                        .iter()
+                        .map(|name| meta_fields_ref.iter().position(|f| f == *name).unwrap() as u16)
+                        .collect();
 
-            for (word, positions) in page.word_data {
-                // Group positions by original_word for this page
-                let mut normalized_positions: Vec<FossickedWord> = Vec::new();
-                let mut variant_positions: BTreeMap<String, Vec<FossickedWord>> = BTreeMap::new();
+                    for (word, positions) in page.word_data {
+                        // Group positions by original_word for this page
+                        let mut normalized_positions: Vec<FossickedWord> = Vec::new();
+                        let mut variant_positions: BTreeMap<String, Vec<FossickedWord>> =
+                            BTreeMap::new();
 
-                for fossicked in positions {
-                    if fossicked.original_word.is_none() {
-                        // No diacritics - original matches normalized form
-                        normalized_positions.push(fossicked);
-                    } else {
-                        // Original form differs (has diacritics) - stored instead in additional_variants
-                        variant_positions
-                            .entry(fossicked.original_word.clone().unwrap())
-                            .or_default()
-                            .push(fossicked);
-                    }
-                }
-
-                let packed_word =
-                    local_word_map
-                        .entry(word.clone())
-                        .or_insert_with(|| PackedWord {
-                            word: word.clone(),
-                            pages: Vec::new(),
-                            additional_variants: Vec::new(),
-                        });
-
-                if !normalized_positions.is_empty() {
-                    packed_word.pages.push(positions_to_packed_page(
-                        normalized_positions,
-                        page.fragment.page_number,
-                    ));
-                }
-
-                for (variant_form, variant_pos) in variant_positions {
-                    let variant_page =
-                        positions_to_packed_page(variant_pos, page.fragment.page_number);
-
-                    if let Some(existing_variant) = packed_word
-                        .additional_variants
-                        .iter_mut()
-                        .find(|v| v.form == variant_form)
-                    {
-                        existing_variant.pages.push(variant_page);
-                    } else {
-                        packed_word.additional_variants.push(PackedVariant {
-                            form: variant_form,
-                            pages: vec![variant_page],
-                        });
-                    }
-                }
-            }
-
-            for (word, meta_positions) in page.meta_word_data {
-                let mut normalized_meta_positions: Vec<MetaFossickedWord> = Vec::new();
-                let mut variant_meta_positions: BTreeMap<String, Vec<MetaFossickedWord>> =
-                    BTreeMap::new();
-
-                for mut meta_fossicked in meta_positions {
-                    meta_fossicked.field_id = field_id_map[meta_fossicked.field_id as usize];
-                    if let Some(original) = meta_fossicked.original_word.clone() {
-                        variant_meta_positions
-                            .entry(original)
-                            .or_default()
-                            .push(meta_fossicked);
-                    } else {
-                        normalized_meta_positions.push(meta_fossicked);
-                    }
-                }
-
-                let packed_word =
-                    local_word_map
-                        .entry(word.clone())
-                        .or_insert_with(|| PackedWord {
-                            word: word.clone(),
-                            pages: Vec::new(),
-                            additional_variants: Vec::new(),
-                        });
-
-                if !normalized_meta_positions.is_empty() {
-                    let meta_locs = meta_positions_to_packed(normalized_meta_positions);
-
-                    if let Some(existing_page) = packed_word
-                        .pages
-                        .iter_mut()
-                        .find(|p| p.page_number == page.fragment.page_number)
-                    {
-                        existing_page.meta_locs = meta_locs;
-                    } else {
-                        packed_word.pages.push(PackedPage {
-                            page_number: page.fragment.page_number,
-                            locs: vec![],
-                            meta_locs,
-                        });
-                    }
-                }
-
-                // Handle diacritic variants in meta
-                for (variant_form, variant_pos) in variant_meta_positions {
-                    let meta_locs = meta_positions_to_packed(variant_pos);
-
-                    if let Some(existing_variant) = packed_word
-                        .additional_variants
-                        .iter_mut()
-                        .find(|v| v.form == variant_form)
-                    {
-                        if let Some(existing_page) = existing_variant
-                            .pages
-                            .iter_mut()
-                            .find(|p| p.page_number == page.fragment.page_number)
-                        {
-                            existing_page.meta_locs = meta_locs;
-                        } else {
-                            existing_variant.pages.push(PackedPage {
-                                page_number: page.fragment.page_number,
-                                locs: vec![],
-                                meta_locs,
-                            });
+                        for fossicked in positions {
+                            if fossicked.original_word.is_none() {
+                                // No diacritics - original matches normalized form
+                                normalized_positions.push(fossicked);
+                            } else {
+                                // Original form differs (has diacritics) - stored instead in additional_variants
+                                variant_positions
+                                    .entry(fossicked.original_word.clone().unwrap())
+                                    .or_default()
+                                    .push(fossicked);
+                            }
                         }
-                    } else {
-                        packed_word.additional_variants.push(PackedVariant {
-                            form: variant_form,
-                            pages: vec![PackedPage {
-                                page_number: page.fragment.page_number,
-                                locs: vec![],
-                                meta_locs,
-                            }],
-                        });
+
+                        let packed_word =
+                            local_word_map
+                                .entry(word.clone())
+                                .or_insert_with(|| PackedWord {
+                                    word: word.clone(),
+                                    pages: Vec::new(),
+                                    additional_variants: Vec::new(),
+                                });
+
+                        if !normalized_positions.is_empty() {
+                            packed_word.pages.push(positions_to_packed_page(
+                                normalized_positions,
+                                page.fragment.page_number,
+                            ));
+                        }
+
+                        for (variant_form, variant_pos) in variant_positions {
+                            let variant_page =
+                                positions_to_packed_page(variant_pos, page.fragment.page_number);
+
+                            if let Some(existing_variant) = packed_word
+                                .additional_variants
+                                .iter_mut()
+                                .find(|v| v.form == variant_form)
+                            {
+                                existing_variant.pages.push(variant_page);
+                            } else {
+                                packed_word.additional_variants.push(PackedVariant {
+                                    form: variant_form,
+                                    pages: vec![variant_page],
+                                });
+                            }
+                        }
                     }
-                }
-            }
 
-            // Collect filter entries for this page
-            let filter_entries: Vec<(String, String, usize)> = page
-                .fragment
-                .data
-                .filters
-                .iter()
-                .flat_map(|(filter, values)| {
-                    values.iter().map(move |value| {
-                        (filter.clone(), value.clone(), page.fragment.page_number)
-                    })
+                    for (word, meta_positions) in page.meta_word_data {
+                        let mut normalized_meta_positions: Vec<MetaFossickedWord> = Vec::new();
+                        let mut variant_meta_positions: BTreeMap<String, Vec<MetaFossickedWord>> =
+                            BTreeMap::new();
+
+                        for mut meta_fossicked in meta_positions {
+                            meta_fossicked.field_id =
+                                field_id_map[meta_fossicked.field_id as usize];
+                            if let Some(original) = meta_fossicked.original_word.clone() {
+                                variant_meta_positions
+                                    .entry(original)
+                                    .or_default()
+                                    .push(meta_fossicked);
+                            } else {
+                                normalized_meta_positions.push(meta_fossicked);
+                            }
+                        }
+
+                        let packed_word =
+                            local_word_map
+                                .entry(word.clone())
+                                .or_insert_with(|| PackedWord {
+                                    word: word.clone(),
+                                    pages: Vec::new(),
+                                    additional_variants: Vec::new(),
+                                });
+
+                        if !normalized_meta_positions.is_empty() {
+                            let meta_locs = meta_positions_to_packed(normalized_meta_positions);
+
+                            if let Some(existing_page) = packed_word
+                                .pages
+                                .iter_mut()
+                                .find(|p| p.page_number == page.fragment.page_number)
+                            {
+                                existing_page.meta_locs = meta_locs;
+                            } else {
+                                packed_word.pages.push(PackedPage {
+                                    page_number: page.fragment.page_number,
+                                    locs: vec![],
+                                    meta_locs,
+                                });
+                            }
+                        }
+
+                        // Handle diacritic variants in meta
+                        for (variant_form, variant_pos) in variant_meta_positions {
+                            let meta_locs = meta_positions_to_packed(variant_pos);
+
+                            if let Some(existing_variant) = packed_word
+                                .additional_variants
+                                .iter_mut()
+                                .find(|v| v.form == variant_form)
+                            {
+                                if let Some(existing_page) = existing_variant
+                                    .pages
+                                    .iter_mut()
+                                    .find(|p| p.page_number == page.fragment.page_number)
+                                {
+                                    existing_page.meta_locs = meta_locs;
+                                } else {
+                                    existing_variant.pages.push(PackedPage {
+                                        page_number: page.fragment.page_number,
+                                        locs: vec![],
+                                        meta_locs,
+                                    });
+                                }
+                            } else {
+                                packed_word.additional_variants.push(PackedVariant {
+                                    form: variant_form,
+                                    pages: vec![PackedPage {
+                                        page_number: page.fragment.page_number,
+                                        locs: vec![],
+                                        meta_locs,
+                                    }],
+                                });
+                            }
+                        }
+                    }
+
+                    // Collect filter entries for this page
+                    let filter_entries: Vec<(String, String, usize)> = page
+                        .fragment
+                        .data
+                        .filters
+                        .iter()
+                        .flat_map(|(filter, values)| {
+                            values.iter().map(move |value| {
+                                (filter.clone(), value.clone(), page.fragment.page_number)
+                            })
+                        })
+                        .collect();
+
+                    // Compute encoded page data
+                    let encoded_data = serde_json::to_string(&page.fragment.data).unwrap();
+                    let encoded_page = IntermediaryPageData {
+                        full_hash: format!(
+                            "{}_{}",
+                            language_ref,
+                            full_hash(encoded_data.as_bytes())
+                        ),
+                        word_count: page.fragment.data.word_count,
+                        page_number: page.fragment.page_number,
+                        encoded_data,
+                    };
+
+                    PageProcessingResult {
+                        word_map: local_word_map,
+                        filter_entries,
+                        encoded_page,
+                    }
                 })
-                .collect();
-
-            // Compute encoded page data
-            let encoded_data = serde_json::to_string(&page.fragment.data).unwrap();
-            let encoded_page = IntermediaryPageData {
-                full_hash: format!("{}_{}", language_ref, full_hash(encoded_data.as_bytes())),
-                word_count: page.fragment.data.word_count,
-                page_number: page.fragment.page_number,
-                encoded_data,
-            };
-
-            PageProcessingResult {
-                word_map: local_word_map,
-                filter_entries,
-                encoded_page,
-            }
-        })
-        .collect();
+                .collect::<Vec<PageProcessingResult>>(),
+        )
+    })
+    .flatten();
 
     // Merge results sequentially
     for result in page_results {
