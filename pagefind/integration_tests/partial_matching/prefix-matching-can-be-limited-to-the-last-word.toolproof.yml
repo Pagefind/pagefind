@@ -1,0 +1,46 @@
+name: Partial Matching > Prefix matching can be limited to the last word
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body
+      data-pagefind-ignore><p>Search</p></body></html>
+  - step: I have a "public/desk/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p>The car rental
+      desk</p></body></html>
+  - step: I have a "public/carpet/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><p>A carpet rental
+      shop</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let urls = async (term) => {
+        let search = await pagefind.search(term);
+        let pages = await Promise.all(search.results.map(r => r.data()));
+        return pages.map(p => p.url).sort();
+      };
+      // By default every word is a prefix, so "car" also matches "carpet"
+      let byDefault = await urls("car rental");
+      await pagefind.options({ prefixMatching: "last" });
+      // Only the last word may be partial, so "car" has to be a whole word
+      let lastWord = await urls("car rental");
+      // Words are still stemmed before they are matched
+      let stemmed = await urls("cars rental");
+      // The last word is still a prefix, as it may still be being typed
+      let typing = await urls("rental car");
+      let partial = await urls("car rent");
+      return [byDefault, lastWord, stemmed, typing, partial];
+    expected:
+      - - /carpet/
+        - /desk/
+      - - /desk/
+      - - /desk/
+      - - /carpet/
+        - /desk/
+      - - /desk/
