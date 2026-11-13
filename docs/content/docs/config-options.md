@@ -71,6 +71,30 @@ Note that currently Pagefind only supports lists of options via configuration fi
 |---------------------------|------------------------------|---------------------|
 | `--exclude-selectors <S>` | `PAGEFIND_EXCLUDE_SELECTORS` | `exclude_selectors` |
 
+### Rules
+Applies Pagefind attributes to the elements a selector matches, so a site can be configured with the same vocabulary its HTML would use. For example, in `pagefind.yml`:
+
+```yml
+rules:
+  - selector: "#my_navigation"
+    attributes:
+      data-pagefind-ignore: all
+  - selector: ".article-body"
+    attributes:
+      data-pagefind-body: ""
+      data-pagefind-meta: "title[data-title]"
+```
+
+Each rule behaves exactly as if the attributes had been written on the matching elements, so the documentation for [indexing attributes](/docs/indexing/) applies unchanged.
+
+An attribute written in the page always wins over a rule setting the same attribute, so rules never override markup you control. A selector Pagefind cannot parse is reported and skipped, and indexing continues without it.
+
+Rules are only available via configuration files, as a list of selectors with their attributes does not fit a CLI flag or an environment variable.
+
+| CLI Flag | ENV Variable | Config Key |
+|----------|--------------|------------|
+| n/a      | n/a          | `rules`    |
+
 ### Include characters
 Prevents Pagefind from stripping the provided characters when indexing content.
 Allows users to search for words including these characters.
