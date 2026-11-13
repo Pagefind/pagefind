@@ -152,13 +152,14 @@ export class PagefindInput extends PagefindElement {
       this.instance?.triggerLoad();
       const navigateText =
         this.instance?.translate("keyboard_navigate") || "navigate";
+      const escLabel = this.instance?.translate("keyboard_key_esc") || "esc";
       const clearText = this.instance?.translate("keyboard_clear") || "clear";
       this.instance?.registerShortcut(
         { label: "↓", description: navigateText },
         this,
       );
       this.instance?.registerShortcut(
-        { label: "esc", description: clearText },
+        { label: escLabel, description: clearText },
         this,
       );
     });
