@@ -36,18 +36,11 @@ export class PagefindModal extends PagefindElement {
     this.innerHTML = "";
 
     const dialogId = this.id || this.instance!.generateId("pagefind-modal");
-    const searchLabel = this.instance?.translate("keyboard_search") || "search";
-
-    if (this.instance?.direction === "rtl") {
-      this.setAttribute("dir", "rtl");
-    } else {
-      this.removeAttribute("dir");
-    }
 
     this.dialogEl = document.createElement("dialog");
     this.dialogEl.className = "pf-modal";
     this.dialogEl.id = dialogId;
-    this.dialogEl.setAttribute("aria-label", searchLabel);
+    this.updateTranslations();
 
     if (hasChildren && children) {
       // User provided structure - move children into dialog as-is
@@ -80,6 +73,19 @@ export class PagefindModal extends PagefindElement {
 
     this.appendChild(this.dialogEl);
     this.setupEventHandlers();
+  }
+
+  private updateTranslations(): void {
+    if (this.instance?.direction === "rtl") {
+      this.setAttribute("dir", "rtl");
+    } else {
+      this.removeAttribute("dir");
+    }
+
+    this.dialogEl?.setAttribute(
+      "aria-label",
+      this.instance?.translate("keyboard_search") || "search",
+    );
   }
 
   private setupEventHandlers(): void {
@@ -193,17 +199,7 @@ export class PagefindModal extends PagefindElement {
   register(instance: Instance): void {
     instance.registerUtility(this, "modal");
 
-    instance.on(
-      "translations",
-      () => {
-        const wasOpen = this._isOpen;
-        this.render();
-        if (wasOpen) {
-          this.open();
-        }
-      },
-      this,
-    );
+    instance.on("translations", () => this.updateTranslations(), this);
   }
 
   reconcileAria(): void {
