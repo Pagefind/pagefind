@@ -23,6 +23,7 @@ class InternalPagefindServiceConfig(TypedDict, total=False):
     write_playground: Optional[bool]
     include_characters: Optional[str]
     max_fragments: Optional[int]
+    skip_ui: Optional[bool]
 
 
 class InternalNewIndexRequest(TypedDict):

@@ -136,6 +136,17 @@ This defaults to false, so playground files are not written to your live site. P
 |----------------------|--------------------|--------------------|
 | `--write-playground` | `PAGEFIND_WRITE_PLAYGROUND` | `write_playground` |
 
+### Skip UI
+Omits the Default, Modular, and Component UI files from your bundle directory. Useful when providing your own search UI with the [Pagefind search API](/docs/api/) or a UI package bundled by your site's build tools.
+
+All other bundle files, including `pagefind.js` and the [highlight script](/docs/highlighting/) (`pagefind-highlight.js`), are still written.
+
+When running the CLI with this option, Pagefind warns if it finds references to the Default or Modular UI files on your site.
+
+| CLI Flag    | ENV Variable       | Config Key |
+|-------------|--------------------|------------|
+| `--skip-ui` | `PAGEFIND_SKIP_UI` | `skip_ui`  |
+
 ### Verbose
 Prints extra logging while indexing the site. Only affects the CLI, does not impact web-facing search.
 

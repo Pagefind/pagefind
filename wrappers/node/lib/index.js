@@ -60,6 +60,7 @@ export const createIndex = (config) => new Promise((resolve, reject) => {
                 write_playground: config?.writePlayground,
                 include_characters: config?.includeCharacters,
                 max_fragments: config?.maxFragments,
+                skip_ui: config?.skipUi,
             }
         }, (response) => {
             /** @type {function(InternalResponsePayload): Omit<NewIndexResponse, 'errors'>?} */

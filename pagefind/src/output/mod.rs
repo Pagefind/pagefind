@@ -177,42 +177,6 @@ async fn write_common(
             write_behavior,
         ),
         write(
-            outdir.join("pagefind-ui.js"),
-            vec![WEB_UI_JS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
-            outdir.join("pagefind-ui.css"),
-            vec![WEB_UI_CSS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
-            outdir.join("pagefind-modular-ui.js"),
-            vec![WEB_MODULAR_UI_JS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
-            outdir.join("pagefind-modular-ui.css"),
-            vec![WEB_MODULAR_UI_CSS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
-            outdir.join("pagefind-component-ui.js"),
-            vec![COMPONENT_UI_JS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
-            outdir.join("pagefind-component-ui.css"),
-            vec![COMPONENT_UI_CSS],
-            Compress::None,
-            write_behavior,
-        ),
-        write(
             outdir.join("wasm.unknown.pagefind"),
             vec![GENERIC_WEB_WASM],
             Compress::None,
@@ -225,6 +189,47 @@ async fn write_common(
             write_behavior,
         ),
     ];
+
+    if !options.skip_ui {
+        files.extend([
+            write(
+                outdir.join("pagefind-ui.js"),
+                vec![WEB_UI_JS],
+                Compress::None,
+                write_behavior,
+            ),
+            write(
+                outdir.join("pagefind-ui.css"),
+                vec![WEB_UI_CSS],
+                Compress::None,
+                write_behavior,
+            ),
+            write(
+                outdir.join("pagefind-modular-ui.js"),
+                vec![WEB_MODULAR_UI_JS],
+                Compress::None,
+                write_behavior,
+            ),
+            write(
+                outdir.join("pagefind-modular-ui.css"),
+                vec![WEB_MODULAR_UI_CSS],
+                Compress::None,
+                write_behavior,
+            ),
+            write(
+                outdir.join("pagefind-component-ui.js"),
+                vec![COMPONENT_UI_JS],
+                Compress::None,
+                write_behavior,
+            ),
+            write(
+                outdir.join("pagefind-component-ui.css"),
+                vec![COMPONENT_UI_CSS],
+                Compress::None,
+                write_behavior,
+            ),
+        ]);
+    }
 
     if output_playground {
         files.extend([

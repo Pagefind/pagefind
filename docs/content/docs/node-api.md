@@ -67,6 +67,7 @@ const { index } = await pagefind.createIndex({
     maxFragments: 1000,
     keepIndexUrl: false,
     writePlayground: false,
+    skipUi: false,
     verbose: false,
     logfile: "debug.log"
 });
