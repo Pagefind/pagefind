@@ -1,0 +1,40 @@
+name: Python API > UI files can be skipped when writing files
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/run.py" file with the content {python}
+    python: |2-
+      import sys
+      sys.path.append('%toolproof_process_directory%/wrappers/python/src')
+
+      import asyncio
+      import json
+      import logging
+      import os
+      from pagefind.index import PagefindIndex, IndexConfig
+
+      async def main():
+        config = IndexConfig(skip_ui=True)
+
+        async with PagefindIndex(config=config) as index:
+          await index.add_html_file(
+              content="<html><body><h1>Testing, testing</h1></body></html>",
+              source_path="dogs/index.html",
+          )
+
+        print("Complete")
+      if __name__ == "__main__":
+        asyncio.run(main())
+  - macro: I run Pagefind Python as "run.py" in "public"
+  - step: stdout should contain "Complete"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: The file "public/pagefind/pagefind-highlight.js" should not be empty
+  - step: I run "ls -lh public/pagefind/pagefind-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.css" and expect it to fail

@@ -1,0 +1,18 @@
+name: Build Options > UI files can be skipped
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind with "--skip-ui"
+  - step: stdout should contain "Running Pagefind"
+  - step: stderr should not contain "`skip_ui` is enabled"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: The file "public/pagefind/pagefind-highlight.js" should not be empty
+  - step: I run "ls -lh public/pagefind/pagefind-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.css" and expect it to fail

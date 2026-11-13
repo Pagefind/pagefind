@@ -62,6 +62,11 @@ export interface PagefindServiceConfig {
      * bundled into shared files.
      */
     maxFragments?: number,
+    /**
+     * Omit the Default, Modular, and Component UI files from the search bundle.
+     * Useful when providing your own search UI.
+     */
+    skipUi?: boolean,
 }
 
 

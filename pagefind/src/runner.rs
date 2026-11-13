@@ -103,7 +103,13 @@ pub async fn run_indexer() -> Result<()> {
                     .iter()
                     .any(|p| p.has_default_ui_reference);
 
-                if has_default_ui {
+                if has_default_ui && options.skip_ui {
+                    logger.warn(
+                        "Warning: Pagefind found references to the Default UI (pagefind-ui.js) on your site,\n\
+                        but the UI files were not written to the search bundle because `skip_ui` is enabled.\n\
+                        These references will fail to load. Either remove them, or stop skipping the UI files.",
+                    );
+                } else if has_default_ui {
                     logger.status(&crate::logging::boxed(
 "Pagefind found references to the Default UI (pagefind-ui.js)\n\
 on your site. The Default UI is supported and will continue\n\
