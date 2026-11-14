@@ -65,6 +65,7 @@ const build = async () => {
     outdir: path.join(__dirname, `npm_dist/cjs/`),
     outExtension: { ".js": ".cjs" },
     platform: "node",
+    conditions: ["browser"],
   };
   const compiledCJS = await esbuild.build(esbuildCjsOptions);
   stripCSSComment(path.join(__dirname, `npm_dist/cjs/ui-core.css`));
@@ -77,6 +78,7 @@ const build = async () => {
     outdir: path.join(__dirname, `npm_dist/mjs/`),
     outExtension: { ".js": ".mjs" },
     platform: "neutral",
+    conditions: ["browser"],
   };
   const compiledMJS = await esbuild.build(esbuildModuleOptions);
   stripCSSComment(path.join(__dirname, `npm_dist/mjs/ui-core.css`));

@@ -1,0 +1,35 @@
+name: UI Test Strings > Pagefind UI npm build loads automatic translations
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="pt-br">
+          <head></head>
+          <body>
+              <h1>Search</h1>
+              <div id="search"></div>
+
+              <script type="module">
+                  import { PagefindUI } from "/ui-core.mjs";
+                  window.pui = new PagefindUI({ element: "#search", bundlePath: "/pagefind/" });
+              </script>
+          </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I run "cp %toolproof_process_directory%/pagefind_ui/default/npm_dist/mjs/ui-core.mjs public/ui-core.mjs"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: window.pui.triggerSearch("garbage");
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |
+      // Waiting for the results to be populated
+      await toolproof.waitFor(async () => {
+        const message = await toolproof.querySelector(".pagefind-ui__message");
+        return message && message.innerHTML.startsWith("Nenhum resultado");
+      });
+      let val = await toolproof.querySelector(".pagefind-ui__message");
+      toolproof.assert_eq(val.innerHTML, `Nenhum resultado encontrado para garbage`);
