@@ -1,0 +1,49 @@
+name: Web Components Tests > Modal opens with its custom content after updating translations
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload></pagefind-config>
+      <pagefind-modal-trigger></pagefind-modal-trigger>
+      <pagefind-modal>
+        <pagefind-modal-header>
+          <pagefind-input></pagefind-input>
+        </pagefind-modal-header>
+        <pagefind-modal-body>
+          <pagefind-summary></pagefind-summary>
+          <pagefind-results></pagefind-results>
+        </pagefind-modal-body>
+        <pagefind-modal-footer></pagefind-modal-footer>
+      </pagefind-modal>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(() => window.PagefindComponents?.getInstanceManager?.()?.getInstance?.("default"));
+      const instance = window.PagefindComponents.getInstanceManager().getInstance("default");
+      instance.setTranslations({ keyboard_search: "find" });
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let count = document.querySelectorAll("pagefind-modal dialog").length;
+      toolproof.assert_eq(count, 1);
+  - step: In my browser, I click the selector "pagefind-modal-trigger button"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let dialog = await toolproof.querySelector("pagefind-modal dialog");
+      await toolproof.waitFor(() => dialog.open === true);
+      // The modal content should be in the open dialog.
+      toolproof.assert(dialog.querySelector(":scope > pagefind-modal-header"));
+      // Translation changes should still update the dialog accessible name.
+      toolproof.assert_eq(dialog.getAttribute("aria-label"), "find");
