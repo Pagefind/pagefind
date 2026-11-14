@@ -83,7 +83,9 @@ export class PagefindModalTrigger extends PagefindElement {
 
     // Set aria-keyshortcuts with the display string
     if (this._keyBinding) {
-      const display = getShortcutDisplay(this._keyBinding);
+      const display = getShortcutDisplay(this._keyBinding, (key) =>
+        this.instance?.translate(key),
+      );
       this.buttonEl.setAttribute("aria-keyshortcuts", display.aria);
     }
 
@@ -104,7 +106,9 @@ export class PagefindModalTrigger extends PagefindElement {
       shortcutContainer.className = "pf-trigger-shortcut";
       shortcutContainer.setAttribute("aria-hidden", "true");
 
-      const display = getShortcutDisplay(this._keyBinding);
+      const display = getShortcutDisplay(this._keyBinding, (key) =>
+        this.instance?.translate(key),
+      );
       for (const keyText of display.keys) {
         const keyEl = document.createElement("span");
         keyEl.className = "pf-trigger-key";

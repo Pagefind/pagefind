@@ -396,7 +396,9 @@ export class PagefindSearchbox extends PagefindElement {
       this._shortcutEl.className = "pf-trigger-shortcut";
       this._shortcutEl.setAttribute("aria-hidden", "true");
 
-      const display = getShortcutDisplay(this._keyBinding);
+      const display = getShortcutDisplay(this._keyBinding, (key) =>
+        this.instance?.translate(key),
+      );
       for (const keyText of display.keys) {
         const keyEl = document.createElement("span");
         keyEl.className = "pf-trigger-key";
@@ -451,6 +453,7 @@ export class PagefindSearchbox extends PagefindElement {
     const navigateText =
       this.instance?.translate("keyboard_navigate") || "navigate";
     const selectText = this.instance?.translate("keyboard_select") || "select";
+    const escLabel = this.instance?.translate("keyboard_key_esc") || "esc";
     const closeText = this.instance?.translate("keyboard_close") || "close";
 
     const navHint = document.createElement("div");
@@ -479,7 +482,7 @@ export class PagefindSearchbox extends PagefindElement {
     closeHint.className = "pf-searchbox-footer-hint";
     const closeKey = document.createElement("span");
     closeKey.className = "pf-searchbox-footer-key";
-    closeKey.textContent = "esc";
+    closeKey.textContent = escLabel;
     closeHint.appendChild(closeKey);
     closeHint.appendChild(document.createTextNode(` ${closeText}`));
     this.footerEl.appendChild(closeHint);

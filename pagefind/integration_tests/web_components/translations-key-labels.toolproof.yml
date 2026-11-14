@@ -1,0 +1,65 @@
+name: Web Components Tests > Custom key label translations
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="en">
+          <head>
+              <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+          </head>
+          <body>
+              <pagefind-config preload></pagefind-config>
+              <pagefind-modal-trigger id="modifiers" shortcut="ctrl+shift+alt+k"></pagefind-modal-trigger>
+              <pagefind-modal-trigger id="meta" shortcut="meta+k"></pagefind-modal-trigger>
+              <pagefind-input></pagefind-input>
+              <pagefind-keyboard-hints></pagefind-keyboard-hints>
+              <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+          </body>
+      </html>
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>world</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      await toolproof.waitFor(() => window.PagefindComponents?.getInstanceManager?.()?.getInstance?.("default"));
+      const instance = window.PagefindComponents.getInstanceManager().getInstance("default");
+      instance.setTranslations({
+          keyboard_key_ctrl: "(Ctrl)",
+          keyboard_key_shift: "(Shift)",
+          keyboard_key_alt: "(Alt)",
+          keyboard_key_win: "(Win)",
+          keyboard_key_esc: "(esc)"
+      });
+  - snapshot: In my browser, the result of {js}
+    platforms: [mac]
+    js: |-
+      let modifiers = await toolproof.querySelector("#modifiers .pf-trigger-shortcut");
+      let meta = await toolproof.querySelector("#meta .pf-trigger-shortcut");
+      return `${modifiers.textContent}\n${meta.textContent}`;
+    snapshot_content: |-
+      ╎(Ctrl)(Shift)(Alt)K
+      ╎⌘K
+  - snapshot: In my browser, the result of {js}
+    platforms: [linux, windows]
+    js: |-
+      let modifiers = await toolproof.querySelector("#modifiers .pf-trigger-shortcut");
+      let meta = await toolproof.querySelector("#meta .pf-trigger-shortcut");
+      return `${modifiers.textContent}\n${meta.textContent}`;
+    snapshot_content: |-
+      ╎(Ctrl)(Shift)(Alt)K
+      ╎(Win)K
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, the console should be empty
+  - snapshot: In my browser, the result of {js}
+    js: |-
+      let hints = await toolproof.querySelector("pagefind-keyboard-hints");
+      return hints.textContent;
+    snapshot_content: |-
+      ╎↓ navigate(esc) clear

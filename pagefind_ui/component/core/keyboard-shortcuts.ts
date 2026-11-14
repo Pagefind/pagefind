@@ -87,7 +87,10 @@ export function keyBindingMatches(
   return keyMatches && ctrlMatch && metaMatch && shiftMatch && altMatch;
 }
 
-export function getShortcutDisplay(binding: KeyBinding): {
+export function getShortcutDisplay(
+  binding: KeyBinding,
+  translate: (key: string) => string | undefined,
+): {
   keys: string[];
   aria: string;
 } {
@@ -96,23 +99,23 @@ export function getShortcutDisplay(binding: KeyBinding): {
   const ariaParts: string[] = [];
 
   if (binding.mod) {
-    keys.push(isMac ? "⌘" : "Ctrl");
+    keys.push(isMac ? "⌘" : translate("keyboard_key_ctrl") || "Ctrl");
     ariaParts.push(isMac ? "Meta" : "Control");
   }
   if (binding.meta) {
-    keys.push(isMac ? "⌘" : "Win");
+    keys.push(isMac ? "⌘" : translate("keyboard_key_win") || "Win");
     ariaParts.push("Meta");
   }
   if (binding.ctrl) {
-    keys.push("Ctrl");
+    keys.push(translate("keyboard_key_ctrl") || "Ctrl");
     ariaParts.push("Control");
   }
   if (binding.shift) {
-    keys.push("Shift");
+    keys.push(translate("keyboard_key_shift") || "Shift");
     ariaParts.push("Shift");
   }
   if (binding.alt) {
-    keys.push("Alt");
+    keys.push(translate("keyboard_key_alt") || "Alt");
     ariaParts.push("Alt");
   }
 

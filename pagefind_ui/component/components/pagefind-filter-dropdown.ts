@@ -225,6 +225,7 @@ export class PagefindFilterDropdown extends PagefindElement {
     const navigateText =
       this.instance?.translate("keyboard_navigate") || "navigate";
     const selectText = this.instance?.translate("keyboard_select") || "select";
+    const escLabel = this.instance?.translate("keyboard_key_esc") || "esc";
     const closeText = this.instance?.translate("keyboard_close") || "close";
     this.instance?.registerShortcut(
       { label: "↑↓", description: navigateText },
@@ -235,7 +236,7 @@ export class PagefindFilterDropdown extends PagefindElement {
       this,
     );
     this.instance?.registerShortcut(
-      { label: "esc", description: closeText },
+      { label: escLabel, description: closeText },
       this,
     );
 
