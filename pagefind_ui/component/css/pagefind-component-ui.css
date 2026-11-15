@@ -1368,6 +1368,27 @@ pagefind-modal-trigger {
     display: flex;
 }
 
+/*
+ * The focus ring is a box-shadow on the input, so while the dropdown is open it
+ * would stop at the input's bottom edge. Carry it around the dropdown too, and
+ * clip each ring along the seam between them so the pair reads as one outline.
+ */
+:is(*, #\#):is(*, #\#):is(*, #\#)
+    .pf-searchbox.open:has(.pf-searchbox-input:focus-visible)
+    .pf-searchbox-input {
+    clip-path: inset(-100vmax -100vmax 0);
+}
+
+:is(*, #\#):is(*, #\#):is(*, #\#)
+    .pf-searchbox.open:has(.pf-searchbox-input:focus-visible)
+    .pf-searchbox-dropdown {
+    border-color: var(--pf-outline-focus);
+    box-shadow:
+        0 0 0 var(--pf-outline-width) var(--pf-outline-focus),
+        var(--pf-shadow-md);
+    clip-path: inset(0 -100vmax -100vmax);
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) .pf-searchbox-results {
     list-style: none;
     padding: 4px;
