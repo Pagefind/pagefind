@@ -1,0 +1,38 @@
+name: Web Components Tests > Config prefix-matching attribute works
+steps:
+  - step: I have the environment variable "PAGEFIND_SITE" set to "public"
+  - step: I have a "public/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html><html lang="en"><head>
+      <link href="/pagefind/pagefind-component-ui.css" rel="stylesheet">
+      </head><body>
+      <pagefind-config preload no-worker prefix-matching="last"></pagefind-config>
+      <pagefind-input></pagefind-input>
+      <pagefind-summary></pagefind-summary>
+      <pagefind-results></pagefind-results>
+      <script src="/pagefind/pagefind-component-ui.js" type="module"></script>
+      </body></html>
+  - step: I have a "public/desk/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Desk</h1><p>The
+      car rental desk</p></body></html>
+  - step: I have a "public/carpet/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><h1>Carpet</h1><p>A
+      carpet rental shop</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I click the selector "pagefind-input input"
+  - step: In my browser, I type "car rental"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let summary = await toolproof.querySelector("pagefind-summary");
+      await toolproof.waitFor(() => /results? for car rental/.test(summary.textContent));
+      return summary.textContent.trim();
+    expected: 1 result for car rental
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let link = await toolproof.querySelector("pagefind-results ul li a");
+      toolproof.assert_eq(link.getAttribute("href"), "/desk/");
