@@ -9,6 +9,8 @@
 
 ## Unreleased
 
+* Soft hyphens (`&shy;`) no longer change how a word is indexed or searched: words in the content and in metadata are indexed without them, and the query drops them too, so text with soft hyphens searches like the same text without them. Excerpts keep them.
+
 ## v1.6.0 (November 1, 2026)
 
 
