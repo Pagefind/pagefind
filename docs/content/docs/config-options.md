@@ -141,8 +141,6 @@ Omits the Default, Modular, and Component UI files from your bundle directory. U
 
 All other bundle files, including `pagefind.js` and the [highlight script](/docs/highlighting/) (`pagefind-highlight.js`), are still written.
 
-When running the CLI with this option, Pagefind warns if it finds references to the Default or Modular UI files on your site.
-
 | CLI Flag    | ENV Variable       | Config Key |
 |-------------|--------------------|------------|
 | `--skip-ui` | `PAGEFIND_SKIP_UI` | `skip_ui`  |
