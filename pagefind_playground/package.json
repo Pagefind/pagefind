@@ -8,7 +8,7 @@
     "build": "node _build.js"
   },
   "dependencies": {
-    "@tsconfig/svelte": "^5.0.8",
+    "@tsconfig/svelte": "^5.0.9",
     "@types/node": "^26.6.6",
     "esbuild": "^0.28.1",
     "esbuild-svelte": "^0.9.5",
