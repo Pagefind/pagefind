@@ -218,7 +218,6 @@ impl SearchIndex {
         let original_terms: Vec<&str> = original_query.split(' ').collect();
         let split_term = stems_from_term(term);
 
-        let mut unfiltered_results: Vec<usize> = vec![];
         let mut maps = Vec::new();
         let mut words: Vec<Vec<&PageWord>> = Vec::new();
 
@@ -250,20 +249,8 @@ impl SearchIndex {
             }
         }
 
-        if !maps.is_empty() {
-            let map = match intersect_maps(maps) {
-                Some(maps) => maps,
-                // Results must exist at this point.
-                None => std::process::abort(),
-            };
-            unfiltered_results.extend(map.iter());
-            maps = vec![map];
-        }
-
-        if let Some(filter) = filter_results {
-            maps.push(filter);
-        }
-
+        // Filters are applied after the phrase matching below,
+        // so that the unfiltered results only hold pages containing the phrase.
         let results = match intersect_maps(maps) {
             Some(map) => map,
             None => return (vec![], vec![]),
@@ -434,6 +421,11 @@ impl SearchIndex {
                     pages.push(search_result);
                 }
             }
+        }
+
+        let unfiltered_results = pages.iter().map(|p| p.page_index).collect();
+        if let Some(filter) = filter_results {
+            pages.retain(|p| filter.contains(p.page_index));
         }
 
         (unfiltered_results, pages)
@@ -958,5 +950,70 @@ mod tests {
 
         let (_, pages) = index.exact_term("cafe latte", "cafe latte", None, true);
         assert!(pages.is_empty());
+    }
+    #[test]
+    fn exact_phrase_unfiltered_results_only_include_phrase_matches() {
+        let page_word = |page, position| PageWord {
+            page,
+            locs: vec![(25, position)],
+            meta_locs: vec![],
+        };
+        // Page 0 reads "cat dog", pages 1 and 2 read "dog cat".
+        let mut words = BTreeMap::new();
+        words.insert(
+            "cat".to_string(),
+            WordData {
+                pages: vec![page_word(0, 0), page_word(1, 1), page_word(2, 1)],
+                additional_variants: vec![],
+            },
+        );
+        words.insert(
+            "dog".to_string(),
+            WordData {
+                pages: vec![page_word(0, 1), page_word(1, 0), page_word(2, 0)],
+                additional_variants: vec![],
+            },
+        );
+
+        let index = SearchIndex {
+            web_version: "test",
+            playground_mode: false,
+            generator_version: None,
+            pages: ["zero", "one", "two"]
+                .into_iter()
+                .map(|hash| Page {
+                    hash: hash.to_string(),
+                    word_count: 2,
+                    group_hash: String::new(),
+                })
+                .collect(),
+            average_page_length: 2.0,
+            chunks: Vec::<IndexChunk>::new(),
+            filter_chunks: BTreeMap::new(),
+            words,
+            filters: BTreeMap::new(),
+            sorts: BTreeMap::new(),
+            meta_fields: vec![],
+            ranking_weights: crate::RankingWeights::default(),
+        };
+
+        let (unfiltered, pages) = index.exact_term("cat dog", "cat dog", None, false);
+        assert_eq!(unfiltered, vec![0]);
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].page, "zero");
+
+        // A filter narrows the results, but not the unfiltered set.
+        let mut filter = BitSet::new();
+        filter.insert(1);
+        let (unfiltered, pages) = index.exact_term("cat dog", "cat dog", Some(filter), false);
+        assert_eq!(unfiltered, vec![0]);
+        assert!(pages.is_empty());
+
+        let mut filter = BitSet::new();
+        filter.insert(1);
+        let (unfiltered, pages) = index.exact_term("dog cat", "dog cat", Some(filter), false);
+        assert_eq!(unfiltered, vec![1, 2]);
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0].page, "one");
     }
 }

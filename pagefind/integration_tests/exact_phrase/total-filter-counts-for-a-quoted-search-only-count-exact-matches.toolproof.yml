@@ -1,0 +1,52 @@
+name: >-
+  Exact Phrase Matching > Total filter counts for a quoted search only count
+  exact matches
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/cat/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><span
+      data-pagefind-filter="color">Black</span>
+
+      <h1>Happy post about cats</h1></body></html>
+  - step: I have a "public/dog/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body><span
+      data-pagefind-filter="color">White</span>
+
+      <h1>A post about how cats do not like dogs</h1></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: >-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+
+      await pagefind.filters(); // Load filters
+
+      let search = await pagefind.search(`"about cats"`, {
+          filters: {
+              color: "White"
+          }
+      });
+
+      let counts = Object.entries(search.totalFilters.color).map(([value,
+      count]) => `${value}(${count})`);
+
+
+      document.querySelector('[data-count]').innerText =
+      `results:${search.results.length} total:${search.unfilteredResultCount}`;
+
+      document.querySelector('[data-result]').innerText = counts.join(', ');
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-count]");
+      toolproof.assert_eq(val.innerHTML, `results:0 total:1`);
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-result]");
+      toolproof.assert_eq(val.innerHTML, `Black(1), White(0)`);
