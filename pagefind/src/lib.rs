@@ -130,6 +130,10 @@ impl SearchState {
     }
 
     pub async fn build_indexes(&mut self) -> Result<()> {
+        self.build_indexes_with_consumption(false).await
+    }
+
+    async fn build_indexes_with_consumption(&mut self, consume: bool) -> Result<()> {
         let log = &self.options.logger;
 
         let used_custom_body = self.fossicked_pages.iter().any(|page| page.has_custom_body);
@@ -163,20 +167,29 @@ impl SearchState {
 
         log.status("[Reading languages]");
 
-        let pages_with_data = self.fossicked_pages.iter().filter(|d| {
+        let include = |d: &FossickedData| {
             if used_custom_body && !d.has_custom_body && !d.force_inclusion {
                 return false;
             }
             !d.word_data.is_empty()
-        });
+        };
+        let pages_with_data: Box<dyn Iterator<Item = FossickedData> + Send> = if consume {
+            Box::new(
+                std::mem::take(&mut self.fossicked_pages)
+                    .into_iter()
+                    .filter(include),
+            )
+        } else {
+            Box::new(self.fossicked_pages.iter().filter(|d| include(d)).cloned())
+        };
 
         let mut language_map: HashMap<String, Vec<fossick::FossickedData>> = HashMap::new();
         for page in pages_with_data {
             let language = page.language.clone();
             if let Some(lang_pages) = language_map.get_mut(&language) {
-                lang_pages.push(page.clone());
+                lang_pages.push(page);
             } else {
-                language_map.insert(language, vec![page.clone()]);
+                language_map.insert(language, vec![page]);
             }
         }
 
