@@ -951,6 +951,7 @@ mod tests {
         let (_, pages) = index.exact_term("cafe latte", "cafe latte", None, true);
         assert!(pages.is_empty());
     }
+
     #[test]
     fn exact_phrase_unfiltered_results_only_include_phrase_matches() {
         let page_word = |page, position| PageWord {
