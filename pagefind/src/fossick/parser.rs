@@ -154,7 +154,41 @@ impl<'a> DomParser<'a> {
             .join(", ");
         let mut anchor_counter = 0;
 
+        // Config rules run before every other handler, so the attributes they set are
+        // read by the handlers below exactly as if the page had carried them itself.
+        let rule_handlers = options
+            .rules
+            .iter()
+            .filter_map(|rule| match rule.selector.parse::<Selector>() {
+                Ok(_) => {
+                    let attributes = rule.attributes.clone();
+                    Some(element!(rule.selector.clone(), move |el| {
+                        for (name, value) in attributes.iter() {
+                            // An attribute written in the HTML is more specific than a
+                            // rule matching a whole selector, so the page wins.
+                            if el.has_attribute(name) {
+                                continue;
+                            }
+                            if el.set_attribute(name, value).is_err() {
+                                // Only an invalid attribute name can fail here, and that
+                                // is reported once when the rules are read.
+                            }
+                        }
+                        Ok(())
+                    }))
+                }
+                Err(error) => {
+                    options.logger.warn(format!(
+                        "Ignoring the rule selector {:?}, which Pagefind can't parse: {error}. Indexing will continue without it.",
+                        rule.selector
+                    ));
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
         let rewriter = HtmlRewriter::new(
+            rule_handlers.into_iter().chain(
             vec![
                     enclose! { (data) element!("html", move |el| {
                         let mut data = data.borrow_mut();
@@ -563,8 +597,7 @@ impl<'a> DomParser<'a> {
                         }
                         Ok(())
                     })},
-            ]
-            .into_iter()
+            ])
             .fold(Settings::new().with_strict(false), |settings, handler| {
                 settings.append_element_content_handler(handler)
             }),
@@ -769,6 +802,93 @@ mod tests {
             let _ = rewriter.write(line.as_bytes());
         }
         rewriter.wrap()
+    }
+
+    fn test_parse_with_rules(
+        mut input: Vec<&'static str>,
+        rules: &[(&'static str, &[(&'static str, &'static str)])],
+    ) -> DomParserResult {
+        use clap::CommandFactory;
+        let config_args = vec![twelf::Layer::Clap(
+            crate::PagefindInboundConfig::command().get_matches_from(vec![
+                "pagefind",
+                "--source",
+                "not_important",
+            ]),
+        )];
+        let mut config =
+            SearchOptions::load(crate::PagefindInboundConfig::with_layers(&config_args).unwrap())
+                .unwrap();
+        config.rules = rules
+            .iter()
+            .map(|(selector, attributes)| crate::options::PagefindRule {
+                selector: selector.to_string(),
+                attributes: attributes
+                    .iter()
+                    .map(|(name, value)| (name.to_string(), value.to_string()))
+                    .collect(),
+            })
+            .collect();
+
+        let mut rewriter = DomParser::new(&config);
+        input.insert(0, "<html><body>");
+        input.push("</body></html>");
+        for line in input {
+            let _ = rewriter.write(line.as_bytes());
+        }
+        rewriter.wrap()
+    }
+
+    #[test]
+    fn rules_apply_pagefind_attributes_by_selector() {
+        let data = test_parse_with_rules(
+            vec!["<div id='nav'>Dropped</div>", "<p>Kept</p>"],
+            &[("#nav", &[("data-pagefind-ignore", "all")])],
+        );
+
+        assert_eq!(data.digest, "Kept.");
+    }
+
+    #[test]
+    fn rules_can_pick_the_body() {
+        let data = test_parse_with_rules(
+            vec![
+                "<div class='chrome'>Chrome</div>",
+                "<div class='main'>Real content</div>",
+            ],
+            &[(".main", &[("data-pagefind-body", "")])],
+        );
+
+        assert_eq!(data.digest, "Real content.");
+    }
+
+    #[test]
+    fn an_attribute_in_the_page_wins_over_a_rule() {
+        let data = test_parse_with_rules(
+            vec![
+                "<p class='weighted' data-pagefind-weight='2'>Own weight</p>",
+                "<p class='weighted'>Rule weight</p>",
+            ],
+            &[(".weighted", &[("data-pagefind-weight", "5")])],
+        );
+
+        // The first paragraph keeps the weight written in the page, the second one
+        // takes the weight from the rule, so the rule applies without overriding.
+        assert!(data.digest.contains("___PAGEFIND_WEIGHT___2 Own weight."));
+        assert!(data.digest.contains("___PAGEFIND_WEIGHT___5 Rule weight."));
+    }
+
+    #[test]
+    fn unsupported_rule_selector_does_not_halt_indexing() {
+        let data = test_parse_with_rules(
+            vec!["<p>Kept</p>", "<div class='ad'>Dropped</div>"],
+            &[
+                (":not(.a b)", &[("data-pagefind-ignore", "all")]),
+                (".ad", &[("data-pagefind-ignore", "all")]),
+            ],
+        );
+
+        assert_eq!(data.digest, "Kept.");
     }
 
     #[test]
