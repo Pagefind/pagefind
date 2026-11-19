@@ -1,0 +1,75 @@
+name: Python API > Add custom records in batch
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/real/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body> <p>Real file on disk with batch content</p></body></html>
+  - step: I have a "public/run.py" file with the content {python}
+    python: |2-
+      import sys
+      sys.path.append('%toolproof_process_directory%/wrappers/python/src')
+
+      import asyncio
+      import os
+      from pagefind.index import PagefindIndex
+
+      async def main():
+        async with PagefindIndex() as index:
+          await index.add_directory(path="real")
+
+          records = [
+              {
+                  "url": "/batch/1/",
+                  "content": "First batch record about testing",
+                  "language": "en",
+                  "meta": {"title": "Batch Record 1"},
+                  "filters": {"category": ["test"]},
+                  "sort": {"date": "2024-01-01"}
+              },
+              {
+                  "url": "/batch/2/",
+                  "content": "Second batch record about searching",
+                  "language": "en",
+                  "meta": {"title": "Batch Record 2"}
+              },
+              {
+                  "url": "/batch/3/",
+                  "content": "Third batch record about indexing",
+                  "language": "en"
+              },
+          ]
+          responses = await index.add_custom_records(records=records)
+          print(f"Added {len(responses)} records")
+          for r in responses:
+              print(f"  {r['page_url']}: {r['page_word_count']} words")
+
+          files = await index.get_files()
+          for file in files:
+              output_path = os.path.join("pagefind", file["path"])
+              dir = os.path.dirname(output_path)
+              if not os.path.exists(dir):
+                  os.makedirs(dir, exist_ok=True)
+              with open(output_path, 'wb') as f:
+                  f.write(file["content"])
+
+      if __name__ == "__main__":
+          asyncio.run(main())
+  - macro: I run Pagefind Python as "run.py" in "public"
+  - step: 'stdout should contain "Added 3 records"'
+  - step: 'stdout should contain "/batch/1/"'
+  - step: 'stdout should contain "/batch/2/"'
+  - step: 'stdout should contain "/batch/3/"'
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("batch");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      let matches = pages.map(p => p.url).sort().join(', ');
+      toolproof.assert_eq(matches, `/, /batch/1/, /batch/2/, /batch/3/`);
+  - step: In my browser, the console should be empty

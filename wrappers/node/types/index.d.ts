@@ -64,24 +64,6 @@ export interface PagefindServiceConfig {
     maxFragments?: number,
 }
 
-
-export interface NewIndexResponse {
-    errors: string[],
-    index?: PagefindIndex
-}
-
-/**
- * A Pagefind index that exists in the backend service before being built
- */
-export interface PagefindIndex {
-    addHTMLFile: typeof addHTMLFile,
-    addCustomRecord: typeof addCustomRecord,
-    addDirectory: typeof addDirectory,
-    writeFiles: typeof writeFiles,
-    getFiles: typeof getFiles,
-    deleteIndex: typeof deleteIndex,
-}
-
 /**
  * Index an HTML file that isn't on disk
  */
@@ -91,9 +73,44 @@ declare function addHTMLFile(file: HTMLFile): Promise<NewFileResponse>;
  */
 declare function addCustomRecord(record: CustomRecord): Promise<NewFileResponse>;
 /**
+ * Index multiple custom records in a single batch
+ */
+declare function addCustomRecords(records: CustomRecordInput[]): Promise<NewFileResponse[]>;
+/**
  * Index a directory of HTML files from disk
  */
 declare function addDirectory(path: SiteDirectory): Promise<IndexingResponse>;
+/**
+ * Write the index files to disk
+ */
+declare function writeFiles(options?: WriteOptions): Promise<WriteFilesResponse>;
+/**
+ * Get an in-memory copy of the built index files
+ */
+declare function getFiles(): Promise<GetFilesResponse>;
+/**
+ * Delete this index and clear it from memory
+ */
+declare function deleteIndex(): Promise<null>;
+
+/**
+ * A Pagefind index that exists in the backend service before being built
+ */
+export interface PagefindIndex {
+    addHTMLFile: typeof addHTMLFile,
+    addCustomRecord: typeof addCustomRecord,
+    addCustomRecords: typeof addCustomRecords,
+    addDirectory: typeof addDirectory,
+    writeFiles: typeof writeFiles,
+    getFiles: typeof getFiles,
+    deleteIndex: typeof deleteIndex,
+}
+export interface NewIndexResponse {
+    errors: string[],
+    index?: PagefindIndex
+}
+
+
 
 /**
  * The data required for Pagefind to index an HTML file that isn't on disk
@@ -153,13 +170,28 @@ export interface CustomRecord {
 }
 
 /**
- * The data required for Pagefind to index the files in a directory
- * @example
- * {
- *   path: "public",
- *   glob: "**\/*.{html}"
- * }
+ * The data required for Pagefind to index a custom record in a batch request.
+ * Includes optional chunking fields for future transport compatibility.
  */
+export interface CustomRecordInput {
+    /** The output URL of this record. Pagefind will not alter this */
+    url: string,
+    /** The raw content of this record */
+    content: string,
+    /** What language is this record written in. Multiple languages will be split into separate indexes. Expects an ISO 639-1 code. */
+    language: string,
+    /** The metadata to attach to this record. Supplying a `title` is highly recommended */
+    meta?: Record<string, string>,
+    /** The filters to attach to this record */
+    filters?: Record<string, string[]>,
+    /** The sort keys to attach to this record */
+    sort?: Record<string, string>,
+    /** Optional chunk identifier for future chunked transport */
+    chunk_id?: number,
+    /** Optional total chunk count for future chunked transport */
+    total_chunks?: number,
+}
+
 export interface SiteDirectory {
     /**
      * The path to the directory to index.

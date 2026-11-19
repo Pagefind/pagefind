@@ -2,12 +2,13 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::service::api::IndexedFileResponse;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub(super) struct ServiceResponse {
     pub(super) message_id: Option<u32>,
     pub(super) payload: ResponseAction,
 }
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type")]
 pub(super) enum ResponseAction {
@@ -25,6 +26,9 @@ pub(super) enum ResponseAction {
     },
     IndexedDir {
         page_count: u32,
+    },
+    IndexedFiles {
+        files: Vec<IndexedFileResponse>,
     },
     BuildIndex {},
     WriteFiles {

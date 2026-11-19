@@ -9,7 +9,7 @@ pub mod api;
 use requests::*;
 use responses::*;
 
-mod requests;
+pub mod requests;
 mod responses;
 
 pub async fn run_service() {
@@ -78,7 +78,7 @@ pub async fn run_service() {
             let encoded = general_purpose::STANDARD.encode(serde_json::to_vec(&msg).unwrap());
 
             stdout.write_all(encoded.as_bytes()).unwrap();
-            stdout.write(b",").unwrap();
+            stdout.write_all(b",").unwrap();
             stdout.flush().unwrap();
         }
     });
@@ -180,6 +180,14 @@ pub async fn run_service() {
                             page_url: data.page_url.clone(),
                             page_meta: data.page_meta.clone(),
                         }),
+                        Err(message) => err(&message.to_string()),
+                    }
+                }
+            }
+            RequestAction::AddRecords { index_id, records } => {
+                if let Some(index) = get_index(&mut indexes, index_id, err) {
+                    match index.add_custom_records(records).await {
+                        Ok(files) => send(ResponseAction::IndexedFiles { files }),
                         Err(message) => err(&message.to_string()),
                     }
                 }

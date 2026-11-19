@@ -1,0 +1,79 @@
+name: Node API Base Tests > Add custom records in batch
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: >-
+      I have a "public/real/index.html" file with the content
+      {html}
+    html: >-
+      <!DOCTYPE html><html lang="en"><head></head><body> <p>Real file on disk with batch content</p></body></html>
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+       import fs from "fs";
+       import path from "path";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex();
+           await index.addDirectory({ path: "real" });
+
+           const records = [
+               {
+                   url: "/batch/1/",
+                   content: "First batch record about testing",
+                   language: "en",
+                   meta: { title: "Batch Record 1" },
+                   filters: { category: ["test"] },
+                   sort: { date: "2024-01-01" }
+               },
+               {
+                   url: "/batch/2/",
+                   content: "Second batch record about searching",
+                   language: "en",
+                   meta: { title: "Batch Record 2" }
+               },
+               {
+                   url: "/batch/3/",
+                   content: "Third batch record about indexing",
+                   language: "en"
+               },
+           ];
+           const responses = await index.addCustomRecords(records);
+           console.log(`Added ${responses.files.length} records`);
+           for (const r of responses.files) {
+               console.log(`  ${r.url}: ${r.uniqueWords} words`);
+           }
+
+           const { files } = await index.getFiles();
+
+           for (const file of files) {
+               const output_path = path.join("pagefind", file.path);
+               const dir = path.dirname(output_path);
+               if (!fs.existsSync(dir)){
+                   fs.mkdirSync(dir, { recursive: true });
+               }
+
+               fs.writeFileSync(output_path, file.content);
+           }
+           console.log("Donezo!");
+       };
+
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: 'stdout should contain "Added 3 records"'
+  - step: 'stdout should contain "/batch/1/"'
+  - step: 'stdout should contain "/batch/2/"'
+  - step: 'stdout should contain "/batch/3/"'
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      let search = await pagefind.search("batch");
+      let pages = await Promise.all(search.results.map(r => r.data()));
+      let matches = pages.map(p => p.url).sort().join(", ");
+      toolproof.assert_eq(matches, `/, /batch/1/, /batch/2/, /batch/3/`);
+  - step: In my browser, the console should be empty
