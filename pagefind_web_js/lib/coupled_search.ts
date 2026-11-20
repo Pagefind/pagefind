@@ -619,7 +619,8 @@ export class PagefindInstance {
     let start = Date.now();
     let ptr = await this.getPtr();
     let filter_only = term === null;
-    term = term ?? "";
+    // A soft hyphen in a word copied from a page only marks where it may break, as it does in the index
+    term = (term ?? "").replace(/\u00AD/g, "");
     let exact_search = /^\s*".+"\s*$/.test(term);
     if (exact_search) {
       log(`Running an exact search`);
