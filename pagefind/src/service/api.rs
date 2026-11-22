@@ -208,7 +208,7 @@ impl PagefindIndex {
     pub async fn write_files(&mut self, output_path: Option<String>) -> Result<String> {
         let mut state = self.search_index.lock().await;
         state.build_indexes().await?;
-        let resolved_output_path = state.write_files(output_path.map(Into::into)).await;
+        let resolved_output_path = state.write_files(output_path.map(Into::into)).await?;
 
         Ok(resolved_output_path.to_string_lossy().into())
     }
@@ -266,5 +266,37 @@ mod tests {
         assert!(filenames
             .iter()
             .any(|f| f.to_string_lossy().ends_with(".pf_index")));
+    }
+
+    #[tokio::test]
+    async fn test_write_files_to_an_existing_file_errors() {
+        let output_path = std::env::temp_dir().join(format!(
+            "pagefind-write-files-to-a-file-{}",
+            std::process::id()
+        ));
+        std::fs::write(&output_path, "not a directory").unwrap();
+
+        let options = PagefindServiceConfig::builder()
+            .force_language("en".to_string())
+            .build();
+        let mut index = PagefindIndex::new(Some(options)).unwrap();
+        index
+            .add_html_file(
+                Some("test/index.html".into()),
+                None,
+                "<html><body><h1>Test content</h1></body></html>".into(),
+            )
+            .await
+            .expect("Adding a file should succeed");
+
+        let response = index
+            .write_files(Some(output_path.to_string_lossy().into()))
+            .await;
+        std::fs::remove_file(&output_path).unwrap();
+
+        let err = response.expect_err("Writing to a file path should fail");
+        assert!(err
+            .to_string()
+            .contains("Pagefind could not create the output directory"));
     }
 }

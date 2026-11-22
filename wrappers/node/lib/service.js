@@ -35,6 +35,15 @@ export class PagefindService {
         (this.backend.stdout).on('data', (data) => this.handleIncomingChunk(data));
         (this.backend.stdin).on('error', (err) => this.close(err));
         this.backend.on('error', (err) => this.close(err));
+        // If the backend exits on its own (e.g. it panicked), reject any requests
+        // still waiting on a response instead of leaving their promises pending.
+        // `close` fires once stdout has ended, so responses the backend sent
+        // before exiting have already been handled.
+        const backend = this.backend;
+        backend.on('close', (code, signal) => {
+            if (this.backend !== backend) return;
+            this.close(new Error(`Pagefind backend exited unexpectedly (${signal ? `signal ${signal}` : `exit code ${code}`})`));
+        });
 
         this.refCount = 0
         this.backend.unref?.();
@@ -58,9 +67,11 @@ export class PagefindService {
         this.backend?.stdin?.destroy?.()
         this.backend?.kill?.();
         this.backend = null;
-        for (const [, cb] of Object.entries(this.callbacks)) {
+        const callbacks = this.callbacks;
+        this.callbacks = {};
+        for (const [, cb] of Object.entries(callbacks)) {
             cb({
-                exception: new Error("Pagefind backend closed"),
+                exception: new Error(err ? `Pagefind backend closed: ${err.message}` : "Pagefind backend closed"),
                 err: null,
                 result: null
             })

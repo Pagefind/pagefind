@@ -1,0 +1,12 @@
+name: Build Options > Output path that is a file fails with an error
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><h1>world</h1></body></html>
+  - step: I have a "misc/search" file with the content {text}
+    text: not a directory
+  - macro: I run a failing Pagefind with "--output-path misc/search"
+  - "stderr should contain 'Pagefind could not create the output directory'"
+  - "stderr should not contain 'panicked'"
