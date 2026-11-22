@@ -1,10 +1,9 @@
-use std::{cmp::Ordering, path::PathBuf};
+use std::{cmp::Ordering, collections::BTreeMap, path::PathBuf};
 
 use anyhow::{bail, Result};
 use either::Either;
 use fossick::{FossickedData, Fossicker};
 use futures::future::join_all;
-use hashbrown::HashMap;
 use index::PagefindIndexes;
 use options::{PagefindInboundConfig, SearchOptions};
 use output::SyntheticFile;
@@ -51,10 +50,14 @@ impl SearchState {
 
         log.status("[Walking source directory]");
         if let Ok(glob) = Glob::new(&glob) {
-            Ok(glob
+            let mut paths: Vec<PathBuf> = glob
                 .walk(&dir)
                 .filter_map(Result::ok)
                 .map(|e| e.into_path())
+                .collect();
+            paths.sort_unstable();
+            Ok(paths
+                .into_iter()
                 .map(|file_path| Fossicker::new_relative_to(file_path, dir.clone()))
                 .collect())
         } else {
@@ -170,7 +173,7 @@ impl SearchState {
             !d.word_data.is_empty()
         });
 
-        let mut language_map: HashMap<String, Vec<fossick::FossickedData>> = HashMap::new();
+        let mut language_map: BTreeMap<String, Vec<fossick::FossickedData>> = BTreeMap::new();
         for page in pages_with_data {
             let language = page.language.clone();
             if let Some(lang_pages) = language_map.get_mut(&language) {
@@ -408,5 +411,246 @@ impl SearchState {
                 .strip_prefix(&self.options.working_directory)
                 .unwrap_or(&self.options.bundle_output)
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn test_options() -> SearchOptions {
+        let mut config: PagefindInboundConfig =
+            serde_json::from_str("{}").expect("all fields have serde defaults");
+        config.service = true;
+        config.silent = true;
+        SearchOptions::load(config).expect("default service options should load")
+    }
+
+    #[test]
+    fn walk_for_files_returns_paths_in_sorted_order() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "pagefind_walk_test_{}_{}",
+            std::process::id(),
+            unique
+        ));
+        std::fs::create_dir_all(root.join("z")).unwrap();
+        std::fs::create_dir_all(root.join("a/sub")).unwrap();
+        std::fs::create_dir_all(root.join("m")).unwrap();
+
+        // Create files intentionally out of sorted order
+        for rel in [
+            "z/index.html",
+            "m/page.html",
+            "a/sub/second.html",
+            "a/first.html",
+            "index.html",
+        ] {
+            std::fs::write(
+                root.join(rel),
+                format!("<html lang=\"en\"><body><p>{rel}</p></body></html>"),
+            )
+            .unwrap();
+        }
+
+        let options = test_options();
+        let state = SearchState::new(options.clone());
+        let walked = state
+            .walk_for_files(root.clone(), "**/*.html".into())
+            .expect("walk_for_files should succeed");
+        let urls: Vec<String> = walked
+            .into_iter()
+            .map(|f| f.fossick_sync(&options).unwrap().url)
+            .collect();
+
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(
+            urls,
+            vec![
+                "/a/first.html",
+                "/a/sub/second.html",
+                "/",
+                "/m/page.html",
+                "/z/",
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn pagefind_index_get_files_is_byte_identical_regardless_of_insertion_order() {
+        use crate::api::PagefindIndex;
+        use std::collections::BTreeMap;
+
+        async fn build_bundle(reverse: bool) -> Vec<(PathBuf, Vec<u8>)> {
+            let mut index = PagefindIndex::new(None).unwrap();
+
+            // Mix explicit languages (en, fr), missing lang ("unknown" -> merged into en),
+            // HTML files, custom records, diacritic variants, filters, and sorts.
+            enum Entry {
+                Html(&'static str, &'static str),
+                Custom(&'static str, &'static str, &'static str),
+            }
+
+            let mut entries = vec![
+                Entry::Html(
+                    "/z-en/",
+                    r#"<html lang="en"><body><h1 data-pagefind-meta="title">Zeta</h1><p data-pagefind-filter="tag:shared" data-pagefind-sort="n:2">café shared alpha</p></body></html>"#,
+                ),
+                Entry::Html(
+                    "/a-unknown/",
+                    r#"<html><body><h1 data-pagefind-meta="title">NoLang</h1><p data-pagefind-filter="tag:shared" data-pagefind-sort="n:1">cafè shared beta</p></body></html>"#,
+                ),
+                Entry::Html(
+                    "/m-en/",
+                    r#"<html lang="en"><body><h1 data-pagefind-meta="title">Mid</h1><p data-pagefind-filter="tag:mid" data-pagefind-sort="n:1">cafê shared gamma</p></body></html>"#,
+                ),
+                Entry::Custom("/b-fr/", "bonjour café monde", "fr"),
+                Entry::Custom("/a-fr/", "salut cafè monde", "fr"),
+            ];
+
+            if reverse {
+                entries.reverse();
+            }
+
+            for entry in entries {
+                match entry {
+                    Entry::Html(url, html) => {
+                        index
+                            .add_html_file(None, Some(url.to_string()), html.to_string())
+                            .await
+                            .unwrap();
+                    }
+                    Entry::Custom(url, content, lang) => {
+                        let mut filters = BTreeMap::new();
+                        filters.insert("lang_group".to_string(), vec![lang.to_string()]);
+                        index
+                            .add_custom_record(
+                                url.to_string(),
+                                content.to_string(),
+                                lang.to_string(),
+                                None,
+                                Some(filters),
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                    }
+                }
+            }
+
+            index
+                .get_files()
+                .await
+                .unwrap()
+                .into_iter()
+                .map(|f| (f.filename, f.contents))
+                .collect()
+        }
+
+        let files_forward = build_bundle(false).await;
+        let files_reversed = build_bundle(true).await;
+
+        assert_eq!(files_forward.len(), files_reversed.len());
+        let forward_names: Vec<_> = files_forward.iter().map(|(p, _)| p).collect();
+        let reversed_names: Vec<_> = files_reversed.iter().map(|(p, _)| p).collect();
+        assert_eq!(
+            forward_names, reversed_names,
+            "generated file list and hashes must match in exact order"
+        );
+        assert_eq!(
+            files_forward, files_reversed,
+            "generated file contents must be byte-for-byte identical"
+        );
+    }
+
+    #[tokio::test]
+    async fn add_directory_produces_identical_bundle_regardless_of_file_creation_order() {
+        use crate::api::PagefindIndex;
+
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir_a = std::env::temp_dir().join(format!(
+            "pagefind_dir_det_a_{}_{}",
+            std::process::id(),
+            unique
+        ));
+        let dir_b = std::env::temp_dir().join(format!(
+            "pagefind_dir_det_b_{}_{}",
+            std::process::id(),
+            unique
+        ));
+
+        let files = [
+            (
+                "z/index.html",
+                r#"<html lang="en"><body><h1>Zeta</h1><p data-pagefind-filter="kind:post" data-pagefind-sort="order:2">café shared</p></body></html>"#,
+            ),
+            (
+                "a/sub/index.html",
+                r#"<html lang="en"><body><h1>Alpha</h1><p data-pagefind-filter="kind:post" data-pagefind-sort="order:1">cafè shared</p></body></html>"#,
+            ),
+            (
+                "m/page.html",
+                r#"<html><body><h1>Unknown Lang</h1><p data-pagefind-filter="kind:note" data-pagefind-sort="order:1">cafê shared</p></body></html>"#,
+            ),
+            (
+                "fr/bonjour.html",
+                r#"<html lang="fr"><body><h1>Bonjour</h1><p>café français</p></body></html>"#,
+            ),
+        ];
+
+        let write_site = |root: &PathBuf, reverse: bool| {
+            let iter: Vec<_> = if reverse {
+                files.iter().rev().collect()
+            } else {
+                files.iter().collect()
+            };
+            for (rel, content) in iter {
+                let path = root.join(rel);
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, content).unwrap();
+            }
+        };
+
+        write_site(&dir_a, false);
+        write_site(&dir_b, true);
+
+        let mut idx_a = PagefindIndex::new(None).unwrap();
+        idx_a
+            .add_directory(dir_a.to_string_lossy().into_owned(), None)
+            .await
+            .unwrap();
+        let bundle_a: Vec<(PathBuf, Vec<u8>)> = idx_a
+            .get_files()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|f| (f.filename, f.contents))
+            .collect();
+
+        let mut idx_b = PagefindIndex::new(None).unwrap();
+        idx_b
+            .add_directory(dir_b.to_string_lossy().into_owned(), None)
+            .await
+            .unwrap();
+        let bundle_b: Vec<(PathBuf, Vec<u8>)> = idx_b
+            .get_files()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|f| (f.filename, f.contents))
+            .collect();
+
+        let _ = std::fs::remove_dir_all(&dir_a);
+        let _ = std::fs::remove_dir_all(&dir_b);
+
+        assert_eq!(bundle_a, bundle_b);
     }
 }
