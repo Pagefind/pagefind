@@ -3,3 +3,8 @@ rustflags = ["-Ctarget-feature=+crt-static"]
 
 [target.aarch64-pc-windows-msvc]
 rustflags = ["-Ctarget-feature=+crt-static"]
+
+[env]
+# Keep C dependencies (e.g. tikv-jemalloc-sys) on baseline x86-64 when building
+# on hosts whose system GCC defaults to -march=x86-64-v3 (such as Ubuntu 26.04+).
+CFLAGS_x86_64_unknown_linux_musl = "-march=x86-64 -mtune=generic"
