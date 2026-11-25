@@ -51,9 +51,17 @@ export interface PagefindAnchor {
 export type FilterCounts = Record<string, Record<string, number>>;
 export type FilterSelection = Record<string, string[]>;
 
+export type ProcessTerm = (term: string) => string;
+
+export type SortOption = string | Record<string, string>;
+
 export interface InstanceOptions {
   bundlePath?: string;
   mergeIndex?: MergeIndexConfig[];
+  preload?: boolean;
+  faceted?: boolean;
+  sort?: SortOption;
+  processTerm?: ProcessTerm;
   [key: string]: unknown;
 }
 

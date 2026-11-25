@@ -13,6 +13,8 @@ import type {
   FilterSelection,
   InstanceOptions,
   MergeIndexConfig,
+  ProcessTerm,
+  SortOption,
   InstanceEvent,
   PagefindError,
   TranslationStrings,
@@ -57,6 +59,29 @@ type HookMap = {
   [K in InstanceEvent]: Array<HookCallback | HookEntry>;
 };
 
+export function normalizeSort(sort: SortOption): Record<string, string> {
+  if (typeof sort !== "string") return { ...sort };
+  const [key, direction = "asc"] = sort.split(":");
+  return { [key]: direction };
+}
+
+/**
+ * Strip the options handled by the Component UI so they aren't passed on to
+ * Pagefind, which would warn about unknown options.
+ */
+function toPagefindOptions(opts: InstanceOptions): Record<string, unknown> {
+  const {
+    bundlePath,
+    mergeIndex,
+    preload,
+    faceted,
+    sort,
+    processTerm,
+    ...pagefindOpts
+  } = opts;
+  return pagefindOpts;
+}
+
 export class Instance {
   private __pagefind__: PagefindAPI | null = null;
   private __loadPromise__: Promise<void> | null = null;
@@ -64,6 +89,7 @@ export class Instance {
   private __hooks__: HookMap;
 
   private _translations: TranslationStrings | null = null;
+  private _processTerm: ProcessTerm | null = null;
   private _userTranslations: Record<string, string> = {};
   private _direction: TextDirection = "ltr";
   private _languageSet: boolean = false;
@@ -106,27 +132,60 @@ export class Instance {
       mergeIndex: opts.mergeIndex ?? [],
     };
 
-    const pagefindOpts = { ...opts };
-    delete pagefindOpts.bundlePath;
-    delete pagefindOpts.mergeIndex;
-
-    this.pagefindOptions = pagefindOpts;
+    this.__applyUiOptions__(opts);
+    this.pagefindOptions = toPagefindOptions(opts);
 
     this._announcer = new Announcer(this.generateId.bind(this));
+
+    if (opts.preload) this.__preload__();
   }
 
   applyOptions(opts: InstanceOptions): void {
+    const { bundlePath, mergeIndex, preload } = opts;
+    const pagefindOpts = toPagefindOptions(opts);
+
+    this.__applyUiOptions__(opts);
+
     if (this.__pagefind__) {
-      console.warn(
-        `[Pagefind Component UI]: Instance "${this.name}" has already loaded, configuration ignored`,
-      );
+      if (
+        bundlePath !== undefined ||
+        mergeIndex !== undefined ||
+        Object.keys(pagefindOpts).length
+      ) {
+        console.warn(
+          `[Pagefind Component UI]: Instance "${this.name}" has already loaded, configuration ignored`,
+        );
+      }
+      this.__startFacetedSearch__();
       return;
     }
 
-    const { bundlePath, mergeIndex, ...pagefindOpts } = opts;
     if (bundlePath !== undefined) this.options.bundlePath = bundlePath;
     if (mergeIndex !== undefined) this.options.mergeIndex = mergeIndex;
     this.pagefindOptions = { ...this.pagefindOptions, ...pagefindOpts };
+
+    if (preload) this.__preload__();
+  }
+
+  /**
+   * Apply the options that belong to the Component UI rather than to Pagefind.
+   */
+  private __applyUiOptions__(opts: InstanceOptions): void {
+    if (opts.faceted !== undefined) this.faceted = opts.faceted;
+    if (opts.sort !== undefined) this.searchSort = normalizeSort(opts.sort);
+    if (opts.processTerm !== undefined) this._processTerm = opts.processTerm;
+  }
+
+  private __preload__(): void {
+    this.triggerLoad().catch((error) => console.error(error));
+  }
+
+  /**
+   * In faceted mode, show all results before a search has been run.
+   */
+  private __startFacetedSearch__(): void {
+    if (!this.__pagefind__ || !this.faceted || this.__searchID__ !== 0) return;
+    this.triggerSearch("");
   }
 
   generateId(prefix: string, length = 2): string {
@@ -598,7 +657,11 @@ export class Instance {
     if (!this.__pagefind__) return;
 
     const searchTerm = term && term.length ? term : null;
-    const results = await this.__pagefind__.search(searchTerm, {
+    const processedTerm =
+      searchTerm && this._processTerm
+        ? this._processTerm(searchTerm)
+        : searchTerm;
+    const results = await this.__pagefind__.search(processedTerm, {
       filters,
       sort: this.searchSort,
     });
@@ -715,10 +778,7 @@ export class Instance {
       total: this.totalFilters,
     });
 
-    // In faceted mode, trigger initial search to show all results
-    if (this.faceted && this.__searchID__ === 0) {
-      this.triggerSearch("");
-    }
+    this.__startFacetedSearch__();
   }
 
   /**
