@@ -148,6 +148,11 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install -y musl-tools musl-dev
+      - name: Install Baseline Verification Tooling
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt update -y
+          sudo apt install -y qemu-user binutils
       - name: Install aarch64 Tooling
         if: matrix.target == 'aarch64-unknown-linux-musl'
         run: |
@@ -263,6 +268,13 @@ jobs:
         if: matrix.build == 'freebsd'
         working-directory: ./pagefind
         run: cross build --release --target ${{ matrix.target }}
+
+      - name: Verify x86_64 Baseline Compatibility
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          bash ./.backstage/verify_x86_64_baseline.sh \
+            target/${{ matrix.target }}/release/pagefind \
+            target/${{ matrix.target }}/release/pagefind_extended
 
       - name: Create Standard Release
         run: |
