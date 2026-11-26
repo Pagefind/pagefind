@@ -42,10 +42,10 @@ Groups can also be opened by listing their keys in the `open` attribute.
 
 ## Faceted Search Mode
 
-For catalog-style interfaces where users browse by filters without requiring a search term, enable faceted mode via [`<pagefind-config>`](/docs/components/config/):
+For catalog-style interfaces where users browse by filters without requiring a search term, enable faceted mode via `<pagefind-config faceted>`, or the `faceted` option of `configureInstance()`:
 
 ```html
 <pagefind-config faceted preload></pagefind-config>
 ```
 
-In faceted mode, all results are shown initially and update immediately when filters are changed. See the [config component documentation](/docs/components/config/#faceted-search-mode) for details.
+In faceted mode, all results are shown initially and update immediately when filters are changed. See [Faceted search](/docs/search-ui-config/#faceted-search) for details.

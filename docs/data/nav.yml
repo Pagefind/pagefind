@@ -36,6 +36,8 @@ main:
         path: /docs/components/
       - label: Components
         drilldown: true
+      - label: Component UI config
+        path: /docs/search-ui-config/
       - label: CSS Variables
         path: /docs/css-variables/
       - label: Custom Components

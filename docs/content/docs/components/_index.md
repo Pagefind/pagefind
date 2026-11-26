@@ -63,4 +63,5 @@ These components can be composed together for custom layouts:
 
 ### Configuration
 
-- **[Config](/docs/components/config/)** — Set options for the Component UI, or for Pagefind itself
+- **[Component UI configuration](/docs/search-ui-config/)** — Options specific to the Component UI
+- **[Config](/docs/components/config/)** — Set options with a `<pagefind-config>` element

@@ -7,6 +7,8 @@ weight: 100
 
 Declaratively configure a Pagefind instance. Optionally include this on the page to set options like bundle path.
 
+This element is one of the two ways to configure the Component UI, the other being `configureInstance()`.
+
 ```html
 <pagefind-config bundle-path="/search/pagefind/"></pagefind-config>
 
@@ -31,6 +33,8 @@ Declaratively configure a Pagefind instance. Optionally include this on the page
 | `meta-cache-tag` | string | — | Replace the default cache-busting timestamp with a fixed string for offline/PWA support |
 | `no-worker` | boolean | `false` | Force Pagefind to run on the main thread instead of a web worker |
 | `sort` | string | — | Order results by a [sort key](/docs/sorts/) rather than by relevance, as `key:asc` or `key:desc` |
+
+The `preload`, `faceted`, and `sort` attributes are specific to the Component UI, and are covered in [Component UI configuration](/docs/search-ui-config/), along with their `configureInstance()` equivalents.
 
 ### Bundle Path Detection
 
@@ -58,42 +62,6 @@ Load from another domain:
 <pagefind-config bundle-path="https://example.com/pagefind/"></pagefind-config>
 ```
 
-### Preload
-
-Load Pagefind immediately on page load (instead of waiting for first search):
-
-```html
-<pagefind-config preload></pagefind-config>
-```
-
-This improves perceived performance for search-only pages but adds initial page weight.
-
-### Faceted Search Mode
-
-Enable faceted/browse mode for catalog-style interfaces where users filter content without requiring a search term:
-
-```html
-<pagefind-config faceted preload></pagefind-config>
-<pagefind-filter-dropdown filter="category"></pagefind-filter-dropdown>
-<pagefind-results></pagefind-results>
-```
-
-When `faceted` is enabled:
-- Searching with an empty term returns all results (instead of showing nothing)
-- Results update immediately when filters are changed
-
-Combine with `preload` to show all results immediately on page load. Without `preload`, results appear after the first user interaction (e.g., opening a filter dropdown).
-
-### Sorted Results
-
-Return results in a fixed order using a sort key from `data-pagefind-sort`:
-
-```html
-<pagefind-config sort="date:desc"></pagefind-config>
-```
-
-Sorting replaces relevancy ordering entirely, and pages that aren't tagged with the given sort key are excluded from the results.
-
 ### Named Instance
 
 Configure a specific instance:
@@ -109,27 +77,6 @@ Configure a specific instance:
 
 ## Programmatic Configuration
 
-For complex configuration, use JavaScript instead of the `<pagefind-config>` element:
+Options that can't be expressed as attributes, such as functions, or objects like `ranking` and `mergeIndex`, can be set with `configureInstance()` instead. Most attributes above have a camelCase equivalent, such as `bundlePath` for `bundle-path`.
 
-```html
-<script>
-  const { configureInstance } = window.PagefindComponents;
-
-  configureInstance("default", {
-    bundlePath: "/pagefind/",
-    mergeIndex: [
-      { bundlePath: "/other-site/pagefind/" }
-    ],
-    ranking: {
-      termFrequency: 0.8
-    }
-  });
-</script>
-
-<pagefind-input></pagefind-input>
-<pagefind-results></pagefind-results>
-```
-
-Either place this on the page as shown, or compile it into your existing JavaScript bundle.
-
-See [Pagefind Search Config](/docs/search-config/) for all available options.
+See [Search API config](/docs/search-config/) for how to call `configureInstance()`, and [Component UI configuration](/docs/search-ui-config/) for the options specific to the Component UI.

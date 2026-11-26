@@ -26,6 +26,7 @@ All pages below are available as markdown at their listed URLs.
 - [<pagefind-filter-dropdown>](https://pagefind.app/docs/components/filter-dropdown/index.md): Filter dropdown
 - [<pagefind-filter-pane>](https://pagefind.app/docs/components/filter-pane/index.md): Filter sidebar panel
 - [<pagefind-config>](https://pagefind.app/docs/components/config/index.md): Declarative configuration
+- [Component UI configuration](https://pagefind.app/docs/search-ui-config/index.md): Options specific to the Component UI, set declaratively or programmatically
 - [CSS Variables](https://pagefind.app/docs/css-variables/index.md): Theming with CSS custom properties
 - [Custom Components](https://pagefind.app/docs/custom-components/index.md): Building your own components
 

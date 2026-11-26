@@ -628,9 +628,21 @@ When `faceted` is enabled:
 
 Combine with `preload` to show all results on page load.
 
+**Component UI Options:**
+
+`preload`, `faceted`, and `sort` are specific to the Component UI, and each is accepted by `configureInstance` as well:
+
+```javascript
+configureInstance("default", {
+  preload: true,
+  faceted: true,
+  sort: "date:desc" // or { date: "desc" }
+});
+```
+
 **Programmatic Configuration:**
 
-**Important:** `configureInstance` can configure an instance that has already been created, as long as it hasn't loaded yet. If the instance has already loaded (for example after a `preload` search), the call is ignored with a console warning. To be safe, configure the instance before its first search, or use a `<pagefind-config>` element instead.
+**Important:** `bundlePath`, `mergeIndex`, and the search options must be set before the instance loads. If the instance has already loaded (for example after a `preload` search), they are ignored with a console warning. To be safe, configure the instance before its first search.
 
 ```javascript
 const { configureInstance } = window.PagefindComponents;
@@ -640,11 +652,15 @@ configureInstance("default", {
   mergeIndex: [
     { bundlePath: "/other-site/pagefind/" }
   ],
+  preload: true,
+  processTerm: (term) => term.replace(/aa/g, "ā"),
   ranking: {
     termFrequency: 0.8
   }
 });
 ```
+
+`processTerm` is specific to the Component UI and can only be set programmatically. It transforms the search term before it is passed to Pagefind; the raw term is still shown in the input, announced, and emitted by the `search` event.
 
 ---
 

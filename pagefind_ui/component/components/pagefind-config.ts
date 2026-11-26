@@ -1,5 +1,5 @@
 import { PagefindElement } from "./base-element";
-import { Instance } from "../core/instance";
+import { Instance, normalizeSort } from "../core/instance";
 
 export class PagefindConfig extends PagefindElement {
   init(): void {
@@ -46,8 +46,7 @@ export class PagefindConfig extends PagefindElement {
 
     const sort = this.getAttribute("sort");
     if (sort) {
-      const [key, direction = "asc"] = sort.split(":");
-      instance.searchSort = { [key]: direction };
+      instance.searchSort = normalizeSort(sort);
     }
 
     if (this.hasAttribute("exact-diacritics")) {
