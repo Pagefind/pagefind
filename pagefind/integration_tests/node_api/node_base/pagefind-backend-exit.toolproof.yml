@@ -1,0 +1,29 @@
+name: Node API Base Tests > A request waiting on a backend that exits is rejected
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+       import { execFileSync } from "child_process";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex();
+           const backend = Number(execFileSync("pgrep", ["-P", String(process.pid)]).toString().trim());
+           // Stopped, the backend reads nothing, so the request is still waiting when it exits.
+           process.kill(backend, "SIGSTOP");
+           const adding = index.addHTMLFile({sourcePath: "dogs/index.html", content: "<html><body><h1>Testing, testing</h1></body></html>"});
+           process.kill(backend, "SIGKILL");
+           try {
+               await adding;
+               console.log("Added after exit");
+           } catch (e) {
+               console.log(`After exit: ${e.message}`);
+           }
+       }
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: 'stdout should contain "After exit: Pagefind backend closed"'

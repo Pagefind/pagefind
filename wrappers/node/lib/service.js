@@ -35,6 +35,11 @@ export class PagefindService {
         (this.backend.stdout).on('data', (data) => this.handleIncomingChunk(data));
         (this.backend.stdin).on('error', (err) => this.close(err));
         this.backend.on('error', (err) => this.close(err));
+        // Requests waiting on a backend that exits would otherwise never settle.
+        const backend = this.backend;
+        backend.on('exit', (code, signal) => {
+            if (this.backend === backend) this.close(new Error(`Pagefind backend exited (${signal ?? code})`));
+        });
 
         this.refCount = 0
         this.backend.unref?.();
