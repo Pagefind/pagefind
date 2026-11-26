@@ -1,0 +1,30 @@
+name: Node API Base Tests > Pending requests reject when the backend exits
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "crashing-backend.sh" file with the content {sh}
+    sh: |-
+      #!/bin/sh
+      # Read the first request, then exit without answering it
+      head -c 1 > /dev/null
+      exit 101
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+
+       const run = async () => {
+           try {
+               await pagefind.createIndex();
+               console.log(`Unexpectedly created an index`);
+           } catch (e) {
+               console.log(`Rejected: ${e.message}`);
+           }
+       }
+
+       run().finally(() => console.log(`Request settled`));
+  - step: I run "chmod +x crashing-backend.sh && cd public && npm i && PAGEFIND_BINARY_PATH=../crashing-backend.sh node index.js"
+  - step: 'stdout should contain "Rejected: Pagefind backend closed: Pagefind backend exited unexpectedly (exit code 101)"'
+  - step: 'stdout should contain "Request settled"'

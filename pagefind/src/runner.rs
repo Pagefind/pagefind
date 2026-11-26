@@ -91,11 +91,11 @@ pub async fn run_indexer() -> Result<()> {
                 }
 
                 runner.build_indexes().await?;
-                _ = &runner.write_files(None).await;
+                runner.write_files(None).await?;
 
                 if use_old_bundle {
                     let old_bundle_location = options.site_source.join("_pagefind");
-                    _ = &runner.write_files(Some(old_bundle_location)).await;
+                    runner.write_files(Some(old_bundle_location)).await?;
                 }
 
                 let has_default_ui = runner

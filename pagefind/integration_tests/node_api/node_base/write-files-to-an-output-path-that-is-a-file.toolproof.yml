@@ -1,0 +1,25 @@
+name: Node API Base Tests > Write files to an output path that is a file
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "output/search" file with the content {text}
+    text: not a directory
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex();
+           await index.addHTMLFile({sourcePath: "dogs/index.html", content: "<html><body><h1>Testing, testing</h1></body></html>"});
+           const { errors } = await index.writeFiles({ outputPath: "../output/search" });
+           console.log(`Write errors: ${errors.join(',')}`);
+           await pagefind.close();
+       }
+
+       run().finally(() => console.log(`Write settled`));
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: 'stdout should contain "Write errors: Error: Pagefind could not create the output directory"'
+  - step: 'stdout should contain "Write settled"'

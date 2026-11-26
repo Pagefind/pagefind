@@ -310,8 +310,21 @@ impl SearchState {
         Ok(())
     }
 
-    pub async fn write_files(&self, custom_outdir: Option<PathBuf>) -> PathBuf {
+    pub async fn write_files(&self, custom_outdir: Option<PathBuf>) -> Result<PathBuf> {
         let outdir = custom_outdir.unwrap_or(self.options.bundle_output.clone());
+
+        // Create the output directory up front, so a path that cannot be a
+        // directory (e.g. an existing file) is reported as an error instead of
+        // panicking in the middle of writing the bundle.
+        if let Err(e) = tokio::fs::create_dir_all(&outdir).await {
+            let message = format!(
+                "Error: Pagefind could not create the output directory {}: {}",
+                outdir.display(),
+                e
+            );
+            self.options.logger.error(&message);
+            bail!(message);
+        }
 
         let index_entries: Vec<_> = self
             .built_indexes
@@ -334,7 +347,7 @@ impl SearchState {
         )
         .await;
 
-        outdir
+        Ok(outdir)
     }
 
     pub async fn get_files(&self) -> Vec<SyntheticFile> {
