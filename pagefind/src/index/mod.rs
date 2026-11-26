@@ -20,8 +20,8 @@ mod index_metadata;
 mod index_words;
 
 pub struct PagefindIndexes {
-    pub word_indexes: HashMap<String, Vec<u8>>,
-    pub filter_indexes: HashMap<String, Vec<u8>>,
+    pub word_indexes: BTreeMap<String, Vec<u8>>,
+    pub filter_indexes: BTreeMap<String, Vec<u8>>,
     pub meta_index: (String, Vec<u8>),
     pub fragments: Vec<(String, String)>,
     pub sorts: Vec<String>,
@@ -78,6 +78,41 @@ pub async fn build_indexes(
     let mut filter_map: HashMap<String, HashMap<String, Vec<usize>>> = HashMap::new();
     let mut fragment_hashes: HashMap<String, IntermediaryPageData> = HashMap::new();
     let mut fragments: Vec<(usize, (String, IntermediaryPageData))> = Vec::new();
+
+    // Sort pages deterministically before assigning page numbers so index,
+    // filter, sort, and meta outputs do not depend on filesystem walk or API call order.
+    pages.sort_unstable_by(|a, b| {
+        a.url
+            .cmp(&b.url)
+            .then_with(|| a.fragment.data.content.cmp(&b.fragment.data.content))
+            .then_with(|| a.fragment.data.meta.cmp(&b.fragment.data.meta))
+            .then_with(|| a.fragment.data.filters.cmp(&b.fragment.data.filters))
+            .then_with(|| a.sort.cmp(&b.sort))
+            .then_with(|| {
+                a.fragment
+                    .data
+                    .anchors
+                    .iter()
+                    .map(|anchor| {
+                        (
+                            &anchor.element,
+                            &anchor.id,
+                            &anchor.text,
+                            &anchor.title,
+                            anchor.location,
+                        )
+                    })
+                    .cmp(b.fragment.data.anchors.iter().map(|anchor| {
+                        (
+                            &anchor.element,
+                            &anchor.id,
+                            &anchor.text,
+                            &anchor.title,
+                            anchor.location,
+                        )
+                    }))
+            })
+    });
 
     for (page_number, page) in pages.iter_mut().enumerate() {
         page.fragment.page_number = page_number;
@@ -382,9 +417,13 @@ pub async fn build_indexes(
         fragment_hashes.insert(short_hash.to_string(), encoded_page);
     }
 
-    // Sort pages within each word by page_number to maintain correct order after parallel processing
+    // Sort pages and variants within each word to maintain deterministic order
+    // after parallel processing and independent of page order
     for packed_word in word_map.values_mut() {
         packed_word.pages.sort_by_key(|p| p.page_number);
+        packed_word
+            .additional_variants
+            .sort_unstable_by(|a, b| a.form.cmp(&b.form));
         for variant in &mut packed_word.additional_variants {
             variant.pages.sort_by_key(|p| p.page_number);
         }
@@ -400,8 +439,9 @@ pub async fn build_indexes(
     let page_count = fragments.len();
     let mut final_fragments = Vec::new();
 
-    if let Some(max_fragments) =
-        options.max_fragments.filter(|&m| m > 0 && (m as usize) < fragments.len())
+    if let Some(max_fragments) = options
+        .max_fragments
+        .filter(|&m| m > 0 && (m as usize) < fragments.len())
     {
         let group_size = (fragments.len() as f32 / max_fragments as f32).ceil() as usize;
         options.logger.info(format!(
@@ -478,7 +518,7 @@ pub async fn build_indexes(
         .collect();
 
     // Handle hash collisions sequentially (required for correctness)
-    let mut filter_indexes = HashMap::new();
+    let mut filter_indexes = BTreeMap::new();
     for (filter, filter_index, hash) in encoded_filters {
         let mut short_hash = &hash[0..=(language.len() + 7)];
 
@@ -556,7 +596,7 @@ pub async fn build_indexes(
         .collect();
 
     // Handle hash collisions sequentially (required for correctness)
-    let mut word_indexes: HashMap<String, Vec<u8>> = HashMap::new();
+    let mut word_indexes: BTreeMap<String, Vec<u8>> = BTreeMap::new();
     for (i, word_index, hash) in encoded_chunks {
         let mut short_hash = &hash[0..=(language.len() + 7)];
 
@@ -872,5 +912,275 @@ mod tests {
             get_prefixes(("catha", "cath")),
             ("catha".into(), "cath".into())
         );
+    }
+
+    #[derive(minicbor::Decode, Debug)]
+    struct DecodedWordIndex {
+        #[n(0)]
+        words: Vec<DecodedPackedWord>,
+    }
+
+    #[derive(minicbor::Decode, Debug)]
+    struct DecodedPackedWord {
+        #[n(0)]
+        word: String,
+        #[n(1)]
+        pages: Vec<DecodedPackedPage>,
+        #[n(2)]
+        additional_variants: Vec<DecodedPackedVariant>,
+    }
+
+    #[derive(minicbor::Decode, Debug)]
+    struct DecodedPackedVariant {
+        #[n(0)]
+        form: String,
+        #[n(1)]
+        pages: Vec<DecodedPackedPage>,
+    }
+
+    #[derive(minicbor::Decode, Debug)]
+    struct DecodedPackedPage {
+        #[n(0)]
+        page_number: usize,
+        #[n(1)]
+        locs: Vec<i32>,
+        #[n(2)]
+        meta_locs: Vec<i32>,
+    }
+
+    fn test_search_options() -> SearchOptions {
+        let mut config: crate::PagefindInboundConfig =
+            serde_json::from_str("{}").expect("all fields have serde defaults");
+        config.service = true;
+        config.silent = true;
+        SearchOptions::load(config).expect("default service options should load")
+    }
+
+    fn fossick_html(url: &str, html: &str, options: &SearchOptions) -> FossickedData {
+        crate::fossick::Fossicker::new_synthetic(None, Some(url.to_string()), html.to_string())
+            .fossick_sync(options)
+            .expect("synthetic HTML should fossick")
+    }
+
+    fn assert_indexes_identical(a: &PagefindIndexes, b: &PagefindIndexes) {
+        assert_eq!(a.language, b.language);
+        assert_eq!(a.page_count, b.page_count);
+        assert_eq!(a.word_count, b.word_count);
+        assert_eq!(a.sorts, b.sorts);
+        assert_eq!(a.meta_index, b.meta_index, "meta_index hash/bytes differed");
+        assert_eq!(
+            a.fragments, b.fragments,
+            "fragments order/contents differed"
+        );
+
+        let a_words: Vec<_> = a.word_indexes.iter().collect();
+        let b_words: Vec<_> = b.word_indexes.iter().collect();
+        assert_eq!(a_words, b_words, "word_indexes differed");
+
+        let a_filters: Vec<_> = a.filter_indexes.iter().collect();
+        let b_filters: Vec<_> = b.filter_indexes.iter().collect();
+        assert_eq!(a_filters, b_filters, "filter_indexes differed");
+    }
+
+    #[tokio::test]
+    async fn build_indexes_is_independent_of_page_input_order() {
+        let mut options = test_search_options();
+        // Force multiple index chunks so chunk boundaries and hashes are exercised too
+        options.index_chunk_size = 8;
+
+        let pages = vec![
+            fossick_html(
+                "/zebra/",
+                r#"<html lang="en"><body>
+                    <h1 data-pagefind-meta="title">Café résumé</h1>
+                    <p data-pagefind-filter="tag:rust" data-pagefind-sort="order:2">café zebra shared alpha</p>
+                </body></html>"#,
+                &options,
+            ),
+            fossick_html(
+                "/alpha/",
+                r#"<html lang="en"><body>
+                    <h1 data-pagefind-meta="title">Cafè naive</h1>
+                    <p data-pagefind-filter="tag:rust" data-pagefind-filter="section:docs" data-pagefind-sort="order:1">cafè naïve shared beta</p>
+                </body></html>"#,
+                &options,
+            ),
+            fossick_html(
+                "/middle/",
+                r#"<html lang="en"><body>
+                    <h1 data-pagefind-meta="title">Cafê resume</h1>
+                    <p data-pagefind-filter="tag:search" data-pagefind-sort="order:2">cafê naìve shared gamma</p>
+                </body></html>"#,
+                &options,
+            ),
+            fossick_html(
+                "/beta/",
+                r#"<html lang="en"><body>
+                    <h1 data-pagefind-meta="title">Cafe plain</h1>
+                    <p data-pagefind-filter="section:docs" data-pagefind-sort="order:1">cafe naive shared delta</p>
+                </body></html>"#,
+                &options,
+            ),
+        ];
+
+        let baseline = build_indexes(pages.clone(), "en".into(), &options)
+            .await
+            .unwrap();
+
+        let reversed: Vec<_> = pages.iter().rev().cloned().collect();
+        let from_reversed = build_indexes(reversed, "en".into(), &options)
+            .await
+            .unwrap();
+
+        let permuted = vec![
+            pages[2].clone(),
+            pages[0].clone(),
+            pages[3].clone(),
+            pages[1].clone(),
+        ];
+        let from_permuted = build_indexes(permuted, "en".into(), &options)
+            .await
+            .unwrap();
+
+        assert_indexes_identical(&baseline, &from_reversed);
+        assert_indexes_identical(&baseline, &from_permuted);
+    }
+
+    #[tokio::test]
+    async fn build_indexes_sorts_additional_variants_across_pages_and_meta() {
+        let options = test_search_options();
+
+        // Page "/z/" introduces "cafê" in body before "cafè" in meta, while page "/a/"
+        // introduces "café" and "cafë" in body. Use lang="unknown" (no stemmer) so all
+        // four normalize to "cafe".
+        let page_z = fossick_html(
+            "/z/",
+            r#"<html><body>
+                <p data-pagefind-meta="label:cafè">cafê</p>
+            </body></html>"#,
+            &options,
+        );
+        let page_a = fossick_html(
+            "/a/",
+            r#"<html><body>
+                <p>café cafë</p>
+            </body></html>"#,
+            &options,
+        );
+
+        let idx_za = build_indexes(
+            vec![page_z.clone(), page_a.clone()],
+            "unknown".into(),
+            &options,
+        )
+        .await
+        .unwrap();
+        let idx_az = build_indexes(vec![page_a, page_z.clone()], "unknown".into(), &options)
+            .await
+            .unwrap();
+
+        assert_indexes_identical(&idx_za, &idx_az);
+
+        let extract_cafe_variants = |idx: &PagefindIndexes| {
+            for bytes in idx.word_indexes.values() {
+                let decoded: DecodedWordIndex =
+                    minicbor::decode(bytes).expect("valid CBOR WordIndex");
+                if let Some(cafe_word) = decoded.words.into_iter().find(|w| w.word == "cafe") {
+                    assert!(cafe_word.pages.is_empty());
+                    return Some(
+                        cafe_word
+                            .additional_variants
+                            .into_iter()
+                            .map(|v| {
+                                let pages = v
+                                    .pages
+                                    .into_iter()
+                                    .map(|p| (p.page_number, p.locs.len(), p.meta_locs.len()))
+                                    .collect();
+                                (v.form, pages)
+                            })
+                            .collect::<Vec<_>>(),
+                    );
+                }
+            }
+            None
+        };
+
+        // Page "/a/" gets page_number 0 (café, cafë in body);
+        // Page "/z/" gets page_number 1 (cafè in meta, cafê in body).
+        // Variants must be sorted by `form` regardless of page or body-vs-meta order.
+        assert_eq!(
+            extract_cafe_variants(&idx_za),
+            Some(vec![
+                ("cafè".to_string(), vec![(1, 0, 2)]),
+                ("café".to_string(), vec![(0, 2, 0)]),
+                ("cafê".to_string(), vec![(1, 2, 0)]),
+                ("cafë".to_string(), vec![(0, 2, 0)]),
+            ])
+        );
+
+        // Even for a single page alone, body ("cafê") is processed before meta ("cafè"),
+        // so `additional_variants` must still be sorted by `form`.
+        let idx_single = build_indexes(vec![page_z], "unknown".into(), &options)
+            .await
+            .unwrap();
+        assert_eq!(
+            extract_cafe_variants(&idx_single),
+            Some(vec![
+                ("cafè".to_string(), vec![(0, 0, 2)]),
+                ("cafê".to_string(), vec![(0, 2, 0)]),
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn build_indexes_is_deterministic_with_max_fragments_grouping() {
+        let mut options = test_search_options();
+        options.max_fragments = Some(2);
+
+        let pages: Vec<_> = ["/p5/", "/p2/", "/p4/", "/p1/", "/p3/"]
+            .into_iter()
+            .map(|url| {
+                fossick_html(
+                    url,
+                    &format!(r#"<html lang="en"><body><h1>Page {url}</h1><p>content {url}</p></body></html>"#),
+                    &options,
+                )
+            })
+            .collect();
+
+        let reversed: Vec<_> = pages.iter().rev().cloned().collect();
+        let a = build_indexes(pages, "en".into(), &options).await.unwrap();
+        let b = build_indexes(reversed, "en".into(), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(a.fragments.len(), 2);
+        assert_indexes_identical(&a, &b);
+    }
+
+    #[tokio::test]
+    async fn build_indexes_tie_breaks_duplicate_urls_and_equal_sorts_deterministically() {
+        let options = test_search_options();
+
+        let page_1 = fossick_html(
+            "/dup/",
+            r#"<html lang="en"><body><p data-pagefind-sort="rank:1" data-pagefind-sort="label:same">alpha body</p></body></html>"#,
+            &options,
+        );
+        let page_2 = fossick_html(
+            "/dup/",
+            r#"<html lang="en"><body><p data-pagefind-sort="rank:1" data-pagefind-sort="label:same">beta body</p></body></html>"#,
+            &options,
+        );
+
+        let a = build_indexes(vec![page_1.clone(), page_2.clone()], "en".into(), &options)
+            .await
+            .unwrap();
+        let b = build_indexes(vec![page_2, page_1], "en".into(), &options)
+            .await
+            .unwrap();
+
+        assert_indexes_identical(&a, &b);
     }
 }
