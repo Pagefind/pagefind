@@ -1,0 +1,39 @@
+name: Character Tests > Soft hyphens only mark where a word may break
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/compound/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>x beet-ro&shy;ot x</p></body></html>
+  - step: I have a "public/hyphenated/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>x hy&shy;phen&shy;ation x</p></body></html>
+  - step: I have a "public/plain/index.html" file with the content {html}
+    html: >-
+      <!DOCTYPE html><html
+      lang="en"><head></head><body><p>x sandwich x</p></body></html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/"
+  - step: In my browser, I evaluate {js}
+    js: >-
+      let pagefind = await import("/pagefind/pagefind.js");
+
+
+      let pages = [
+          ...(await Promise.all((await pagefind.search("root")).results.map(r => r.data()))),
+          ...(await Promise.all((await pagefind.search("hyphenation")).results.map(r => r.data()))),
+          ...(await Promise.all((await pagefind.search("sand\u00ADwich")).results.map(r => r.data()))),
+      ];
+
+
+      document.querySelector('[data-result]').innerText = pages.map(p =>
+      p.url).join(", ");
+  - step: In my browser, the console should be empty
+  - step: In my browser, I evaluate {js}
+    js: |-
+      let val = await toolproof.querySelector("[data-result]");
+      toolproof.assert_eq(val.innerHTML, `/compound/, /hyphenated/, /plain/`);

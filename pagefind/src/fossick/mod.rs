@@ -495,6 +495,12 @@ impl Fossicker {
             if base_word.is_empty() {
                 return;
             }
+            // A soft hyphen only marks where a word may break: the word is indexed as it is without it, while the
+            // content keeps it. A word of nothing but soft hyphens is left out of both, as an empty one is.
+            let index_word = base_word.replace('\u{AD}', "");
+            if index_word.is_empty() {
+                return;
+            }
 
             content.push_str(&base_word);
             if append_whitespace {
@@ -508,9 +514,9 @@ impl Fossicker {
             let word_weight = *weight_stack.last().unwrap_or(&1);
 
             let mut indexable_words =
-                get_indexable_words(&base_word, stemmer.as_ref(), &options.include_characters);
+                get_indexable_words(&index_word, stemmer.as_ref(), &options.include_characters);
             let dotted_tails = get_dotted_tails(
-                &base_word,
+                &index_word,
                 stemmer.as_ref(),
                 &options.include_characters,
                 &indexable_words,
@@ -519,12 +525,12 @@ impl Fossicker {
             let mut cross_bigram = None;
             if segmented {
                 let bigrams =
-                    get_indexable_bigrams(&base_word, stemmer.as_ref(), &indexable_words);
+                    get_indexable_bigrams(&index_word, stemmer.as_ref(), &indexable_words);
                 indexable_words.extend(bigrams);
                 // The pair that spans the boundary from the previous segment is
                 // indexed against that segment, so it is tracked separately
                 cross_bigram = get_indexable_cross_bigram(
-                    &base_word,
+                    &index_word,
                     previous_cluster,
                     stemmer.as_ref(),
                     &indexable_words,
@@ -645,9 +651,14 @@ impl Fossicker {
 
         for (field_id, field_name) in field_order.iter().enumerate() {
             if let Some(field_value) = meta.get(field_name) {
-                for (word_idx, word) in field_value.split_whitespace().enumerate() {
+                // As in the content, a soft hyphen does not change how a word is indexed
+                let words = field_value
+                    .split_whitespace()
+                    .map(|word| word.replace('\u{AD}', ""))
+                    .filter(|word| !word.is_empty());
+                for (word_idx, word) in words.enumerate() {
                     let indexable_words =
-                        get_indexable_words(word, stemmer.as_ref(), &options.include_characters);
+                        get_indexable_words(&word, stemmer.as_ref(), &options.include_characters);
 
                     for indexable in indexable_words {
                         let entry = MetaFossickedWord {
@@ -1180,6 +1191,40 @@ mod tests {
                     }]
                 )
             ])
+        );
+    }
+
+    #[tokio::test]
+    async fn parse_soft_hyphens() {
+        // The content keeps its soft hyphens; without them, it and all that is indexed are as for the plain text
+        let words = |text: &str| {
+            let mut f = test_fossick(format!("<html lang='de'><body><p>{text}</p></body></html>"));
+            let (digest, words, anchors, count) = f.parse_digest(&test_opts());
+            let anchors: Vec<_> = anchors
+                .into_iter()
+                .map(|a| (a.element, a.id, a.location))
+                .collect();
+            (digest.replace('\u{AD}', ""), words, anchors, count)
+        };
+
+        let with = words("Hoch&shy;span&shy;nungs&shy;netz&shy;teil KI-Werkzeu&shy;gen a3kul&shy;tur ist vor&shy;la&shy;ge_di&shy;gi.test/1x &shy; x</p><h2 id='end'>y</h2><p>z");
+        assert_eq!(with.2.len(), 1);
+        assert_eq!(
+            with,
+            words("Hochspannungsnetzteil KI-Werkzeugen a3kultur ist vorlage_digi.test/1x x</p><h2 id='end'>y</h2><p>z")
+        );
+    }
+
+    #[test]
+    fn parse_soft_hyphens_in_metadata() {
+        let words = |title: &str| {
+            let meta = BTreeMap::from([("title".to_string(), title.to_string())]);
+            Fossicker::parse_meta_words(&meta, &["title".to_string()], "de", &test_opts())
+        };
+
+        assert_eq!(
+            words("KI-Werkzeu\u{AD}gen a3kul\u{AD}tur \u{AD} x"),
+            words("KI-Werkzeugen a3kultur x")
         );
     }
 
