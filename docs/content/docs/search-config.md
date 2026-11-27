@@ -216,6 +216,39 @@ await pagefind.options({
 {{< /tab >}}
 {{< /tabs >}}
 
+### Prefix matching
+
+Defaults to `"all"`. Controls which words of a search may match longer words that start with them.
+
+By default, every word in a search is treated as a prefix, so searching for "car rental" will also match pages containing "carpet" and "rental". When searching as you type this suits the last word, which may not be finished yet, but makes every other word broader than intended.
+
+- When set to `"last"`, only the last word of a search may match longer words. Every other word has to match a whole word, so "car rental" will match "car" but not "carpet".
+- When set to `"none"`, every word has to match a whole word, including the last. This suits searches that only run once the full search has been entered.
+- Words are still stemmed, so "cars rental" will match "car" in both modes.
+- If a word doesn't match any whole word on the site, Pagefind falls back to matching it as a prefix, so a search for "carp rental" will still find "carpet".
+
+{{< tabs >}}
+{{< tab "UI (declarative)" "sync-cfg-declarative" >}}
+```html
+<pagefind-config prefix-matching="last"></pagefind-config>
+```
+{{< /tab >}}
+{{< tab "UI (programmatic)" "sync-cfg-programmatic" >}}
+```js
+configureInstance("default", {
++    prefixMatching: "last"
+});
+```
+{{< /tab >}}
+{{< tab "Search API" "sync-cfg-searchapi" >}}
+```js
+await pagefind.options({
++    prefixMatching: "last"
+});
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### Meta cache tag
 
 By default, Pagefind appends a timestamp to the metadata request to ensure fresh data. If you're building a PWA or offline-capable site, set this to a fixed string so that your service worker can cache the request. Change this value each time you rebuild your site. A build timestamp or random string works well.

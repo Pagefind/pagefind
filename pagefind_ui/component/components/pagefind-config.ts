@@ -53,6 +53,11 @@ export class PagefindConfig extends PagefindElement {
       instance.pagefindOptions.exactDiacritics = true;
     }
 
+    const prefixMatching = this.getAttribute("prefix-matching");
+    if (prefixMatching) {
+      instance.pagefindOptions.prefixMatching = prefixMatching;
+    }
+
     if (this.hasAttribute("no-worker")) {
       instance.pagefindOptions.noWorker = true;
     }
