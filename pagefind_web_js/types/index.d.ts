@@ -29,6 +29,12 @@ declare global {
     highlightParam?: string;
     language?: string;
     /**
+     * If set, a merged index that fails to load is skipped instead of failing the whole search.
+     *
+     * Only applies in multisite setups, to indexes passed to mergeIndex.
+     */
+    optional?: boolean;
+    /**
      * Whether an instance of Pagefind is the primary index or not (for multisite).
      *
      * This is set for you automatically, so it is unlikely you should set this directly.
