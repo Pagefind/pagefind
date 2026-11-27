@@ -126,7 +126,7 @@
         console.error(e);
         console.error(
           [
-            `Pagefind couldn't be loaded from ${this.options.bundlePath}pagefind.js`,
+            `Pagefind couldn't be loaded from ${base_path}pagefind.js`,
             `You can configure this by passing a bundlePath option to PagefindUI`,
           ].join("\n")
         );
