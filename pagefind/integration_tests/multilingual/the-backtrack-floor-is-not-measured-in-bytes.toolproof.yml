@@ -1,0 +1,23 @@
+name: The backtrack floor is not measured in bytes
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/ru/index.html" file with the content {html}
+    html: |-
+      <!DOCTYPE html>
+      <html lang="ru">
+      <body>
+          <p>я по русски привет</p>
+      </body>
+      </html>
+  - macro: I run Pagefind
+  - step: stdout should contain "Running Pagefind"
+  - step: I serve the directory "public"
+  - step: In my browser, I load "/ru/"
+  - step: In my browser, the result of {js} should be exactly {expected}
+    js: |-
+      let pagefind = await import("/pagefind/pagefind.js");
+      // Cyrillic is two bytes per character, so a byte floor of 3 would let the
+      // two-character preposition по through here
+      let search = await pagefind.search("подсолнечник");
+      return search.results.length;
+    expected: 0
