@@ -547,16 +547,12 @@ export class PagefindSearchbox extends PagefindElement {
           if (this.isOpen && this.activeIndex >= 0) {
             e.preventDefault();
             this.activateCurrentSelection(e);
-          } else if (!this.isOpen && this.inputEl?.value.trim()) {
+          } else if (this.reopenWithQuery()) {
             e.preventDefault();
-            this.openDropdown();
             if (this.results.length > 0) {
-              this.rerenderLoadedResults();
               this.activeIndex = 0;
               this.activeOptionOffset = 0;
               this.updateSelectionUI();
-            } else {
-              this.instance?.triggerSearch(this.inputEl.value);
             }
           }
           break;
@@ -582,6 +578,13 @@ export class PagefindSearchbox extends PagefindElement {
 
     this.inputEl.addEventListener("focus", () => {
       this.instance?.triggerLoad();
+      this.reopenWithQuery();
+    });
+
+    // Focus does not fire again when the dropdown was closed with Escape and
+    // the input kept focus, so a click on the input reopens it too.
+    this.inputEl.addEventListener("click", () => {
+      this.reopenWithQuery();
     });
 
     this.resultsEl.addEventListener("click", (e) => {
@@ -637,6 +640,22 @@ export class PagefindSearchbox extends PagefindElement {
     };
 
     document.addEventListener("keydown", this._shortcutKeyHandler);
+  }
+
+  /**
+   * Reopens a closed dropdown for the query still in the input, showing the
+   * results already loaded for it or searching again if there are none.
+   * Returns whether it reopened.
+   */
+  private reopenWithQuery(): boolean {
+    if (this.isOpen || !this.inputEl?.value.trim()) return false;
+    this.openDropdown();
+    if (this.results.length > 0) {
+      this.rerenderLoadedResults();
+    } else {
+      this.instance?.triggerSearch(this.inputEl.value);
+    }
+    return true;
   }
 
   private openDropdown(): void {
