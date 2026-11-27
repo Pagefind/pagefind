@@ -66,6 +66,11 @@ class IndexConfig(TypedDict, total=False):
     shared files. Useful for hosting providers that limit the number of files in a
     deployment.
     """
+    skip_ui: Optional[bool]
+    """Omit the Default, Modular, and Component UI files from the search bundle.
+
+    Useful when providing your own search UI.
+    """
     output_path: Optional[str]
     """
     The folder to output the search bundle into, relative to the processed site.

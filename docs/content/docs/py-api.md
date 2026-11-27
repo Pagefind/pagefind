@@ -136,6 +136,7 @@ config = IndexConfig(
     logfile="index.log",
     keep_index_url=True,
     write_playground=True,
+    skip_ui=True,
     output_path="./output",
 )
 

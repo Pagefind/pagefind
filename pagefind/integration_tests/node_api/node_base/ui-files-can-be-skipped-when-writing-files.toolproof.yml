@@ -1,0 +1,29 @@
+name: Node API Base Tests > UI files can be skipped when writing files
+platforms:
+  - linux
+  - mac
+
+steps:
+  - ref: ./background.toolproof.yml
+  - step: I have a "public/index.js" file with the content {js}
+    js: |2-
+       import * as pagefind from "pagefind";
+
+       const run = async () => {
+           const { index } = await pagefind.createIndex({ skipUi: true });
+           await index.addHTMLFile({sourcePath: "dogs/index.html", content: "<html><body><h1>Testing, testing</h1></body></html>"});
+           await index.writeFiles();
+           console.log(`Successfully wrote files`);
+       }
+
+       run();
+  - macro: I run Pagefind Node as "index.js" in "public"
+  - step: stdout should contain "Successfully wrote files"
+  - step: The file "public/pagefind/pagefind.js" should not be empty
+  - step: The file "public/pagefind/pagefind-highlight.js" should not be empty
+  - step: I run "ls -lh public/pagefind/pagefind-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-modular-ui.css" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.js" and expect it to fail
+  - step: I run "ls -lh public/pagefind/pagefind-component-ui.css" and expect it to fail

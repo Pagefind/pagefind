@@ -163,6 +163,14 @@ pub(crate) struct PagefindInboundConfig {
     #[clap(required = false)]
     pub(crate) max_fragments: Option<u32>,
 
+    #[clap(
+        long,
+        help = "Omit the Default, Modular, and Component UI files from the search bundle. Useful when providing your own search UI."
+    )]
+    #[clap(required = false)]
+    #[serde(default = "defaults::default_false")]
+    pub(crate) skip_ui: bool,
+
     #[clap(long)]
     #[clap(required = false, hide = true)]
     #[serde(default = "defaults::default_false")]
@@ -209,6 +217,8 @@ pub struct PagefindServiceConfig {
     #[patch(as_option)]
     /// The maximum number of fragment files to output per language.
     pub(crate) max_fragments: Option<u32>,
+    /// Omit the Default, Modular, and Component UI files from the search bundle.
+    pub(crate) skip_ui: Option<bool>,
 }
 
 mod defaults {
@@ -248,6 +258,7 @@ pub(crate) struct SearchOptions {
     pub(crate) config_warnings: ConfigWarnings,
     pub(crate) index_chunk_size: usize,
     pub(crate) max_fragments: Option<u32>,
+    pub(crate) skip_ui: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -337,6 +348,7 @@ impl SearchOptions {
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(defaults::default_index_chunk_size()),
                 max_fragments: config.max_fragments,
+                skip_ui: config.skip_ui,
             })
         }
     }
