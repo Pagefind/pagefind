@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, path::PathBuf};
+use std::{cmp::Ordering, path::PathBuf, collections::BTreeMap};
 
 use anyhow::{bail, Result};
 use either::Either;
@@ -10,9 +10,10 @@ use options::{PagefindInboundConfig, SearchOptions};
 use output::SyntheticFile;
 use rayon::prelude::*;
 pub use service::api;
+use crate::service::requests::CustomRecordInput;
+use crate::fossick::parser::DomParserResult;
 use wax::walk::Entry;
 use wax::Glob;
-
 use crate::index::build_indexes;
 
 mod fossick;
@@ -111,6 +112,69 @@ impl SearchState {
         self.fossicked_pages.extend(results);
 
         Ok(self.fossicked_pages.len() - existing_page_count)
+    }
+
+    /// Process multiple custom records in parallel using rayon
+    pub fn fossick_many_custom(
+        &mut self,
+        records: Vec<CustomRecordInput>,
+    ) -> Result<Vec<FossickedData>> {
+        let log = &self.options.logger;
+
+        let fossickers: Vec<Fossicker> = records
+            .into_iter()
+            .map(|r| {
+                let data = DomParserResult {
+                    digest: r.content,
+                    filters: r.filters.unwrap_or_default(),
+                    sort: r.sort.unwrap_or_default(),
+                    meta: r.meta.unwrap_or_default(),
+                    anchor_content: BTreeMap::new(),
+                    anchor_titles: BTreeMap::new(),
+                    has_custom_body: false,
+                    force_inclusion: true,
+                    has_html_element: true,
+                    has_old_bundle_reference: false,
+                    has_default_ui_reference: false,
+                    language: self.options.force_language.clone().unwrap_or(r.language),
+                };
+                Fossicker::new_with_data(r.url, data)
+            })
+            .collect();
+
+        log.info(format!(
+            "Processing {} custom record{} in parallel",
+            fossickers.len(),
+            plural!(fossickers.len())
+        ));
+        log.status("[Processing custom records]");
+
+        let (results, errors): (Vec<_>, Vec<_>) = fossickers
+            .into_par_iter()
+            .map(|f| f.fossick_sync(&self.options))
+            .partition_map(|r| match r {
+                Ok(data) => Either::Left(data),
+                Err(e) => Either::Right(e),
+            });
+
+        if !errors.is_empty() {
+            log.warn(format!(
+                "{} custom record{} failed to index",
+                errors.len(),
+                plural!(errors.len())
+            ));
+            for err in errors.iter().take(5) {
+                log.warn(format!("  - {}", err));
+            }
+            if errors.len() > 5 {
+                log.warn(format!("  ... and {} more", errors.len() - 5));
+            }
+        }
+
+        let _existing_page_count = self.fossicked_pages.len();
+        self.fossicked_pages.extend(results.clone());
+
+        Ok(results)
     }
 
     pub fn fossick_one(&mut self, file: Fossicker) -> Result<FossickedData> {

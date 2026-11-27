@@ -6,7 +6,7 @@
         "strict": true,
         "target": "es2020",
         "module": "es2022",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "allowSyntheticDefaultImports": true,
         "paths": {
             "pagefindService": [

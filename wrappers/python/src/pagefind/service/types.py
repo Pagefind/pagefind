@@ -51,6 +51,28 @@ class InternalAddRecordRequest(TypedDict):
     sort: Optional[Dict[str, str]]
 
 
+class CustomRecordInput(TypedDict, total=False):
+    url: str
+    content: str
+    language: str
+    meta: Optional[Dict[str, str]]
+    filters: Optional[Dict[str, List[str]]]
+    sort: Optional[Dict[str, str]]
+    chunk_id: Optional[int]
+    total_chunks: Optional[int]
+
+
+class InternalAddRecordsRequest(TypedDict):
+    type: Literal["AddRecords"]
+    index_id: int
+    records: List[CustomRecordInput]
+
+
+class InternalIndexedFilesResponse(TypedDict):
+    type: Literal["IndexedFiles"]
+    files: List["InternalIndexedFileResponse"]
+
+
 class InternalAddDirRequest(TypedDict, total=False):
     type: Literal["AddDir"]
     index_id: int
@@ -81,6 +103,7 @@ InternalRequestPayload = Union[
     InternalNewIndexRequest,
     InternalAddFileRequest,
     InternalAddRecordRequest,
+    InternalAddRecordsRequest,
     InternalAddDirRequest,
     InternalWriteFilesRequest,
     InternalGetFilesRequest,
@@ -153,6 +176,7 @@ class InternalDeleteIndexResponse(TypedDict):
 InternalResponsePayload = Union[
     InternalNewIndexResponse,
     InternalIndexedFileResponse,
+    InternalIndexedFilesResponse,
     InternalIndexedDirResponse,
     InternalWriteFilesResponse,
     InternalGetFilesResponse,

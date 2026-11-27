@@ -15,6 +15,7 @@ export type InternalRequestPayload =
   | InternalNewIndexRequest
   | InternalAddFileRequest
   | InternalAddRecordRequest
+  | InternalAddRecordsRequest
   | InternalAddDirRequest
   | InternalWriteFilesRequest
   | InternalGetFilesRequest
@@ -54,6 +55,28 @@ export interface InternalAddRecordRequest {
     meta?: Record<string, string>,
     filters?: Record<string, string[]>,
     sort?: Record<string, string>
+}
+
+export interface CustomRecordInput {
+    url: string,
+    content: string,
+    language: string,
+    meta?: Record<string, string>,
+    filters?: Record<string, string[]>,
+    sort?: Record<string, string>,
+    chunk_id?: number,
+    total_chunks?: number,
+}
+
+export interface InternalAddRecordsRequest {
+    type: 'AddRecords',
+    index_id: number,
+    records: CustomRecordInput[],
+}
+
+export interface InternalIndexedFilesResponse {
+    type: 'IndexedFiles',
+    files: InternalIndexedFileResponse[],
 }
 
 export interface InternalAddDirRequest {
@@ -104,6 +127,7 @@ export interface InternalResponseError {
 export type InternalResponsePayload = 
   | InternalNewIndexResponse
   | InternalIndexedFileResponse
+  | InternalIndexedFilesResponse
   | InternalIndexedDirResponse
   | InternalWriteFilesResponse
   | InternalGetFilesResponse
